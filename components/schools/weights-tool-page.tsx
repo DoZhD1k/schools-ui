@@ -20,6 +20,7 @@ import { RatingWeights } from "@/types/schools";
 import { SchoolsService } from "@/services/schools.service";
 import { defaultWeights } from "@/lib/mock-data";
 import { validateWeights, getIndicatorLabel } from "@/lib/rating-utils";
+import "./weights-tool-styles.css";
 
 export default function WeightsToolPage() {
   const [weights, setWeights] = useState<RatingWeights>(defaultWeights);
@@ -226,14 +227,14 @@ export default function WeightsToolPage() {
                         htmlFor={indicator}
                         className="flex items-center gap-2"
                       >
-                        <span className="font-mono bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
+                        <span className="weight-indicator-label">
                           {indicator}
                         </span>
                         <span className="text-sm">
                           {getIndicatorLabel(indicator)}
                         </span>
                       </Label>
-                      <div className="flex items-center gap-2">
+                      <div className="weight-input-container">
                         <Input
                           id={indicator}
                           type="number"
@@ -248,11 +249,16 @@ export default function WeightsToolPage() {
                         />
                         <span className="text-sm text-gray-500 w-8">%</span>
                       </div>
-                      <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="weight-progress-bar">
                         <div
-                          className="h-full bg-blue-500 transition-all duration-300"
-                          style={{
-                            width: `${Math.min(weights[indicator], 100)}%`,
+                          className="weight-progress-fill"
+                          ref={(el) => {
+                            if (el) {
+                              el.style.width = `${Math.min(
+                                weights[indicator],
+                                100
+                              )}%`;
+                            }
                           }}
                         />
                       </div>

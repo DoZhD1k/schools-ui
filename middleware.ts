@@ -91,5 +91,7 @@ export const config = {
     "/map/:path*",
     "/admin/:path*",
     "/dashboard/:path*",
+    // Schools paths
+    "/schools/:path*",
   ],
 };

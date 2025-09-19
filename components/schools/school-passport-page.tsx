@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,10 +43,11 @@ import { SchoolPassportData } from "@/types/schools";
 import { SchoolsService } from "@/services/schools.service";
 import { getRatingZoneColor } from "@/lib/rating-utils";
 
-export default function SchoolPassportPage() {
-  const params = useParams();
-  const schoolId = params.id as string;
+interface Props {
+  schoolId: string;
+}
 
+export default function SchoolPassportPage({ schoolId }: Props) {
   const [passportData, setPassportData] = useState<SchoolPassportData | null>(
     null
   );
