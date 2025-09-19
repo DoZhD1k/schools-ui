@@ -125,23 +125,23 @@ function DashboardPage({ params }: DashboardPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800">
       {/* Header */}
-      <div className="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-lg border-b border-slate-200/60 dark:border-slate-700/60">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
+          <div className="flex items-center justify-between h-24">
             <div className="flex items-center space-x-6">
               <div>
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-blue-600 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
+                <div className="flex items-center space-x-4">
+                  <div className="p-3 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg">
+                    <BarChart3 className="h-7 w-7 text-white" />
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+                    <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-200 bg-clip-text text-transparent">
                       Добро пожаловать, {userName}
                     </h1>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Управление образовательной платформой
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                      Система управления образовательными учреждениями
                     </p>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-300 hover:bg-slate-50"
+                  className="border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 font-medium"
                 >
                   <MapPin className="h-4 w-4 mr-2" />
                   Карта
@@ -162,15 +162,15 @@ function DashboardPage({ params }: DashboardPageProps) {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="border-slate-300 hover:bg-slate-50"
+                  className="border-slate-300 hover:bg-slate-50 hover:border-slate-400 transition-all duration-200 font-medium"
                 >
                   <Settings className="h-4 w-4 mr-2" />
-                  Админ
+                  Панель управления
                 </Button>
               </Link>
               <div className="flex items-center space-x-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-blue-600 text-white font-semibold">
+                <Avatar className="h-10 w-10 ring-2 ring-blue-100 dark:ring-slate-700">
+                  <AvatarFallback className="bg-gradient-to-br from-blue-600 to-blue-700 text-white font-semibold text-sm">
                     {userName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
@@ -178,7 +178,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                   variant="ghost"
                   size="sm"
                   onClick={logout}
-                  className="text-slate-600 hover:text-slate-900"
+                  className="text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 transition-all duration-200 font-medium"
                 >
                   <LogOut className="h-4 w-4 mr-2" />
                   Выйти
@@ -189,14 +189,14 @@ function DashboardPage({ params }: DashboardPageProps) {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-8 mb-12">
           <StatCard
             title="Всего школ"
             value={stats.totalSchools.toLocaleString()}
             subtitle="Образовательных учреждений"
-            icon={<School className="h-5 w-5" />}
+            icon={<School className="h-6 w-6" />}
             variant="default"
           />
 
@@ -204,7 +204,7 @@ function DashboardPage({ params }: DashboardPageProps) {
             title="Лидирующие школы"
             value={stats.leadingSchools}
             subtitle="С высоким рейтингом"
-            icon={<Trophy className="h-5 w-5" />}
+            icon={<Trophy className="h-6 w-6" />}
             variant="success"
             trend="up"
             trendValue="+12%"
@@ -214,7 +214,7 @@ function DashboardPage({ params }: DashboardPageProps) {
             title="Учащиеся"
             value={stats.totalStudents.toLocaleString()}
             subtitle="Общее количество"
-            icon={<Users className="h-5 w-5" />}
+            icon={<Users className="h-6 w-6" />}
             variant="default"
           />
 
@@ -222,7 +222,7 @@ function DashboardPage({ params }: DashboardPageProps) {
             title="Средний рейтинг"
             value={stats.averageRating.toFixed(1)}
             subtitle="Из 5.0"
-            icon={<Star className="h-5 w-5" />}
+            icon={<Star className="h-6 w-6" />}
             variant="warning"
             trend="up"
             trendValue="+0.2"
@@ -230,7 +230,7 @@ function DashboardPage({ params }: DashboardPageProps) {
         </div>
 
         {/* Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           {/* Recent Activity */}
           <div className="lg:col-span-1">
             <RecentActivity activities={stats.recentActivity} />
@@ -238,56 +238,56 @@ function DashboardPage({ params }: DashboardPageProps) {
 
           {/* Quick Actions */}
           <div className="lg:col-span-2">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="group bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 hover:shadow-xl hover:shadow-blue-500/10 transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center mb-6">
-                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-lg mr-4">
-                    <BarChart3 className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <div className="p-4 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/30 dark:to-blue-800/30 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300">
+                    <BarChart3 className="h-7 w-7 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                       Аналитика
                     </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                       Интерактивная карта
                     </p>
                   </div>
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
                   Просмотр детальной аналитики по школам, регионам и
-                  образовательным показателям
+                  образовательным показателям на интерактивной карте
                 </p>
                 <Link href={`/${params.lang}/map`}>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5">
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200">
                     Открыть карту
                   </Button>
                 </Link>
               </div>
 
-              <div className="bg-white dark:bg-slate-800 p-8 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+              <div className="group bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm p-8 rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1">
                 <div className="flex items-center mb-6">
-                  <div className="p-3 bg-emerald-100 dark:bg-emerald-900/20 rounded-lg mr-4">
-                    <Settings className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                  <div className="p-4 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/30 dark:to-emerald-800/30 rounded-xl mr-4 group-hover:scale-110 transition-transform duration-300">
+                    <Settings className="h-7 w-7 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white">
                       Управление
                     </h3>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
                       Системные настройки
                     </p>
                   </div>
                 </div>
-                <p className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+                <p className="text-slate-600 dark:text-slate-400 mb-8 leading-relaxed">
                   Управление пользователями, школами, коллекциями данных и
-                  системными настройками
+                  системными настройками платформы
                 </p>
                 <Link href={`/${params.lang}/admin`}>
                   <Button
                     variant="outline"
-                    className="w-full border-slate-300 dark:border-slate-600 font-medium py-2.5"
+                    className="w-full border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 font-semibold py-3 rounded-xl transition-all duration-200"
                   >
-                    Админ панель
+                    Панель управления
                   </Button>
                 </Link>
               </div>

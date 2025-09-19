@@ -1,15 +1,13 @@
-import { getDictionary } from "@/get-dictionary";
-import { Locale } from "@/i18n-config";
-import AdminDashboard from "./admin-dashboard";
+"use client";
 
-export default async function AdminPage({
-  params,
-}: {
-  params: { lang: Locale };
-}) {
-  // Await the params to access the lang property
-  const { lang } = await params;
-  const dictionary = await getDictionary(lang);
+import React from "react";
+import AdminDashboard from "../../../../components/admin/admin-dashboard";
+import AdminLayout from "../../../../components/admin/admin-layout";
 
-  return <AdminDashboard dictionary={dictionary} />;
+export default function AdminHomePage() {
+  return (
+    <AdminLayout>
+      <AdminDashboard />
+    </AdminLayout>
+  );
 }

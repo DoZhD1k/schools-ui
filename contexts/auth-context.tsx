@@ -42,6 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const extractRoleFromToken = (token: string): string | null => {
     try {
+      // Check if token has the correct JWT format (3 parts separated by dots)
+      if (!token || token.split(".").length !== 3) {
+        console.error("Invalid token format:", token);
+        return null;
+      }
+
       const decodedToken = jwtDecode<JwtPayload>(token);
       return decodedToken.role || null;
     } catch (error) {
@@ -50,28 +56,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const setAccessToken = (token: string | null, expires_in?: number) => {
-    setAccessTokenState(token);
-    setAuthHeader(token);
+  const setAccessToken = useCallback(
+    (token: string | null, expires_in?: number) => {
+      setAccessTokenState(token);
+      setAuthHeader(token);
 
-    if (token) {
-      localStorage.setItem("accessToken", token);
-      const role = extractRoleFromToken(token);
-      setUserRole(role);
-    } else {
-      localStorage.removeItem("accessToken");
-      setUserRole(null);
-    }
+      if (token) {
+        localStorage.setItem("accessToken", token);
+        const role = extractRoleFromToken(token);
+        setUserRole(role);
+      } else {
+        localStorage.removeItem("accessToken");
+        setUserRole(null);
+      }
 
-    if (expires_in) {
-      const expiryTime = Date.now() + expires_in * 1000;
-      setExpiresAt(expiryTime);
-      localStorage.setItem("expiresAt", expiryTime.toString());
-    } else {
-      setExpiresAt(null);
-      localStorage.removeItem("expiresAt");
-    }
-  };
+      if (expires_in) {
+        const expiryTime = Date.now() + expires_in * 1000;
+        setExpiresAt(expiryTime);
+        localStorage.setItem("expiresAt", expiryTime.toString());
+      } else {
+        setExpiresAt(null);
+        localStorage.removeItem("expiresAt");
+      }
+    },
+    []
+  );
 
   const logout = useCallback(async () => {
     try {
@@ -82,7 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAccessToken(null);
       router.push("/sign-in");
     }
-  }, [router]);
+  }, [router, setAccessToken]);
 
   const refreshAccessToken = useCallback(async () => {
     setIsLoading(true);
@@ -116,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Делаем перенаправление только если мы на защищенном маршруте и НЕ на странице входа
         if (isProtectedRoute && !isSignInPage) {
           // Используем тихое перенаправление без перезагрузки страницы
-          router.push("/sign-in", { shallow: true });
+          router.push("/sign-in");
         }
       }
     } catch (error) {
@@ -135,12 +144,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (isProtectedRoute && !isSignInPage) {
         // Используем тихую навигацию для предотвращения полной перезагрузки
-        router.push("/sign-in", { shallow: true });
+        router.push("/sign-in");
       }
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, [router, setAccessToken]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -149,13 +158,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedExpiresAt = localStorage.getItem("expiresAt");
 
       if (savedToken && savedExpiresAt) {
-        const now = Date.now();
-        const expiryTime = Number(savedExpiresAt);
-
-        if (now < expiryTime) {
-          setAccessToken(savedToken, (expiryTime - now) / 1000);
-        } else {
+        // Validate token format before using it
+        if (savedToken.split(".").length !== 3) {
+          console.error("Invalid token format in localStorage, clearing...");
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("expiresAt");
           await refreshAccessToken();
+        } else {
+          const now = Date.now();
+          const expiryTime = Number(savedExpiresAt);
+
+          if (now < expiryTime) {
+            setAccessToken(savedToken, (expiryTime - now) / 1000);
+          } else {
+            await refreshAccessToken();
+          }
         }
       } else {
         await refreshAccessToken();
@@ -164,7 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     initAuth();
-  }, [refreshAccessToken]);
+  }, [refreshAccessToken, setAccessToken]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout | null = null;
@@ -204,7 +221,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           // Используем тихую навигацию для предотвращения полной перезагрузки страницы
           if (isProtectedRoute) {
-            router.push("/sign-in", { shallow: true });
+            router.push("/sign-in");
           }
         }
       }
@@ -212,7 +229,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [router, accessToken]);
+  }, [router, accessToken, setAccessToken]);
 
   return (
     <AuthContext.Provider

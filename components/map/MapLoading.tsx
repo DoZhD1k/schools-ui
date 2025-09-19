@@ -6,7 +6,7 @@ export default function MapLoading() {
       <div className="flex flex-col items-center space-y-6">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
         <h3 className="text-sm font-medium uppercase tracking-wide">
-          Loading map data
+          Загрузка данных карты...
         </h3>
       </div>
     </div>

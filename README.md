@@ -1,22 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Schools UI - Интерактивная карта школ Алматы
 
-## Getting Started
+Это [Next.js](https://nextjs.org) проект для отображения школ Алматы на интерактивной карте с подробной информацией и системой фильтрации.
 
-First, run the development server:
+## Возможности
+
+- 🗺️ **Интерактивная карта** с данными о 392 школах Алматы
+- 🔍 **Расширенная фильтрация** по типу, району, рейтингу и загруженности
+- 📊 **Статистика в реальном времени** с визуализацией данных
+- 🏫 **Подробная информация** о каждой школе в всплывающих окнах
+- 🔐 **Админ-панель** для управления пользователями и ролями
+- 🌐 **Мультиязычность** (русский, казахский, английский)
+
+## Настройка проекта
+
+### 1. Установка зависимостей
+
+```bash
+npm install
+# или
+yarn install
+```
+
+### 2. Настройка переменных окружения
+
+Скопируйте `.env.example` в `.env.local` и настройте переменные:
+
+```bash
+cp .env.example .env.local
+```
+
+**Обязательные переменные:**
+
+```env
+# Токен Mapbox (получите на https://account.mapbox.com/)
+NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_mapbox_token_here
+
+# URL API для данных о школах
+NEXT_PUBLIC_API_BASE_URL=https://admin.smartalmaty.kz/api/v1
+
+# URL приложения
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+```
+
+### 3. Получение токена Mapbox
+
+1. Зарегистрируйтесь на [mapbox.com](https://account.mapbox.com/)
+2. Создайте новый токен доступа
+3. Добавьте токен в файл `.env.local`
+
+## Запуск проекта
 
 ```bash
 npm run dev
-# or
+# или
 yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Откройте [http://localhost:3000](http://localhost:3000) в браузере.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Структура проекта
+
+```tree
+├── app/[lang]/(routes)/
+│   ├── map/                 # Страница карты школ
+│   └── admin/               # Админ-панель
+├── components/
+│   ├── map/                 # Компоненты карты
+│   ├── admin/               # Компоненты админки
+│   └── ui/                  # Базовые UI компоненты
+├── hooks/
+│   └── useSchoolsMap.ts     # Хук для управления картой
+├── services/
+│   └── schools-map.service.ts # Сервис для работы с API
+├── types/
+│   └── schools-map.ts       # TypeScript типы
+└── dictionaries/            # Файлы локализации
+```
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 

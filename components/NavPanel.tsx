@@ -12,7 +12,17 @@ import { usePathname } from "next/navigation";
 import * as React from "react";
 import { useTheme } from "next-themes";
 
-import { Home, Map, Shield, Menu, X, Building } from "lucide-react";
+import {
+  Home,
+  MapPinned,
+  Shield,
+  Menu,
+  X,
+  School,
+  Trophy,
+  ChartColumn,
+  UserX,
+} from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import {
@@ -54,35 +64,35 @@ export function NavPanel() {
       {
         label: "Рейтинг школ",
         href: "/ru/schools",
-        icon: Building,
+        icon: Trophy,
         description: "",
         external: false,
       },
       {
         label: "Организации образования",
         href: "/ru/schools/organizations",
-        icon: Shield,
+        icon: School,
         description: "",
         external: false,
       },
       {
         label: "Анализ рейтингов",
         href: "/ru/schools/analytics",
-        icon: Shield,
+        icon: ChartColumn,
         description: "",
         external: false,
       },
       {
         label: "Карта школ",
-        href: "/ru/schools/map",
-        icon: Map,
+        href: "/ru/map",
+        icon: MapPinned,
         description: "",
         external: false,
       },
       {
         label: "Прогноз дефицита мест",
         href: "/ru/deficit",
-        icon: Map,
+        icon: UserX,
         description: "",
         external: false,
       },
