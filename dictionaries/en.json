@@ -1,0 +1,289 @@
+{
+  "signIn": {
+    "title": "Sign In",
+    "description": "Enter your credentials to access your account",
+    "username": "Username",
+    "password": "Password",
+    "button": "Sign In",
+    "buttonLoading": "Signing in...",
+    "errors": {
+      "generic": "An error occurred during sign in",
+      "tooManyAttempts": "Too many attempts",
+      "tryLater": "Try again later"
+    },
+    "success": {
+      "title": "Successfully signed in",
+      "description": "Welcome to the system"
+    },
+    "validation": {
+      "username": {
+        "min": "Minimum 3 characters",
+        "max": "Maximum 50 characters",
+        "invalid": "Invalid characters"
+      },
+      "password": {
+        "min": "Minimum 8 characters",
+        "max": "Maximum 100 characters"
+      }
+    }
+  },
+  "storytelling": {
+    "navigation": {
+      "hero": "hero",
+      "about": "about",
+      "services": "services",
+      "caseStudies": "case studies"
+    },
+    "header": {
+      "brand": "Datapolis"
+    },
+    "hero": {
+      "tagline": "Data that drives",
+      "highlight": "human progress",
+      "description": "We transform complex data into meaningful insights, enabling organizations to make informed decisions and create positive impact in the world.",
+      "cta": {
+        "primary": "Discover our story",
+        "secondary": "Our services"
+      }
+    },
+    "about": {
+      "title": "Our story began with a simple question",
+      "intro": "In a world overwhelmed by data but starving for meaning, we asked:",
+      "question": "\"How can we transform data into a catalyst for positive change?\"",
+      "description": "Founded in 2015, Datapolis emerged from the vision that data should serve humanity, not the other way around. Our team of data scientists, designers, and developers works at the intersection of technology and human needs, creating solutions that matter.",
+      "stats": [
+        { "number": "12+", "label": "Years Experience" },
+        { "number": "98%", "label": "Client Satisfaction" },
+        { "number": "230+", "label": "Projects Completed" },
+        { "number": "18", "label": "Industry Awards" }
+      ]
+    },
+    "services": {
+      "title": "Our approach to transform your data",
+      "offerings": [
+        {
+          "title": "Data Analysis",
+          "description": "We illuminate hidden patterns and trends in your data through advanced analytics techniques.",
+          "icon": "📊"
+        },
+        {
+          "title": "Visual Storytelling",
+          "description": "We craft compelling visual narratives that make complex information accessible and actionable.",
+          "icon": "📈"
+        },
+        {
+          "title": "Predictive Models",
+          "description": "We build machine learning models that help you anticipate future trends and make proactive decisions.",
+          "icon": "🧠"
+        }
+      ],
+      "action": "Read more"
+    },
+    "caseStudies": {
+      "title": "Our impact stories",
+      "cases": [
+        {
+          "title": "Financial Analytics Platform",
+          "description": "How we helped a global financial institution reduce decision time by 64% through our real-time analytics dashboard.",
+          "tag": "Financial Services",
+          "action": "Read case study"
+        },
+        {
+          "title": "Healthcare Data Integration",
+          "description": "Creating a unified patient data system that improved care coordination and reduced treatment delays by 53%.",
+          "tag": "Healthcare",
+          "action": "Read case study"
+        }
+      ]
+    },
+    "cta": {
+      "title": "Ready to unlock the potential in your data?",
+      "description": "Let's collaborate to create data solutions that drive real impact for your organization.",
+      "button": "Start a conversation",
+      "alreadyHaveAccess": "Already have access? Sign in"
+    },
+    "footer": {
+      "brand": "Datapolis",
+      "description": "Transforming data into insights that drive human progress and innovation.",
+      "headings": {
+        "company": "Company",
+        "legal": "Legal"
+      },
+      "company": ["About", "Services", "Team", "Careers", "Contact"],
+      "legal": ["Privacy Policy", "Terms of Service", "Cookie Policy"],
+      "copyright": "© {year} Datapolis. All rights reserved.",
+      "tagline": "Designed with Swiss precision",
+      "developedBy": "Developed by SitCenter"
+    }
+  },
+  "map": {
+    "title": "Interactive Map",
+    "description": "Explore regional data with our interactive visualization",
+    "filters": {
+      "title": "Map Filters",
+      "metrics": "Metrics",
+      "layers": "Layers",
+      "visualization": "Visualization",
+      "apply": "Apply",
+      "reset": "Reset"
+    },
+    "infoPanel": {
+      "title": "Region Info",
+      "noSelection": "Select a region to view details",
+      "metrics": {
+        "area": "Area",
+        "population": "Population",
+        "density": "Population Density",
+        "crimes": "Crime Count",
+        "crimesPerCapita": "Crimes per 1000",
+        "cameras": "Cameras",
+        "camerasPerCapita": "Cameras per 1000",
+        "companies": "Companies"
+      },
+      "viewDetails": "View Detailed Report"
+    }
+  },
+  "admin": {
+    "title": "Admin Dashboard",
+    "description": "Manage collections, features, and users",
+    "tabs": {
+      "collections": "Collections",
+      "features": "Features",
+      "users": "Users"
+    },
+    "collections": {
+      "title": "GeoJSON Collections",
+      "uploadButton": "Upload GeoJSON",
+      "noData": "No collections found",
+      "uploadNote": "Upload a GeoJSON file to create a new collection.",
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "description": "Description",
+        "createdAt": "Created At",
+        "actions": "Actions"
+      },
+      "viewFeatures": "View Features"
+    },
+    "features": {
+      "title": "Features for Collection #{id}",
+      "noCollectionTitle": "Select a collection to view features",
+      "addButton": "Add Feature",
+      "noData": "No features found",
+      "noDataNote": "This collection doesn't have any features. Add a new feature or upload a GeoJSON file.",
+      "table": {
+        "id": "ID",
+        "name": "Name",
+        "gridId": "Grid ID",
+        "area": "Area (km²)",
+        "population": "Population",
+        "actions": "Actions"
+      },
+      "edit": "Edit"
+    },
+    "users": {
+      "title": "User Management",
+      "addButton": "Register User",
+      "noData": "No users found",
+      "noDataNote": "Register a new user to get started.",
+      "table": {
+        "id": "ID",
+        "username": "Username",
+        "role": "Role",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "actions": {
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "delete": "Delete"
+      },
+      "deleteDialog": {
+        "title": "Delete User",
+        "description": "Are you sure you want to delete this user? This action cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "success": {
+        "activate": "User activated successfully!",
+        "deactivate": "User deactivated successfully!",
+        "delete": "User deleted successfully!"
+      },
+      "errors": {
+        "activate": "Failed to activate user. Please try again.",
+        "deactivate": "Failed to deactivate user. Please try again.",
+        "delete": "Failed to delete user. Please try again."
+      }
+    },
+    "upload": {
+      "title": "Upload GeoJSON",
+      "description": "Upload a GeoJSON file to create a new collection.",
+      "form": {
+        "name": "Collection Name",
+        "description": "Description",
+        "file": "GeoJSON File"
+      },
+      "cancel": "Cancel",
+      "submit": "Upload",
+      "success": "File uploaded successfully!"
+    },
+    "register": {
+      "title": "Register User",
+      "description": "Add a new user to the system.",
+      "form": {
+        "username": "Username",
+        "email": "Email",
+        "password": "Password",
+        "role": "Role",
+        "selectRole": "Select role",
+        "userRole": "User",
+        "adminRole": "Admin"
+      },
+      "cancel": "Cancel",
+      "submit": "Register",
+      "success": "User registered successfully!"
+    },
+    "feature": {
+      "add": {
+        "title": "Add New Feature",
+        "description": "Create a new feature for collection #{id}."
+      },
+      "edit": {
+        "title": "Edit Feature",
+        "description": "Update feature #{id}"
+      },
+      "form": {
+        "name": "Name",
+        "nameRu": "Name (Russian)",
+        "gridId": "Grid ID",
+        "areaKm2": "Area (km²)",
+        "population": "Population",
+        "crimesCount": "Crimes Count",
+        "camerasCount": "Cameras Count",
+        "companyCount": "Company Count",
+        "geometry": "GeoJSON Geometry (MultiPolygon)"
+      },
+      "cancel": "Cancel",
+      "submit": {
+        "add": "Add Feature",
+        "update": "Update Feature"
+      },
+      "success": {
+        "add": "Feature added successfully!",
+        "update": "Feature updated successfully!"
+      }
+    },
+    "errors": {
+      "collections": "Failed to load collections",
+      "features": "Failed to load features",
+      "users": "Failed to load users",
+      "upload": "Failed to upload file. Please try again.",
+      "register": "Failed to register user. Please try again.",
+      "addFeature": "Failed to add feature. Please try again.",
+      "updateFeature": "Failed to update feature. Please try again.",
+      "activateUser": "Failed to activate user. Please try again.",
+      "deactivateUser": "Failed to deactivate user. Please try again.",
+      "deleteUser": "Failed to delete user. Please try again."
+    }
+  }
+}

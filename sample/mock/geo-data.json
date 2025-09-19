@@ -1,0 +1,217 @@
+[
+  {
+    "id": 1,
+    "type": "Feature",
+    "properties": {
+      "name": "Central District",
+      "nameRu": "Центральный район",
+      "area_m2": 5500000.0,
+      "grid_id": 1,
+      "area_km2": 5.5,
+      "population": 85000,
+      "crimes_count": 45,
+      "cameras_count": 120,
+      "company_count": 350,
+      "crimes_per_camera": 0.375,
+      "crimes_per_company": 0.129,
+      "people_per_company": 243,
+      "cameras_per_company": 0.34,
+      "camera_density_per_km2": 21.8,
+      "crimes_density_per_km2": 8.2,
+      "crimes_per_1000_people": 0.53,
+      "density_people_per_km2": 15454.5,
+      "cameras_per_1000_people": 1.41,
+      "company_density_per_km2": 63.6,
+      "companies_per_1000_people": 4.12
+    },
+    "geometry": {
+      "type": "MultiPolygon",
+      "coordinates": [
+        [
+          [
+            [76.92, 43.26],
+            [76.93, 43.26],
+            [76.93, 43.27],
+            [76.92, 43.27],
+            [76.92, 43.26]
+          ]
+        ]
+      ]
+    },
+    "collection_id": 1,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 2,
+    "type": "Feature",
+    "properties": {
+      "name": "Turksib",
+      "nameRu": "Турксибский район",
+      "area_m2": 8200000.0,
+      "grid_id": 2,
+      "area_km2": 8.2,
+      "population": 125000,
+      "crimes_count": 32,
+      "cameras_count": 85,
+      "company_count": 180,
+      "crimes_per_camera": 0.376,
+      "crimes_per_company": 0.178,
+      "people_per_company": 694,
+      "cameras_per_company": 0.47,
+      "camera_density_per_km2": 10.4,
+      "crimes_density_per_km2": 3.9,
+      "crimes_per_1000_people": 0.26,
+      "density_people_per_km2": 15243.9,
+      "cameras_per_1000_people": 0.68,
+      "company_density_per_km2": 22.0,
+      "companies_per_1000_people": 1.44
+    },
+    "geometry": {
+      "type": "MultiPolygon",
+      "coordinates": [
+        [
+          [
+            [76.93, 43.25],
+            [76.95, 43.25],
+            [76.95, 43.27],
+            [76.93, 43.27],
+            [76.93, 43.25]
+          ]
+        ]
+      ]
+    },
+    "collection_id": 1,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 3,
+    "type": "Feature",
+    "properties": {
+      "name": "Almaly",
+      "nameRu": "Алмалинский район",
+      "area_m2": 4500000.0,
+      "grid_id": 3,
+      "area_km2": 4.5,
+      "population": 95000,
+      "crimes_count": 28,
+      "cameras_count": 140,
+      "company_count": 420,
+      "crimes_per_camera": 0.2,
+      "crimes_per_company": 0.067,
+      "people_per_company": 226,
+      "cameras_per_company": 0.33,
+      "camera_density_per_km2": 31.1,
+      "crimes_density_per_km2": 6.2,
+      "crimes_per_1000_people": 0.29,
+      "density_people_per_km2": 21111.1,
+      "cameras_per_1000_people": 1.47,
+      "company_density_per_km2": 93.3,
+      "companies_per_1000_people": 4.42
+    },
+    "geometry": {
+      "type": "MultiPolygon",
+      "coordinates": [
+        [
+          [
+            [76.91, 43.24],
+            [76.93, 43.24],
+            [76.93, 43.26],
+            [76.91, 43.26],
+            [76.91, 43.24]
+          ]
+        ]
+      ]
+    },
+    "collection_id": 1,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 4,
+    "type": "Feature",
+    "properties": {
+      "name": "Medeu",
+      "nameRu": "Медеуский район",
+      "area_m2": 12000000.0,
+      "grid_id": 4,
+      "area_km2": 12.0,
+      "population": 65000,
+      "crimes_count": 15,
+      "cameras_count": 95,
+      "company_count": 150,
+      "crimes_per_camera": 0.158,
+      "crimes_per_company": 0.1,
+      "people_per_company": 433,
+      "cameras_per_company": 0.63,
+      "camera_density_per_km2": 7.9,
+      "crimes_density_per_km2": 1.25,
+      "crimes_per_1000_people": 0.23,
+      "density_people_per_km2": 5416.7,
+      "cameras_per_1000_people": 1.46,
+      "company_density_per_km2": 12.5,
+      "companies_per_1000_people": 2.31
+    },
+    "geometry": {
+      "type": "MultiPolygon",
+      "coordinates": [
+        [
+          [
+            [76.95, 43.27],
+            [76.98, 43.27],
+            [76.98, 43.29],
+            [76.95, 43.29],
+            [76.95, 43.27]
+          ]
+        ]
+      ]
+    },
+    "collection_id": 1,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  },
+  {
+    "id": 5,
+    "type": "Feature",
+    "properties": {
+      "name": "Alatau",
+      "nameRu": "Алатауский район",
+      "area_m2": 15000000.0,
+      "grid_id": 5,
+      "area_km2": 15.0,
+      "population": 110000,
+      "crimes_count": 22,
+      "cameras_count": 75,
+      "company_count": 200,
+      "crimes_per_camera": 0.293,
+      "crimes_per_company": 0.11,
+      "people_per_company": 550,
+      "cameras_per_company": 0.375,
+      "camera_density_per_km2": 5.0,
+      "crimes_density_per_km2": 1.47,
+      "crimes_per_1000_people": 0.2,
+      "density_people_per_km2": 7333.3,
+      "cameras_per_1000_people": 0.68,
+      "company_density_per_km2": 13.3,
+      "companies_per_1000_people": 1.82
+    },
+    "geometry": {
+      "type": "MultiPolygon",
+      "coordinates": [
+        [
+          [
+            [76.89, 43.22],
+            [76.92, 43.22],
+            [76.92, 43.25],
+            [76.89, 43.25],
+            [76.89, 43.22]
+          ]
+        ]
+      ]
+    },
+    "collection_id": 1,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z"
+  }
+]

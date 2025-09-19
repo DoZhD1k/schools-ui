@@ -1,0 +1,29 @@
+[
+  {
+    "id": 1,
+    "name": "Almaty Districts",
+    "description": "Districts of Almaty city with demographic and security data",
+    "srid": 4326,
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-15T10:30:00Z",
+    "user_id": 1
+  },
+  {
+    "id": 2,
+    "name": "Turksib District",
+    "description": "Detailed analysis of Turksib district",
+    "srid": 4326,
+    "created_at": "2024-02-01T14:20:00Z",
+    "updated_at": "2024-02-01T14:20:00Z",
+    "user_id": 1
+  },
+  {
+    "id": 3,
+    "name": "Security Grid",
+    "description": "Security camera and crime data overlay",
+    "srid": 4326,
+    "created_at": "2024-03-10T09:15:00Z",
+    "updated_at": "2024-03-10T09:15:00Z",
+    "user_id": 2
+  }
+]
