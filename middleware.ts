@@ -28,9 +28,21 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
-  // Check if pathname should be ignored (public files)
-  if (["/manifest.json", "/favicon.ico"].includes(pathname))
+  // Define regex for public files
+  const PUBLIC_FILE = /\.(?:svg|png|jpe?g|gif|webp|avif|ico|txt|xml|json|mp4|mp3)$/i;
+
+  // Check if pathname should be ignored (public files and Next.js internals)
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.startsWith("/favicon") ||
+    pathname.startsWith("/static") ||
+    pathname.startsWith("/assets") ||
+    pathname.startsWith("/images") ||   // ВАЖНО: ваша папка со статикой
+    PUBLIC_FILE.test(pathname)
+  ) {
     return NextResponse.next();
+  }
 
   // Check if there is any supported locale in the pathname
   const pathnameHasLocale = i18n.locales.some(
@@ -38,7 +50,16 @@ export function middleware(request: NextRequest) {
   );
 
   // Define protected paths, including dynamic segments
-  const protectedPaths = ["/admin", "/map", "/dashboard"];
+  const protectedPaths = [
+    "/admin",
+    "/map",
+    "/dashboard",
+    "/schools/**",
+    "/analytics",
+    "/deficit",
+    "/profile",
+    "/schools/passport/",
+  ];
   const isProtectedRoute = protectedPaths.some((protectedPath) =>
     pathname.includes(protectedPath)
   );
@@ -85,8 +106,10 @@ export function middleware(request: NextRequest) {
 // Apply middleware to all routes
 export const config = {
   matcher: [
-    // i18n paths
-    "/((?!api|_next/static|_next/image|favicon.ico).*)",
+    // Skip all internal paths (_next)
+    // Skip all API routes
+    // Skip all static files
+    "/((?!api|_next/static|_next/image|_next/webpack-hmr|favicon.ico|.*\\.(?:svg|png|jpe?g|gif|webp|avif|ico|txt|xml|json|mp4|mp3)).*)",
     // Original protected paths
     "/map/:path*",
     "/admin/:path*",

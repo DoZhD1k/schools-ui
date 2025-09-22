@@ -1,0 +1,4 @@
+/* Admin Dashboard Styles */
+.progress-bar {
+  width: var(--progress-width, 0%);
+}
