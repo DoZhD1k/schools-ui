@@ -4,6 +4,11 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { motion, AnimatePresence, Variants } from 'framer-motion'
+import SchoolDetailPopup from "@/components/schools/school-detail-popup";
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
+
 import {
   School,
   Trophy,
@@ -22,6 +27,10 @@ import {
   User,
   Grid3X3,
   List,
+  Award,
+  ChevronLeft, 
+  ChevronRight, 
+  Target
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -36,10 +45,98 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import Image from "next/image";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
+import {
+  ChartConfig,
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart";
+
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  LabelList
+} from "recharts";
+
+import {
+  District,
+  DistrictStats,
+  SchoolFilters,
+} from "@/types/schools";
+
+const chartConfig = {
+  desktop: {
+    label: "Count",
+    color: "var(--chart-2)",
+  },
+  high: {
+    label: "High",
+    color: "var(--chart-2)",
+  },
+  medium: {
+    label: "Medium",
+    color: "var(--chart-2)",
+  },
+  low: {
+    label: "Low",
+    color: "var(--chart-2)",
+  },
+  label: {
+    color: "var(--background)",
+  },
+} satisfies ChartConfig
 
 interface SchoolsPageProps {
   params: { lang: string };
 }
+
+interface DistrictData {
+  district: string
+  count: number
+  high: number
+  medium: number
+  low: number
+}
+
+interface RatingApiItem {
+  district: string
+  count: number
+  rating?: {
+    high: number
+    medium: number
+    low: number
+  }
+}
+
+interface SchoolApiItem {
+  id: number;
+  name_of_the_organization: string;
+  types_of_educational_institutions: string;
+  district: string;
+  gis_rating: number | null;
+}
+
+interface AnalyzeItem {
+  id: number;
+  academic_results_rating: number;
+  pedagogical_potential_rating: number;
+  safety_climate_rating: number;
+  infrastructure_rating: number;
+  graduate_success_rating: number;
+  penalty_rating: number;
+  digital_rating: number;
+}
+
+export type CombinedSchool = SchoolApiItem & Partial<Omit<AnalyzeItem, 'id'>>;
 
 // Утилита для декодирования JWT токена
 function decodeJWT(token: string) {
@@ -147,8 +244,8 @@ const SchoolCard = ({
   school,
   onView,
 }: {
-  school: SchoolData;
-  onView: (school: SchoolData) => void;
+  school: CombinedSchool;
+  onView: (school: CombinedSchool) => void;
 }) => {
   const getRatingZoneColor = (zone: string) => {
     switch (zone) {
@@ -184,6 +281,32 @@ const SchoolCard = ({
     return <TrendingDown className="h-4 w-4 text-red-500" />;
   };
 
+  const getColoredRating = (rating: number | null) => {
+    if (rating === null || rating === undefined) return '—';
+    if (rating >= 4.3) return <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
+    if (rating >= 3.0) return <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
+    return <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
+  }
+
+  const getPercentage = (value?: number) => {
+    if (value === undefined || value === null) 
+      return (
+      <span className={`px-2 py-1 text-gray-600`}>
+        -
+      </span>
+    );
+    
+    // let colorClass = ''; // default: low
+    // if (value >= 80) colorClass = 'bg-green-400';      // excellent
+    // else if (value >= 50) colorClass = 'bg-yellow-400'; // medium
+
+    return (
+      <span className={` font-semibold px-2 py-1 rounded-md`}>
+        {value.toFixed(1)}%
+      </span>
+    );
+  };
+
   return (
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
@@ -192,39 +315,42 @@ const SchoolCard = ({
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
             <h3 className="text-lg font-bold text-slate-800 mb-1">
-              {school.nameRu}
+              {school.name_of_the_organization}
             </h3>
             <p className="text-sm text-slate-600 mb-2">
-              {school.organizationType}
+              {school.types_of_educational_institutions}
             </p>
             <div className="flex items-center space-x-2 mb-2">
               <MapPin className="h-4 w-4 text-slate-500" />
               <span className="text-sm text-slate-600">{school.district}</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <Building2 className="h-4 w-4 text-slate-500" />
-              <span className="text-sm text-slate-600">{school.address}</span>
-            </div>
           </div>
           <div className="text-right">
             <div className="flex items-center space-x-2 mb-2">
-              <div
+              {/* <div
                 className={`w-12 h-12 rounded-2xl ${getRatingZoneColor(
                   school.ratingZone
                 )} flex items-center justify-center shadow-lg`}
+              > */}
+              <div
+                className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg`}
               >
                 <span className="text-white font-bold text-lg">
-                  {school.currentRating}
+                  {school.digital_rating ?? "—"}
                 </span>
               </div>
-              {formatTrend(school.currentRating, school.q3Rating)}
+              {/* {formatTrend(school.currentRating, school.q3Rating)} */}
+              {getColoredRating(school.gis_rating ?? null)}
             </div>
-            <Badge
+            {/* <Badge
               className={`text-xs font-medium ${getRatingZoneColor(
                 school.ratingZone
               )} text-white border-0`}
+            > */}
+            <Badge
+              className={`text-xs font-medium text-white border-0`}
             >
-              {getZoneName(school.ratingZone)}
+              {/* {getZoneName(school.ratingZone)} */}
             </Badge>
           </div>
         </div>
@@ -232,25 +358,25 @@ const SchoolCard = ({
         <div className="grid grid-cols-4 gap-3 mb-4">
           <div className="text-center bg-slate-50/50 rounded-xl p-3 border border-slate-200/50">
             <div className="text-lg font-bold text-blue-600">
-              {school.q1Rating}
+              {getPercentage(school.academic_results_rating)}
             </div>
             <div className="text-xs text-slate-500">1-я четв.</div>
           </div>
           <div className="text-center bg-slate-50/50 rounded-xl p-3 border border-slate-200/50">
             <div className="text-lg font-bold text-emerald-600">
-              {school.q2Rating}
+              {getPercentage(school.pedagogical_potential_rating)}
             </div>
             <div className="text-xs text-slate-500">2-я четв.</div>
           </div>
           <div className="text-center bg-slate-50/50 rounded-xl p-3 border border-slate-200/50">
             <div className="text-lg font-bold text-purple-600">
-              {school.q3Rating}
+              {getPercentage(school.safety_climate_rating)}
             </div>
             <div className="text-xs text-slate-500">3-я четв.</div>
           </div>
           <div className="text-center bg-slate-50/50 rounded-xl p-3 border border-slate-200/50">
             <div className="text-lg font-bold text-amber-600">
-              {school.yearlyRating}
+              {getPercentage(school.graduate_success_rating)}
             </div>
             <div className="text-xs text-slate-500">Годовой</div>
           </div>
@@ -258,8 +384,8 @@ const SchoolCard = ({
 
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-sm text-slate-600">
-            <User className="h-4 w-4" />
-            <span>{school.director}</span>
+            <Star className="h-4 w-4 text-yellow-500" />
+            <span>{getColoredRating(school.gis_rating)}</span>
           </div>
           <Button
             variant="outline"
@@ -278,83 +404,164 @@ const SchoolCard = ({
 
 // Компонент таблицы школ
 const SchoolsTable = ({
-  schools,
+  onRowClick,
+  selectedDistrict,
+  searchQuery,
   onView,
+  schools,
+  setSchools
 }: {
-  schools: SchoolData[];
-  onView: (school: SchoolData) => void;
+  onRowClick: (school: CombinedSchool) => void;
+  selectedDistrict?: string;
+  searchQuery?: string;
+  onView: (school: CombinedSchool) => void;
+  schools: CombinedSchool[];
+  setSchools: React.Dispatch<React.SetStateAction<CombinedSchool[]>>;
 }) => {
-  const getRatingZoneColor = (zone: string) => {
-    switch (zone) {
-      case "green":
-        return "bg-emerald-500";
-      case "yellow":
-        return "bg-amber-500";
-      case "red":
-        return "bg-red-500";
-      default:
-        return "bg-gray-500";
-    }
+  const [totalCount, setTotalCount] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 100; 
+  // const getRatingZoneColor = (zone: string) => {
+  //   switch (zone) {
+  //     case "green":
+  //       return "bg-emerald-500";
+  //     case "yellow":
+  //       return "bg-amber-500";
+  //     case "red":
+  //       return "bg-red-500";
+  //     default:
+  //       return "bg-gray-500";
+  //   }
+  // };
+
+  // const getZoneName = (zone: string) => {
+  //   switch (zone) {
+  //     case "green":
+  //       return "Зеленая зона";
+  //     case "yellow":
+  //       return "Желтая зона";
+  //     case "red":
+  //       return "Красная зона";
+  //     default:
+  //       return "Неизвестно";
+  //   }
+  // };
+
+  // const formatTrend = (current: number, previous: number) => {
+  //   const diff = current - previous;
+  //   if (Math.abs(diff) < 0.5)
+  //     return <Minus className="h-4 w-4 text-gray-400" />;
+  //   if (diff > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
+  //   return <TrendingDown className="h-4 w-4 text-red-500" />;
+  // };
+
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
+
+  const getColoredPercentage = (value?: number) => {
+    if (value === undefined || value === null) 
+      return (
+      <span className={`px-2 py-1 text-gray-600`}>
+        -
+      </span>
+    );;
+    
+    let colorClass = 'bg-red-400'; // default: low
+    if (value >= 80) colorClass = 'bg-green-400';      // excellent
+    else if (value >= 50) colorClass = 'bg-yellow-400'; // medium
+
+    return (
+      <span className={`${colorClass} font-semibold px-2 py-1 rounded-md`}>
+        {value.toFixed(1)}%
+      </span>
+    );
   };
 
-  const getZoneName = (zone: string) => {
-    switch (zone) {
-      case "green":
-        return "Зеленая зона";
-      case "yellow":
-        return "Желтая зона";
-      case "red":
-        return "Красная зона";
-      default:
-        return "Неизвестно";
-    }
-  };
+  const getColoredRating = (rating: number | null) => {
+    if (rating === null || rating === undefined) return '—';
+    if (rating >= 4.3) return <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
+    if (rating >= 3.0) return <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
+    return <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
+  }
 
-  const formatTrend = (current: number, previous: number) => {
-    const diff = current - previous;
-    if (Math.abs(diff) < 0.5)
-      return <Minus className="h-4 w-4 text-gray-400" />;
-    if (diff > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
-    return <TrendingDown className="h-4 w-4 text-red-500" />;
-  };
+  useEffect(() => {
+    const districtFilter = !selectedDistrict || selectedDistrict === "all" ? "" : selectedDistrict
+    // const ratingFilter = !selectedRating || selectedRating === "all" ? "" : selectedRating.toLowerCase();
+    const fetchData = async () => {
+      try {
+        const offset = (currentPage - 1) * itemsPerPage;
+
+        const [res1, res2] = await Promise.all([
+          fetch(
+            `https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}&search=${searchQuery}`
+          ),
+          fetch(
+            `https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}`
+          ),
+        ]);
+
+        const data1 = await res1.json();
+        const data2 = await res2.json();
+
+        const analyzeMap = new Map<number, AnalyzeItem>();
+        data2.results.forEach((a: AnalyzeItem) => analyzeMap.set(a.id, a));
+
+        const merged: CombinedSchool[] = data1.results.map((s: SchoolApiItem) => ({
+          ...s,
+          ...(analyzeMap.get(s.id) ?? {}),
+        }));
+
+        setSchools(merged);
+        setTotalCount(data1.count);
+      } catch (err) {
+        console.error('Ошибка загрузки данных:', err);
+      }
+    };
+
+    fetchData();
+  }, [currentPage, selectedDistrict, searchQuery]);
 
   return (
+    <div>
     <div className="relative overflow-hidden">
       <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
       <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-      <div className="relative overflow-x-auto">
+      <div className="relative overflow-x-auto overflow-y-auto max-h-[600px] ">
         <table className="w-full">
-          <thead>
+          <thead className="bg-slate-50 sticky top-0 z-10">
             <tr className="border-b border-slate-200/50">
               <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Школа
+                Наименование
               </th>
               <th className="text-left p-6 text-sm font-semibold text-slate-700">
                 Район
               </th>
               <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Директор
+                Общий рейтинг
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                1-я четв.
+                Качество знаний
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                2-я четв.
+                Квалификация педагогов
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                3-я четв.
+                Безопасность
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Годовой
+                Оснащенность
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Текущий
+                Динамика результатов школы
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Зона
+                Профилактика нарушений
               </th>
               <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Действия
+                Рейтинг GIS
+              </th>
+              <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                Паспорт организации
               </th>
             </tr>
           </thead>
@@ -365,18 +572,19 @@ const SchoolsTable = ({
                 className={`border-b border-slate-200/30 hover:bg-slate-50/50 transition-colors ${
                   index % 2 === 0 ? "bg-slate-25/30" : ""
                 }`}
+                onClick={() => onRowClick(school)}
               >
                 <td className="p-6">
                   <div>
                     <div className="font-semibold text-slate-800 mb-1">
-                      {school.nameRu}
+                      {school.name_of_the_organization}
                     </div>
                     <div className="text-sm text-slate-600">
-                      {school.organizationType}
+                      {school.types_of_educational_institutions}
                     </div>
                     <div className="text-xs text-slate-500 mt-1 flex items-center">
                       <Building2 className="h-3 w-3 mr-1" />
-                      {school.address}
+                      {school.district}
                     </div>
                   </div>
                 </td>
@@ -387,53 +595,44 @@ const SchoolsTable = ({
                   </div>
                 </td>
                 <td className="p-6">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <User className="h-4 w-4 mr-2 text-slate-400" />
-                    {school.director}
+                  <div className="flex items-center text-sm text-white">
+                    {getColoredPercentage(school.digital_rating)}
                   </div>
                 </td>
                 <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-blue-50 text-blue-700 rounded-lg font-semibold text-sm">
-                    {school.q1Rating}
+                  <div className="inline-flex items-center justify-center w-12 h-8 bg-blue-50 text-white rounded-lg font-semibold text-sm">
+                    {getColoredPercentage(school.academic_results_rating)}
                   </div>
                 </td>
                 <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-emerald-700 rounded-lg font-semibold text-sm">
-                    {school.q2Rating}
+                  <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
+                    {getColoredPercentage(school.pedagogical_potential_rating)}
                   </div>
                 </td>
                 <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-purple-50 text-purple-700 rounded-lg font-semibold text-sm">
-                    {school.q3Rating}
+                  <div className="inline-flex items-center justify-center w-12 h-8 bg-purple-50 text-white rounded-lg font-semibold text-sm">
+                    {getColoredPercentage(school.safety_climate_rating)}
                   </div>
                 </td>
                 <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-amber-700 rounded-lg font-semibold text-sm">
-                    {school.yearlyRating}
+                  <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
+                    {getColoredPercentage(school.infrastructure_rating)}
                   </div>
                 </td>
                 <td className="p-6 text-center">
-                  <div className="flex items-center justify-center space-x-2">
-                    <div
-                      className={`w-10 h-10 rounded-xl ${getRatingZoneColor(
-                        school.ratingZone
-                      )} flex items-center justify-center shadow-sm`}
-                    >
-                      <span className="text-white font-bold text-sm">
-                        {school.currentRating}
-                      </span>
-                    </div>
-                    {formatTrend(school.currentRating, school.q3Rating)}
+                  <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
+                    {getColoredPercentage(school.graduate_success_rating)}
+                  </div>
+                </td>
+                <td className="p-6">
+                  <div className="flex items-center text-sm text-white">
+                    {getColoredPercentage(school.penalty_rating)}
                   </div>
                 </td>
                 <td className="p-6 text-center">
-                  <Badge
-                    className={`text-xs font-medium ${getRatingZoneColor(
-                      school.ratingZone
-                    )} text-white border-0`}
-                  >
-                    {getZoneName(school.ratingZone)}
-                  </Badge>
+                  <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
+                    {getColoredRating(school.gis_rating)}
+                  </div>
                 </td>
                 <td className="p-6 text-center">
                   <Button
@@ -451,6 +650,46 @@ const SchoolsTable = ({
           </tbody>
         </table>
       </div>
+
+    </div>
+      <div className="flex items-center justify-between px-4 py-3 bg-white border border-t-0 border-b-0 border-slate-200 rounded-b-lg">
+        <div className="flex items-center text-sm text-slate-700">
+          Показано {(currentPage - 1) * itemsPerPage + 1}–
+          {Math.min(currentPage * itemsPerPage, totalCount)} из {totalCount} школ
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => setCurrentPage(page)}
+                className={`px-3 py-1 text-sm rounded-md transition-colors ${
+                  page === currentPage ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
@@ -462,119 +701,146 @@ function SchoolsPage({ params }: SchoolsPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("all");
   const [viewMode, setViewMode] = useState<"cards" | "table">("table");
-
+  const [data, setData] = useState<DistrictData[]>([])
+  const [schools, setSchools] = useState<CombinedSchool[]>([]);
   // Данные (в реальном приложении будут загружаться с сервера)
-  const [schools] = useState<SchoolData[]>([
-    {
-      id: "1",
-      nameRu: "Школа-лицей №165 имени Гани Муратбаева",
-      organizationType: "Государственное учреждение",
-      district: "Алмалинский район",
-      address: "ул. Толе би, 273/1",
-      phone: "+7 (727) 292-15-46",
-      director: "Ахметова Айгуль Кайратовна",
-      currentRating: 85,
-      q1Rating: 82,
-      q2Rating: 84,
-      q3Rating: 83,
-      yearlyRating: 85,
-      ratingZone: "green",
-    },
-    {
-      id: "2",
-      nameRu: "Гимназия №148",
-      organizationType: "Государственное учреждение",
-      district: "Бостандыкский район",
-      address: "ул. Сейфуллина, 458",
-      phone: "+7 (727) 267-89-23",
-      director: "Нурланов Ерлан Маратович",
-      currentRating: 78,
-      q1Rating: 75,
-      q2Rating: 77,
-      q3Rating: 76,
-      yearlyRating: 78,
-      ratingZone: "yellow",
-    },
-    {
-      id: "3",
-      nameRu: "Средняя школа №89",
-      organizationType: "Государственное учреждение",
-      district: "Турксибский район",
-      address: "ул. Рыскулова, 123",
-      phone: "+7 (727) 396-45-12",
-      director: "Сарсенова Гульнара Амангельдиновна",
-      currentRating: 65,
-      q1Rating: 63,
-      q2Rating: 64,
-      q3Rating: 66,
-      yearlyRating: 65,
-      ratingZone: "red",
-    },
-    {
-      id: "4",
-      nameRu: "НИШ ФМН г. Алматы",
-      organizationType: "Автономная организация образования",
-      district: "Алатауский район",
-      address: "ул. Шевченко, 189",
-      phone: "+7 (727) 273-56-78",
-      director: "Калиев Данияр Ермекович",
-      currentRating: 92,
-      q1Rating: 90,
-      q2Rating: 91,
-      q3Rating: 89,
-      yearlyRating: 92,
-      ratingZone: "green",
-    },
-    {
-      id: "5",
-      nameRu: "Лицей №28",
-      organizationType: "Государственное учреждение",
-      district: "Медеуский район",
-      address: "мкр. Самал-1, д. 15",
-      phone: "+7 (727) 264-78-90",
-      director: "Жанузакова Асель Болатовна",
-      currentRating: 81,
-      q1Rating: 79,
-      q2Rating: 80,
-      q3Rating: 82,
-      yearlyRating: 81,
-      ratingZone: "green",
-    },
-    {
-      id: "6",
-      nameRu: "Средняя школа №156",
-      organizationType: "Государственное учреждение",
-      district: "Жетысуский район",
-      address: "ул. Абая, 567",
-      phone: "+7 (727) 398-23-45",
-      director: "Темирбеков Нурлан Сериккалиевич",
-      currentRating: 72,
-      q1Rating: 70,
-      q2Rating: 71,
-      q3Rating: 74,
-      yearlyRating: 72,
-      ratingZone: "yellow",
-    },
-  ]);
+  // const [schools] = useState<SchoolData[]>([
+  //   {
+  //     id: "1",
+  //     nameRu: "Школа-лицей №165 имени Гани Муратбаева",
+  //     organizationType: "Государственное учреждение",
+  //     district: "Алмалинский район",
+  //     address: "ул. Толе би, 273/1",
+  //     phone: "+7 (727) 292-15-46",
+  //     director: "Ахметова Айгуль Кайратовна",
+  //     currentRating: 85,
+  //     q1Rating: 82,
+  //     q2Rating: 84,
+  //     q3Rating: 83,
+  //     yearlyRating: 85,
+  //     ratingZone: "green",
+  //   },
+  //   {
+  //     id: "2",
+  //     nameRu: "Гимназия №148",
+  //     organizationType: "Государственное учреждение",
+  //     district: "Бостандыкский район",
+  //     address: "ул. Сейфуллина, 458",
+  //     phone: "+7 (727) 267-89-23",
+  //     director: "Нурланов Ерлан Маратович",
+  //     currentRating: 78,
+  //     q1Rating: 75,
+  //     q2Rating: 77,
+  //     q3Rating: 76,
+  //     yearlyRating: 78,
+  //     ratingZone: "yellow",
+  //   },
+  //   {
+  //     id: "3",
+  //     nameRu: "Средняя школа №89",
+  //     organizationType: "Государственное учреждение",
+  //     district: "Турксибский район",
+  //     address: "ул. Рыскулова, 123",
+  //     phone: "+7 (727) 396-45-12",
+  //     director: "Сарсенова Гульнара Амангельдиновна",
+  //     currentRating: 65,
+  //     q1Rating: 63,
+  //     q2Rating: 64,
+  //     q3Rating: 66,
+  //     yearlyRating: 65,
+  //     ratingZone: "red",
+  //   },
+  //   {
+  //     id: "4",
+  //     nameRu: "НИШ ФМН г. Алматы",
+  //     organizationType: "Автономная организация образования",
+  //     district: "Алатауский район",
+  //     address: "ул. Шевченко, 189",
+  //     phone: "+7 (727) 273-56-78",
+  //     director: "Калиев Данияр Ермекович",
+  //     currentRating: 92,
+  //     q1Rating: 90,
+  //     q2Rating: 91,
+  //     q3Rating: 89,
+  //     yearlyRating: 92,
+  //     ratingZone: "green",
+  //   },
+  //   {
+  //     id: "5",
+  //     nameRu: "Лицей №28",
+  //     organizationType: "Государственное учреждение",
+  //     district: "Медеуский район",
+  //     address: "мкр. Самал-1, д. 15",
+  //     phone: "+7 (727) 264-78-90",
+  //     director: "Жанузакова Асель Болатовна",
+  //     currentRating: 81,
+  //     q1Rating: 79,
+  //     q2Rating: 80,
+  //     q3Rating: 82,
+  //     yearlyRating: 81,
+  //     ratingZone: "green",
+  //   },
+  //   {
+  //     id: "6",
+  //     nameRu: "Средняя школа №156",
+  //     organizationType: "Государственное учреждение",
+  //     district: "Жетысуский район",
+  //     address: "ул. Абая, 567",
+  //     phone: "+7 (727) 398-23-45",
+  //     director: "Темирбеков Нурлан Сериккалиевич",
+  //     currentRating: 72,
+  //     q1Rating: 70,
+  //     q2Rating: 71,
+  //     q3Rating: 74,
+  //     yearlyRating: 72,
+  //     ratingZone: "yellow",
+  //   },
+  // ]);
 
   const districts = [
-    { id: "all", name: "Все районы" },
-    { id: "almalinsky", name: "Алмалинский район" },
-    { id: "bostandyksky", name: "Бостандыкский район" },
-    { id: "turksibsky", name: "Турксибский район" },
+    // { id: "all", name: "Все районы" },
     { id: "alatausky", name: "Алатауский район" },
-    { id: "medeusky", name: "Медеуский район" },
+    { id: "almalinsky", name: "Алмалинский район" },
+    { id: "zhetysusky", name: "Ауэзовский район" },
+    { id: "bostandyksky", name: "Бостандыкский район" },
     { id: "zhetysusky", name: "Жетысуский район" },
+    { id: "medeusky", name: "Медеуский район" },
+    { id: "zhetysusky", name: "Наурызбайский район" },
+    { id: "turksibsky", name: "Турксибский район" },
   ];
+
+  // const stats = {
+  //   totalSchools: schools.length,
+  //   greenZone: schools.filter((s) => s.ratingZone === "green").length,
+  //   yellowZone: schools.filter((s) => s.ratingZone === "yellow").length,
+  //   redZone: schools.filter((s) => s.ratingZone === "red").length,
+  //   averageRating: Math.round(
+  //     schools.reduce((sum, s) => sum + s.currentRating, 0) / schools.length
+  //   ),
+  // };
 
   const stats = {
     totalSchools: schools.length,
-    greenZone: schools.filter((s) => s.ratingZone === "green").length,
-    yellowZone: schools.filter((s) => s.ratingZone === "yellow").length,
-    redZone: schools.filter((s) => s.ratingZone === "red").length,
+    greenZone: schools.length,
+    yellowZone: schools.length,
+    redZone: schools.length,
     averageRating: Math.round(
-      schools.reduce((sum, s) => sum + s.currentRating, 0) / schools.length
+      schools.reduce((sum, s) => sum + (s.digital_rating ?? 0), 0) / schools.length
     ),
+  };
+
+  const getRatingInfo = (rating: number | null | undefined) => {
+    if (rating === null || rating === undefined) {
+      return { color: "text-slate-400", bgColor: "bg-slate-100", icon: Target };
+    }
+
+    if (rating >= 80) {
+      return { color: "text-emerald-600", bgColor: "bg-emerald-50", icon: Trophy }; // High
+    } else if (rating < 50) {
+      return { color: "text-red-500", bgColor: "bg-red-50", icon: Target }; // Low
+    } else {
+      return { color: "text-amber-600", bgColor: "bg-amber-50", icon: Star }; // Medium
+    }
   };
 
   useEffect(() => {
@@ -595,18 +861,110 @@ function SchoolsPage({ params }: SchoolsPageProps) {
     return () => clearTimeout(timer);
   }, []);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch("https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/rating-by-district/")
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`)
+        }
+        const result = await response.json()
+
+        const formatted = result.map((item: RatingApiItem) => ({
+            district: item.district,
+            count: item.count,
+            high: item.rating?.high ?? 0,
+            medium: item.rating?.medium ?? 0,
+            low: item.rating?.low ?? 0,
+        }))
+
+        setData(formatted)
+      } catch (err: unknown) {
+        if (err instanceof Error) {
+          console.error(err.message)
+        } else {
+          console.error("Unexpected error", err)
+        }
+      }
+    }
+    fetchData()
+  }, [])
+
+  const [selectedSchool, setSelectedSchool] = useState<CombinedSchool | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleRowClick = (school: CombinedSchool) => {
+    setSelectedSchool(school);
+    setShowModal(true);
+  };
+
+
+  const exportAllToExcel = async () => {
+    try {
+      const allSchools: CombinedSchool[] = [];
+      const itemsPerPage = 100;
+      let offset = 0;
+
+      while (true) {
+        const [res1, res2] = await Promise.all([
+          fetch(`https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/?limit=${itemsPerPage}&offset=${offset}`),
+          fetch(`https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}`)
+        ]);
+
+        const data1 = await res1.json();
+        const data2 = await res2.json();
+
+        const analyzeMap = new Map<number, AnalyzeItem>();
+        data2.results.forEach((a: AnalyzeItem) => analyzeMap.set(a.id, a));
+
+        const merged = data1.results.map((s: SchoolApiItem) => ({
+          ...s,
+          ...(analyzeMap.get(s.id) ?? {})
+        }));
+
+        allSchools.push(...merged);
+
+        offset += itemsPerPage;
+        if (offset >= data1.count) break;
+      }
+
+      const rows = allSchools.map((s) => ({
+        Наименование: s.name_of_the_organization,
+        Район: s.district,
+        'Рейтинг GIS': s.gis_rating ?? '',
+        'Качество знаний': s.academic_results_rating ?? '',
+        'Квалификация педагогов': s.pedagogical_potential_rating ?? '',
+        Безопасность: s.safety_climate_rating ?? '',
+        Оснащенность: s.infrastructure_rating ?? '',
+        'Динамика результатов школы': s.graduate_success_rating ?? '',
+        Профилактика: s.penalty_rating ?? '',
+        'Общий рейтинг': s.digital_rating ?? '',
+      }));
+
+      const worksheet = XLSX.utils.json_to_sheet(rows);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Schools');
+
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      saveAs(data, `schools_full.xlsx`);
+    } catch (err) {
+      console.error('Ошибка экспорта:', err);
+    }
+  };
+
   const filteredSchools = schools.filter((school) => {
     const matchesSearch =
-      school.nameRu.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      school.name_of_the_organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
       school.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      school.director.toLowerCase().includes(searchTerm.toLowerCase());
+      school.types_of_educational_institutions.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesDistrict =
       selectedDistrict === "all" ||
       school.district.toLowerCase().includes(selectedDistrict);
     return matchesSearch && (selectedDistrict === "all" || matchesDistrict);
   });
 
-  const handleViewSchool = (school: SchoolData) => {
+  const handleViewSchool = (school: CombinedSchool) => {
     // Переход на паспорт школы
     window.location.href = `/${params.lang}/schools/passport/${school.id}`;
   };
@@ -812,6 +1170,110 @@ function SchoolsPage({ params }: SchoolsPageProps) {
           />
         </div>
 
+        {/* Графики */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+          <div className="p-6">
+            <Card className="bg-white/80 shadow-none border-0">
+              <CardHeader className="flex items-center space-x-3">
+                <TrendingUp className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <CardTitle className="text-lg font-bold text-slate-800">Количество школ по районам</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig}>
+                  <BarChart
+                    accessibilityLayer
+                    data={data}
+                    layout="vertical"
+                    margin={{
+                      right: 16,
+                    }}
+                  >
+                    <CartesianGrid horizontal={false} />
+                    <YAxis
+                      dataKey="district"
+                      type="category"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickFormatter={(value) => value.slice(0, 3)}
+                      hide
+                    />
+                    <XAxis dataKey="count" type="number" hide />
+                    <ChartTooltip
+                      cursor={false}
+                      content={<ChartTooltipContent indicator="line" />}
+                    />
+                    <Bar
+                      dataKey="count"
+                      layout="vertical"
+                      fill="var(--color-desktop)"
+                      radius={4}
+                    >
+                      <LabelList
+                        dataKey="district"
+                        position="insideLeft"
+                        offset={8}
+                        className="fill-(--color-label)"
+                        fontSize={12}
+                      />
+                      <LabelList
+                        dataKey="count"
+                        position="right"
+                        offset={8}
+                        className="gray"
+                        fontSize={12}
+                      />
+                    </Bar>
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+          <div className="p-6">
+            <Card className="bg-white/80 shadow-none border-0">
+              <CardHeader className="flex items-center space-x-3">
+                <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <CardTitle className="text-lg font-bold text-slate-800">Рейтинг школ по районам</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ChartContainer config={chartConfig}>
+                  <BarChart accessibilityLayer data={data}>
+                    <CartesianGrid vertical={false} />
+                    <XAxis
+                      dataKey="district"
+                      tickLine={false}
+                      tickMargin={10}
+                      axisLine={false}
+                      tickFormatter={(value) => value.slice(0, 3)}
+                    />
+                    <ChartTooltip content={<ChartTooltipContent hideLabel />} />
+                    <ChartLegend className="text-black" content={<ChartLegendContent />} />
+                    <Bar
+                      dataKey="high"
+                      stackId="a"
+                      // fill="var(--color-desktop)"
+                      fill="#41e14eff"
+                      radius={[0, 0, 4, 4]}
+                    />
+                    <Bar
+                      dataKey="medium"
+                      stackId="a"
+                      fill="#e4e591ff"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="low"
+                      stackId="a"
+                      fill="#de664eff"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ChartContainer>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
         {/* Search and Filters */}
         <div className="mb-8">
           <div className="relative overflow-hidden">
@@ -821,12 +1283,12 @@ function SchoolsPage({ params }: SchoolsPageProps) {
               <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
                 <div className="flex-1 max-w-lg">
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-600 z-10" />
                     <Input
                       placeholder="Поиск по названию школы, району или директору..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-white/50 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] focus:bg-white/80"
+                      className="pl-10 bg-white/50 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] focus:bg-white/80 text-slate-700"
                     />
                   </div>
                 </div>
@@ -864,11 +1326,15 @@ function SchoolsPage({ params }: SchoolsPageProps) {
                     onValueChange={setSelectedDistrict}
                   >
                     <SelectTrigger className="w-48 bg-white/50 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] focus:bg-white/80">
-                      <SelectValue placeholder="Выберите район" />
+                      <div className="flex items-center gap-1 text-slate-700">
+                        <MapPin className="w-4 h-4 text-slate-500" />
+                        <SelectValue placeholder="Все районы" />
+                      </div>
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">Все районы</SelectItem>
                       {districts.map((district) => (
-                        <SelectItem key={district.id} value={district.id}>
+                        <SelectItem key={district.id} value={district.name}>
                           {district.name}
                         </SelectItem>
                       ))}
@@ -876,7 +1342,7 @@ function SchoolsPage({ params }: SchoolsPageProps) {
                   </Select>
                   <Button
                     variant="outline"
-                    onClick={handleExport}
+                    onClick={exportAllToExcel}
                     className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
                   >
                     <Download className="h-4 w-4 mr-2" />
@@ -890,7 +1356,7 @@ function SchoolsPage({ params }: SchoolsPageProps) {
 
         {/* Schools Content */}
         {viewMode === "table" ? (
-          <SchoolsTable schools={filteredSchools} onView={handleViewSchool} />
+          <SchoolsTable onRowClick={handleRowClick} selectedDistrict={selectedDistrict} searchQuery={searchTerm} onView={handleViewSchool} schools={schools} setSchools={setSchools} />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredSchools.map((school) => (
@@ -902,8 +1368,16 @@ function SchoolsPage({ params }: SchoolsPageProps) {
             ))}
           </div>
         )}
+        <AnimatePresence>
+          <SchoolDetailPopup
+            isOpen={showModal}
+            school={selectedSchool}
+            onClose={() => setShowModal(false)}
+            getRatingInfo={getRatingInfo}
+          />
+        </AnimatePresence>
 
-        {filteredSchools.length === 0 && (
+        {schools.length === 0 && (
           <div className="relative overflow-hidden mt-12">
             <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
             <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
