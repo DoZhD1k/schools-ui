@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { motion, AnimatePresence, Variants } from 'framer-motion'
+import { motion, AnimatePresence, Variants } from "framer-motion";
 import SchoolDetailPopup from "@/components/schools/school-detail-popup";
-import * as XLSX from 'xlsx';
-import { saveAs } from 'file-saver';
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 import {
   School,
@@ -28,9 +28,9 @@ import {
   Grid3X3,
   List,
   Award,
-  ChevronLeft, 
-  ChevronRight, 
-  Target
+  ChevronLeft,
+  ChevronRight,
+  Target,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -45,7 +45,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import Image from "next/image";
-import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+  CardDescription,
+} from "@/components/ui/card";
 import {
   ChartConfig,
   ChartContainer,
@@ -64,14 +71,10 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-  LabelList
+  LabelList,
 } from "recharts";
 
-import {
-  District,
-  DistrictStats,
-  SchoolFilters,
-} from "@/types/schools";
+import { District, DistrictStats, SchoolFilters } from "@/types/schools";
 
 const chartConfig = {
   desktop: {
@@ -93,28 +96,28 @@ const chartConfig = {
   label: {
     color: "var(--background)",
   },
-} satisfies ChartConfig
+} satisfies ChartConfig;
 
 interface SchoolsPageProps {
   params: { lang: string };
 }
 
 interface DistrictData {
-  district: string
-  count: number
-  high: number
-  medium: number
-  low: number
+  district: string;
+  count: number;
+  high: number;
+  medium: number;
+  low: number;
 }
 
 interface RatingApiItem {
-  district: string
-  count: number
+  district: string;
+  count: number;
   rating?: {
-    high: number
-    medium: number
-    low: number
-  }
+    high: number;
+    medium: number;
+    low: number;
+  };
 }
 
 interface SchoolApiItem {
@@ -136,7 +139,7 @@ interface AnalyzeItem {
   digital_rating: number;
 }
 
-export type CombinedSchool = SchoolApiItem & Partial<Omit<AnalyzeItem, 'id'>>;
+export type CombinedSchool = SchoolApiItem & Partial<Omit<AnalyzeItem, "id">>;
 
 // Утилита для декодирования JWT токена
 function decodeJWT(token: string) {
@@ -282,20 +285,30 @@ const SchoolCard = ({
   };
 
   const getColoredRating = (rating: number | null) => {
-    if (rating === null || rating === undefined) return '—';
-    if (rating >= 4.3) return <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
-    if (rating >= 3.0) return <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
-    return <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
-  }
-
-  const getPercentage = (value?: number) => {
-    if (value === undefined || value === null) 
+    if (rating === null || rating === undefined) return "—";
+    if (rating >= 4.3)
       return (
-      <span className={`px-2 py-1 text-gray-600`}>
-        -
+        <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">
+          {rating}
+        </span>
+      );
+    if (rating >= 3.0)
+      return (
+        <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">
+          {rating}
+        </span>
+      );
+    return (
+      <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">
+        {rating}
       </span>
     );
-    
+  };
+
+  const getPercentage = (value?: number) => {
+    if (value === undefined || value === null)
+      return <span className={`px-2 py-1 text-gray-600`}>-</span>;
+
     // let colorClass = ''; // default: low
     // if (value >= 80) colorClass = 'bg-green-400';      // excellent
     // else if (value >= 50) colorClass = 'bg-yellow-400'; // medium
@@ -347,9 +360,7 @@ const SchoolCard = ({
                 school.ratingZone
               )} text-white border-0`}
             > */}
-            <Badge
-              className={`text-xs font-medium text-white border-0`}
-            >
+            <Badge className={`text-xs font-medium text-white border-0`}>
               {/* {getZoneName(school.ratingZone)} */}
             </Badge>
           </div>
@@ -409,7 +420,7 @@ const SchoolsTable = ({
   searchQuery,
   onView,
   schools,
-  setSchools
+  setSchools,
 }: {
   onRowClick: (school: CombinedSchool) => void;
   selectedDistrict?: string;
@@ -420,7 +431,7 @@ const SchoolsTable = ({
 }) => {
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 100; 
+  const itemsPerPage = 100;
   // const getRatingZoneColor = (zone: string) => {
   //   switch (zone) {
   //     case "green":
@@ -455,20 +466,15 @@ const SchoolsTable = ({
   //   return <TrendingDown className="h-4 w-4 text-red-500" />;
   // };
 
-
   const totalPages = Math.max(1, Math.ceil(totalCount / itemsPerPage));
 
   const getColoredPercentage = (value?: number) => {
-    if (value === undefined || value === null) 
-      return (
-      <span className={`px-2 py-1 text-gray-600`}>
-        -
-      </span>
-    );;
-    
-    let colorClass = 'bg-red-400'; // default: low
-    if (value >= 80) colorClass = 'bg-green-400';      // excellent
-    else if (value >= 50) colorClass = 'bg-yellow-400'; // medium
+    if (value === undefined || value === null)
+      return <span className={`px-2 py-1 text-gray-600`}>-</span>;
+
+    let colorClass = "bg-red-400"; // default: low
+    if (value >= 80) colorClass = "bg-green-400"; // excellent
+    else if (value >= 50) colorClass = "bg-yellow-400"; // medium
 
     return (
       <span className={`${colorClass} font-semibold px-2 py-1 rounded-md`}>
@@ -478,14 +484,29 @@ const SchoolsTable = ({
   };
 
   const getColoredRating = (rating: number | null) => {
-    if (rating === null || rating === undefined) return '—';
-    if (rating >= 4.3) return <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
-    if (rating >= 3.0) return <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
-    return <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">{rating}</span>;
-  }
+    if (rating === null || rating === undefined) return "—";
+    if (rating >= 4.3)
+      return (
+        <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">
+          {rating}
+        </span>
+      );
+    if (rating >= 3.0)
+      return (
+        <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">
+          {rating}
+        </span>
+      );
+    return (
+      <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">
+        {rating}
+      </span>
+    );
+  };
 
   useEffect(() => {
-    const districtFilter = !selectedDistrict || selectedDistrict === "all" ? "" : selectedDistrict
+    const districtFilter =
+      !selectedDistrict || selectedDistrict === "all" ? "" : selectedDistrict;
     // const ratingFilter = !selectedRating || selectedRating === "all" ? "" : selectedRating.toLowerCase();
     const fetchData = async () => {
       try {
@@ -493,10 +514,10 @@ const SchoolsTable = ({
 
         const [res1, res2] = await Promise.all([
           fetch(
-            `https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}&search=${searchQuery}`
+            `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}&search=${searchQuery}`
           ),
           fetch(
-            `https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}`
+            `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}`
           ),
         ]);
 
@@ -506,15 +527,17 @@ const SchoolsTable = ({
         const analyzeMap = new Map<number, AnalyzeItem>();
         data2.results.forEach((a: AnalyzeItem) => analyzeMap.set(a.id, a));
 
-        const merged: CombinedSchool[] = data1.results.map((s: SchoolApiItem) => ({
-          ...s,
-          ...(analyzeMap.get(s.id) ?? {}),
-        }));
+        const merged: CombinedSchool[] = data1.results.map(
+          (s: SchoolApiItem) => ({
+            ...s,
+            ...(analyzeMap.get(s.id) ?? {}),
+          })
+        );
 
         setSchools(merged);
         setTotalCount(data1.count);
       } catch (err) {
-        console.error('Ошибка загрузки данных:', err);
+        console.error("Ошибка загрузки данных:", err);
       }
     };
 
@@ -523,139 +546,141 @@ const SchoolsTable = ({
 
   return (
     <div>
-    <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-      <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-      <div className="relative overflow-x-auto overflow-y-auto max-h-[600px] ">
-        <table className="w-full">
-          <thead className="bg-slate-50 sticky top-0 z-10">
-            <tr className="border-b border-slate-200/50">
-              <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Наименование
-              </th>
-              <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Район
-              </th>
-              <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Общий рейтинг
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Качество знаний
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Квалификация педагогов
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Безопасность
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Оснащенность
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Динамика результатов школы
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Профилактика нарушений
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Рейтинг GIS
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Паспорт организации
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {schools.map((school, index) => (
-              <tr
-                key={school.id}
-                className={`border-b border-slate-200/30 hover:bg-slate-50/50 transition-colors ${
-                  index % 2 === 0 ? "bg-slate-25/30" : ""
-                }`}
-                onClick={() => onRowClick(school)}
-              >
-                <td className="p-6">
-                  <div>
-                    <div className="font-semibold text-slate-800 mb-1">
-                      {school.name_of_the_organization}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
+        <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
+        <div className="relative overflow-x-auto overflow-y-auto max-h-[600px] ">
+          <table className="w-full">
+            <thead className="bg-slate-50 sticky top-0 z-10">
+              <tr className="border-b border-slate-200/50">
+                <th className="text-left p-6 text-sm font-semibold text-slate-700">
+                  Наименование
+                </th>
+                <th className="text-left p-6 text-sm font-semibold text-slate-700">
+                  Район
+                </th>
+                <th className="text-left p-6 text-sm font-semibold text-slate-700">
+                  Общий рейтинг
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Качество знаний
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Квалификация педагогов
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Безопасность
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Оснащенность
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Динамика результатов школы
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Профилактика нарушений
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Рейтинг GIS
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  Паспорт организации
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {schools.map((school, index) => (
+                <tr
+                  key={school.id}
+                  className={`border-b border-slate-200/30 hover:bg-slate-50/50 transition-colors ${
+                    index % 2 === 0 ? "bg-slate-25/30" : ""
+                  }`}
+                  onClick={() => onRowClick(school)}
+                >
+                  <td className="p-6">
+                    <div>
+                      <div className="font-semibold text-slate-800 mb-1">
+                        {school.name_of_the_organization}
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        {school.types_of_educational_institutions}
+                      </div>
+                      <div className="text-xs text-slate-500 mt-1 flex items-center">
+                        <Building2 className="h-3 w-3 mr-1" />
+                        {school.district}
+                      </div>
                     </div>
-                    <div className="text-sm text-slate-600">
-                      {school.types_of_educational_institutions}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 flex items-center">
-                      <Building2 className="h-3 w-3 mr-1" />
+                  </td>
+                  <td className="p-6">
+                    <div className="flex items-center text-sm text-slate-600">
+                      <MapPin className="h-4 w-4 mr-2 text-slate-400" />
                       {school.district}
                     </div>
-                  </div>
-                </td>
-                <td className="p-6">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                    {school.district}
-                  </div>
-                </td>
-                <td className="p-6">
-                  <div className="flex items-center text-sm text-white">
-                    {getColoredPercentage(school.digital_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-blue-50 text-white rounded-lg font-semibold text-sm">
-                    {getColoredPercentage(school.academic_results_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
-                    {getColoredPercentage(school.pedagogical_potential_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-purple-50 text-white rounded-lg font-semibold text-sm">
-                    {getColoredPercentage(school.safety_climate_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
-                    {getColoredPercentage(school.infrastructure_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
-                    {getColoredPercentage(school.graduate_success_rating)}
-                  </div>
-                </td>
-                <td className="p-6">
-                  <div className="flex items-center text-sm text-white">
-                    {getColoredPercentage(school.penalty_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
-                    {getColoredRating(school.gis_rating)}
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onView(school)}
-                    className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Паспорт
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                  </td>
+                  <td className="p-6">
+                    <div className="flex items-center text-sm text-white">
+                      {getColoredPercentage(school.digital_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-8 bg-blue-50 text-white rounded-lg font-semibold text-sm">
+                      {getColoredPercentage(school.academic_results_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
+                      {getColoredPercentage(
+                        school.pedagogical_potential_rating
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-8 bg-purple-50 text-white rounded-lg font-semibold text-sm">
+                      {getColoredPercentage(school.safety_climate_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
+                      {getColoredPercentage(school.infrastructure_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
+                      {getColoredPercentage(school.graduate_success_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6">
+                    <div className="flex items-center text-sm text-white">
+                      {getColoredPercentage(school.penalty_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
+                      {getColoredRating(school.gis_rating)}
+                    </div>
+                  </td>
+                  <td className="p-6 text-center">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onView(school)}
+                      className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      Паспорт
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
-
-    </div>
       <div className="flex items-center justify-between px-4 py-3 bg-white border border-t-0 border-b-0 border-slate-200 rounded-b-lg">
         <div className="flex items-center text-sm text-slate-700">
           Показано {(currentPage - 1) * itemsPerPage + 1}–
-          {Math.min(currentPage * itemsPerPage, totalCount)} из {totalCount} школ
+          {Math.min(currentPage * itemsPerPage, totalCount)} из {totalCount}{" "}
+          школ
         </div>
 
         <div className="flex items-center gap-2">
@@ -673,7 +698,9 @@ const SchoolsTable = ({
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`px-3 py-1 text-sm rounded-md transition-colors ${
-                  page === currentPage ? 'bg-blue-500 text-white' : 'text-slate-600 hover:bg-slate-100'
+                  page === currentPage
+                    ? "bg-blue-500 text-white"
+                    : "text-slate-600 hover:bg-slate-100"
                 }`}
               >
                 {page}
@@ -682,7 +709,9 @@ const SchoolsTable = ({
           </div>
 
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -701,7 +730,7 @@ function SchoolsPage({ params }: SchoolsPageProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("all");
   const [viewMode, setViewMode] = useState<"cards" | "table">("table");
-  const [data, setData] = useState<DistrictData[]>([])
+  const [data, setData] = useState<DistrictData[]>([]);
   const [schools, setSchools] = useState<CombinedSchool[]>([]);
   // Данные (в реальном приложении будут загружаться с сервера)
   // const [schools] = useState<SchoolData[]>([
@@ -825,7 +854,8 @@ function SchoolsPage({ params }: SchoolsPageProps) {
     yellowZone: schools.length,
     redZone: schools.length,
     averageRating: Math.round(
-      schools.reduce((sum, s) => sum + (s.digital_rating ?? 0), 0) / schools.length
+      schools.reduce((sum, s) => sum + (s.digital_rating ?? 0), 0) /
+        schools.length
     ),
   };
 
@@ -835,7 +865,11 @@ function SchoolsPage({ params }: SchoolsPageProps) {
     }
 
     if (rating >= 80) {
-      return { color: "text-emerald-600", bgColor: "bg-emerald-50", icon: Trophy }; // High
+      return {
+        color: "text-emerald-600",
+        bgColor: "bg-emerald-50",
+        icon: Trophy,
+      }; // High
     } else if (rating < 50) {
       return { color: "text-red-500", bgColor: "bg-red-50", icon: Target }; // Low
     } else {
@@ -864,40 +898,43 @@ function SchoolsPage({ params }: SchoolsPageProps) {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch("https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/rating-by-district/")
+        const response = await fetch(
+          "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/rating-by-district/"
+        );
         if (!response.ok) {
-            throw new Error(`Ошибка: ${response.status}`)
+          throw new Error(`Ошибка: ${response.status}`);
         }
-        const result = await response.json()
+        const result = await response.json();
 
         const formatted = result.map((item: RatingApiItem) => ({
-            district: item.district,
-            count: item.count,
-            high: item.rating?.high ?? 0,
-            medium: item.rating?.medium ?? 0,
-            low: item.rating?.low ?? 0,
-        }))
+          district: item.district,
+          count: item.count,
+          high: item.rating?.high ?? 0,
+          medium: item.rating?.medium ?? 0,
+          low: item.rating?.low ?? 0,
+        }));
 
-        setData(formatted)
+        setData(formatted);
       } catch (err: unknown) {
         if (err instanceof Error) {
-          console.error(err.message)
+          console.error(err.message);
         } else {
-          console.error("Unexpected error", err)
+          console.error("Unexpected error", err);
         }
       }
-    }
-    fetchData()
-  }, [])
+    };
+    fetchData();
+  }, []);
 
-  const [selectedSchool, setSelectedSchool] = useState<CombinedSchool | null>(null);
+  const [selectedSchool, setSelectedSchool] = useState<CombinedSchool | null>(
+    null
+  );
   const [showModal, setShowModal] = useState(false);
 
   const handleRowClick = (school: CombinedSchool) => {
     setSelectedSchool(school);
     setShowModal(true);
   };
-
 
   const exportAllToExcel = async () => {
     try {
@@ -907,8 +944,12 @@ function SchoolsPage({ params }: SchoolsPageProps) {
 
       while (true) {
         const [res1, res2] = await Promise.all([
-          fetch(`https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/?limit=${itemsPerPage}&offset=${offset}`),
-          fetch(`https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}`)
+          fetch(
+            `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/?limit=${itemsPerPage}&offset=${offset}`
+          ),
+          fetch(
+            `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}`
+          ),
         ]);
 
         const data1 = await res1.json();
@@ -919,7 +960,7 @@ function SchoolsPage({ params }: SchoolsPageProps) {
 
         const merged = data1.results.map((s: SchoolApiItem) => ({
           ...s,
-          ...(analyzeMap.get(s.id) ?? {})
+          ...(analyzeMap.get(s.id) ?? {}),
         }));
 
         allSchools.push(...merged);
@@ -931,33 +972,42 @@ function SchoolsPage({ params }: SchoolsPageProps) {
       const rows = allSchools.map((s) => ({
         Наименование: s.name_of_the_organization,
         Район: s.district,
-        'Рейтинг GIS': s.gis_rating ?? '',
-        'Качество знаний': s.academic_results_rating ?? '',
-        'Квалификация педагогов': s.pedagogical_potential_rating ?? '',
-        Безопасность: s.safety_climate_rating ?? '',
-        Оснащенность: s.infrastructure_rating ?? '',
-        'Динамика результатов школы': s.graduate_success_rating ?? '',
-        Профилактика: s.penalty_rating ?? '',
-        'Общий рейтинг': s.digital_rating ?? '',
+        "Рейтинг GIS": s.gis_rating ?? "",
+        "Качество знаний": s.academic_results_rating ?? "",
+        "Квалификация педагогов": s.pedagogical_potential_rating ?? "",
+        Безопасность: s.safety_climate_rating ?? "",
+        Оснащенность: s.infrastructure_rating ?? "",
+        "Динамика результатов школы": s.graduate_success_rating ?? "",
+        Профилактика: s.penalty_rating ?? "",
+        "Общий рейтинг": s.digital_rating ?? "",
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(rows);
       const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Schools');
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Schools");
 
-      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
-      const data = new Blob([excelBuffer], { type: 'application/octet-stream' });
+      const excelBuffer = XLSX.write(workbook, {
+        bookType: "xlsx",
+        type: "array",
+      });
+      const data = new Blob([excelBuffer], {
+        type: "application/octet-stream",
+      });
       saveAs(data, `schools_full.xlsx`);
     } catch (err) {
-      console.error('Ошибка экспорта:', err);
+      console.error("Ошибка экспорта:", err);
     }
   };
 
   const filteredSchools = schools.filter((school) => {
     const matchesSearch =
-      school.name_of_the_organization.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      school.name_of_the_organization
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase()) ||
       school.district.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      school.types_of_educational_institutions.toLowerCase().includes(searchTerm.toLowerCase());
+      school.types_of_educational_institutions
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase());
     const matchesDistrict =
       selectedDistrict === "all" ||
       school.district.toLowerCase().includes(selectedDistrict);
@@ -1032,7 +1082,7 @@ function SchoolsPage({ params }: SchoolsPageProps) {
                   Карта
                 </Button>
               </Link>
-              <Link href={`/${params.lang}/schools/forecast`}>
+              <Link href={`/${params.lang}/schools/deficit`}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -1176,7 +1226,9 @@ function SchoolsPage({ params }: SchoolsPageProps) {
             <Card className="bg-white/80 shadow-none border-0">
               <CardHeader className="flex items-center space-x-3">
                 <TrendingUp className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                <CardTitle className="text-lg font-bold text-slate-800">Количество школ по районам</CardTitle>
+                <CardTitle className="text-lg font-bold text-slate-800">
+                  Количество школ по районам
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -1233,7 +1285,9 @@ function SchoolsPage({ params }: SchoolsPageProps) {
             <Card className="bg-white/80 shadow-none border-0">
               <CardHeader className="flex items-center space-x-3">
                 <Award className="h-6 w-6 text-amber-600 dark:text-amber-400" />
-                <CardTitle className="text-lg font-bold text-slate-800">Рейтинг школ по районам</CardTitle>
+                <CardTitle className="text-lg font-bold text-slate-800">
+                  Рейтинг школ по районам
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig}>
@@ -1247,7 +1301,10 @@ function SchoolsPage({ params }: SchoolsPageProps) {
                       tickFormatter={(value) => value.slice(0, 3)}
                     />
                     <ChartTooltip content={<ChartTooltipContent hideLabel />} />
-                    <ChartLegend className="text-black" content={<ChartLegendContent />} />
+                    <ChartLegend
+                      className="text-black"
+                      content={<ChartLegendContent />}
+                    />
                     <Bar
                       dataKey="high"
                       stackId="a"
@@ -1356,7 +1413,14 @@ function SchoolsPage({ params }: SchoolsPageProps) {
 
         {/* Schools Content */}
         {viewMode === "table" ? (
-          <SchoolsTable onRowClick={handleRowClick} selectedDistrict={selectedDistrict} searchQuery={searchTerm} onView={handleViewSchool} schools={schools} setSchools={setSchools} />
+          <SchoolsTable
+            onRowClick={handleRowClick}
+            selectedDistrict={selectedDistrict}
+            searchQuery={searchTerm}
+            onView={handleViewSchool}
+            schools={schools}
+            setSchools={setSchools}
+          />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {filteredSchools.map((school) => (

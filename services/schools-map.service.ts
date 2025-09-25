@@ -5,7 +5,7 @@ import {
 } from "@/types/schools-map";
 
 const SCHOOLS_API_URL =
-  "https://admin.smartalmaty.kz/api/v1/institutions_monitoring/schools-enriched/?limit=10000";
+  "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools-enriched/?limit=10000";
 
 export class SchoolsMapService {
   /**

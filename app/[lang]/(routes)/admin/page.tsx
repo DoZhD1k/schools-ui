@@ -501,7 +501,7 @@ function AdminPage({ params }: AdminPageProps) {
                   Просмотрите прогноз дефицита и профицита школьных мест по
                   районам города с интерактивной картой.
                 </p>
-                <Link href={`/${params.lang}/schools/forecast`}>
+                <Link href={`/${params.lang}/schools/deficit`}>
                   <Button
                     className="w-full bg-white/10 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] text-white hover:bg-white/15 hover:border-[hsl(0_0%_100%_/_0.15)] font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                     size="lg"

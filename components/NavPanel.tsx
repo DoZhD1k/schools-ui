@@ -91,7 +91,7 @@ export function NavPanel() {
       },
       {
         label: "Прогноз дефицита мест",
-        href: "/ru/deficit",
+        href: "/ru/schools/deficit",
         icon: UserX,
         description: "",
         external: false,
