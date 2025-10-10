@@ -1,13 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useSchoolsMap } from "@/hooks/useSchoolsMap";
-import SchoolsMapFilters from "@/components/map/SchoolsMapFilters";
+import { useDistrictFilters } from "@/hooks/useDistrictFilters";
+import { MapProvider } from "@/contexts/map-context";
+import DistrictFilters from "@/components/map/DistrictFilters";
 import MapLoading from "@/components/map/MapLoading";
 
-// Dynamically import the SchoolsMapContainer to avoid SSR issues with mapbox-gl
-const SchoolsMapContainer = dynamic(
-  () => import("@/components/map/SchoolsMapContainer"),
+// Dynamically import the MapWithPolygons to avoid SSR issues with mapbox-gl
+const MapWithPolygons = dynamic(
+  () => import("@/components/map/MapWithPolygons"),
   {
     ssr: false,
     loading: () => <MapLoading />,
@@ -16,17 +17,18 @@ const SchoolsMapContainer = dynamic(
 
 export default function MapPage() {
   const {
-    filteredSchools,
-    selectedSchool,
-    filters,
     loading,
     error,
-    applyFilters,
-    resetFilters,
+    filteredPolygons,
+    filteredSchools,
+    filters,
     selectSchool,
-    getFilterOptions,
-    getStatistics,
-  } = useSchoolsMap();
+    selectLanguage,
+    searchSchool,
+    resetFilters,
+    getUniqueSchools,
+    getAvailableLanguages,
+  } = useDistrictFilters();
 
   if (loading) {
     return (
@@ -64,20 +66,32 @@ export default function MapPage() {
   }
 
   return (
-    <div className="relative h-[100vh] w-full overflow-hidden">
-      <SchoolsMapContainer
-        schools={filteredSchools}
-        selectedSchool={selectedSchool}
-        onSchoolSelect={selectSchool}
-      />
+    <MapProvider>
+      <div className="relative h-[100vh] w-full overflow-hidden">
+        <MapWithPolygons
+          schools={filteredSchools}
+          selectedSchool={null}
+          onSchoolSelect={() => {}}
+          mode="polygons"
+          districtPolygons={filteredPolygons}
+        />
 
-      <SchoolsMapFilters
-        filters={filters}
-        filterOptions={getFilterOptions()}
-        statistics={getStatistics()}
-        onFiltersChange={applyFilters}
-        onReset={resetFilters}
-      />
-    </div>
+        {/* Новые фильтры для районов */}
+        <div className="absolute top-4 left-4 z-20 max-w-md">
+          <DistrictFilters
+            selectedSchool={filters.selectedSchool}
+            selectedLanguage={filters.selectedLanguage}
+            schoolSearchQuery={filters.schoolSearchQuery}
+            uniqueSchools={getUniqueSchools()}
+            filteredSchoolsCount={filteredSchools.length}
+            availableLanguages={getAvailableLanguages(filters.selectedSchool)}
+            onSchoolSelect={selectSchool}
+            onLanguageSelect={selectLanguage}
+            onSchoolSearch={searchSchool}
+            onReset={resetFilters}
+          />
+        </div>
+      </div>
+    </MapProvider>
   );
 }

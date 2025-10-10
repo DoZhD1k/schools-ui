@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 // Map styles
-const DEFAULT_MAP_STYLE = "mapbox://styles/mapbox/light-v11";
+const DEFAULT_MAP_STYLE = "mapbox://styles/mapbox/streets-v12";
 
 // TypeScript type definitions
 type MapRef = React.RefObject<mapboxgl.Map>;

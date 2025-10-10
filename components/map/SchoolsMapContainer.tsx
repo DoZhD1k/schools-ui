@@ -48,7 +48,7 @@ export default function SchoolsMapContainer({
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/mapbox/light-v11",
+        style: "mapbox://styles/mapbox/streets-v12",
         center: ALMATY_CENTER,
         zoom: DEFAULT_ZOOM,
         attributionControl: false,

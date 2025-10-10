@@ -75,13 +75,13 @@ export function NavPanel() {
         description: "",
         external: false,
       },
-      {
-        label: "Анализ рейтингов",
-        href: "/ru/schools/analytics",
-        icon: ChartColumn,
-        description: "",
-        external: false,
-      },
+      // {
+      //   label: "Анализ рейтингов",
+      //   href: "/ru/schools/analytics",
+      //   icon: ChartColumn,
+      //   description: "",
+      //   external: false,
+      // },
       {
         label: "Карта школ",
         href: "/ru/map",
@@ -89,13 +89,13 @@ export function NavPanel() {
         description: "",
         external: false,
       },
-      {
-        label: "Прогноз дефицита мест",
-        href: "/ru/schools/deficit",
-        icon: UserX,
-        description: "",
-        external: false,
-      },
+      // {
+      //   label: "Прогноз дефицита мест",
+      //   href: "/ru/schools/deficit",
+      //   icon: UserX,
+      //   description: "",
+      //   external: false,
+      // },
     ];
 
     // Добавляем пункт Админка только для пользователей с ролью admin

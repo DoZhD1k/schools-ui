@@ -6,8 +6,14 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import useGeoJSONData from "@/hooks/useGeoJSONData";
 import { useMapContext } from "@/contexts/map-context";
 import { createPopupHtml } from "./MapPopup";
+import PolygonsLayer from "./PolygonsLayer";
+// import SchoolsLayer from "./SchoolsLayer"; // ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ОТЛАДКИ
+import SchoolPolygonsLayer from "./SchoolPolygonsLayer";
+// import MapDebugInfo from "./MapDebugInfo";
+import LayerOrderTest from "./LayerOrderTest";
 import type { FilterSpecification } from "mapbox-gl";
 import { EnrichedGridProperties } from "@/types/geojson";
+import type { DistrictPolygon, SchoolFeature } from "@/types/schools-map";
 
 // Set Mapbox token from environment variable
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -16,7 +22,15 @@ mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 const ALMATY_CENTER: [number, number] = [76.9286, 43.2567];
 const DEFAULT_ZOOM = 11;
 
-export default function MapContainer() {
+interface MapContainerProps {
+  districtPolygons?: DistrictPolygon[];
+  schools?: SchoolFeature[];
+}
+
+export default function MapContainer({
+  districtPolygons,
+  schools,
+}: MapContainerProps = {}) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const { loadGeoJSONData } = useGeoJSONData();
@@ -50,7 +64,7 @@ export default function MapContainer() {
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: "mapbox://styles/mapbox/light-v11", // Using a light, minimal base map
+        style: "mapbox://styles/mapbox/streets-v12", // Возвращаем темную карту
         center: ALMATY_CENTER,
         zoom: DEFAULT_ZOOM,
         attributionControl: false,
@@ -164,7 +178,7 @@ export default function MapContainer() {
                 10000,
                 colorScheme[4],
               ],
-              "fill-opacity": 0.7,
+              "fill-opacity": 1,
             },
           });
 
@@ -176,7 +190,7 @@ export default function MapContainer() {
             paint: {
               "line-color": "#000",
               "line-width": 1,
-              "line-opacity": 0.5,
+              "line-opacity": 1,
             },
           });
 
@@ -191,7 +205,7 @@ export default function MapContainer() {
                 "case",
                 ["boolean", ["feature-state", "hover"], false],
                 0.3,
-                0,
+                1,
               ],
             },
           });
@@ -230,6 +244,7 @@ export default function MapContainer() {
   }, [
     loadGeoJSONData,
     mapLoaded,
+    dataLoaded,
     activeMetric,
     colorScheme,
     setMetricMaxValues,
@@ -317,7 +332,7 @@ export default function MapContainer() {
         "interpolate",
         ["linear"],
         ["get", activeMetric],
-        ...(colorStops.flat() as any),
+        ...(colorStops.flat() as (string | number)[]),
       ];
 
       map.current.setPaintProperty("area-fill", "fill-color", colorExpression);
@@ -462,9 +477,21 @@ export default function MapContainer() {
 
     // Close popup when clicking elsewhere on the map
     const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
-      // Check if the click is not on a feature
+      // Debug: Check all features at click point
+      const allFeatures = map.current!.queryRenderedFeatures(e.point);
+      console.log("🎯 Map click debug:", {
+        clickPosition: e.lngLat,
+        allFeatures: allFeatures.map((f) => ({
+          layer: f.layer?.id || "unknown",
+          sourceLayer: f.sourceLayer,
+          properties: f.properties,
+        })),
+      });
+
+      // Check if the click is not on a feature (only if layer exists)
+      const layers = map.current!.getLayer("area-fill") ? ["area-fill"] : [];
       const features = map.current!.queryRenderedFeatures(e.point, {
-        layers: ["area-fill"],
+        layers: layers,
       });
 
       // Close popup when clicking outside areas
@@ -500,24 +527,45 @@ export default function MapContainer() {
   return (
     <div className="relative w-full h-full">
       {mapInitError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background text-red-500 p-4 z-20">
+        <div className="absolute inset-0 flex items-center justify-center bg-red-50 text-red-500 p-4 z-20">
           <div className="bg-white p-6 rounded shadow-lg max-w-md border-l-4 border-red-500">
-            <h3 className="font-medium text-lg mb-2 uppercase tracking-wide">
-              Map Error
-            </h3>
+            <h3 className="font-medium text-lg mb-2">Map Error</h3>
             <p className="mb-4">{mapInitError}</p>
-            <p className="text-sm text-muted-foreground">
-              Please check your Mapbox access token in the environment
-              variables.
-            </p>
           </div>
         </div>
       )}
+
+      {/* Map container - simplified like SchoolsMapContainer */}
       <div
         ref={mapContainer}
-        className="absolute inset-0 bg-background"
+        className="w-full h-full"
         style={{ visibility: mapInitError ? "hidden" : "visible" }}
       />
+
+      {/* Add polygons layer when map is loaded */}
+      {mapLoaded && map.current && (
+        <PolygonsLayer
+          mapInstance={map.current}
+          districtPolygons={districtPolygons}
+        />
+      )}
+
+      {/* Add schools points layer when map is loaded - ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ОТЛАДКИ */}
+      {/* {mapLoaded && map.current && <SchoolsLayer mapInstance={map.current} />} */}
+
+      {/* Add schools polygons layer when map is loaded */}
+      {mapLoaded && map.current && (
+        <SchoolPolygonsLayer
+          mapInstance={map.current}
+          filteredSchools={schools}
+        />
+      )}
+
+      {/* Debug info */}
+      {/* <MapDebugInfo mapInstance={map.current} /> */}
+
+      {/* Layer order test - temporary debug component */}
+      {mapLoaded && map.current && <LayerOrderTest mapInstance={map.current} />}
     </div>
   );
 }
