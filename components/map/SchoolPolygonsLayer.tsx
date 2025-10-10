@@ -344,7 +344,11 @@ export default function SchoolPolygonsLayer({
                   });
                 }
               });
-              console.log("📏 Polygons bounds:", bounds.toArray());
+              if (bounds && !bounds.isEmpty()) {
+                console.log("📏 Polygons bounds:", bounds.toArray());
+              } else {
+                console.log("📏 No valid bounds found for school polygons");
+              }
             }
           }, 100);
         }
