@@ -1,9 +1,22 @@
 "use client";
 
 import { motion, AnimatePresence, Variants } from "framer-motion";
-import { X, MapPin, School, Trophy, Award, GraduationCap, Users, Shield, Building, TrendingUp, Zap, LucideIcon } from "lucide-react";
+import {
+  X,
+  MapPin,
+  School,
+  Trophy,
+  Award,
+  GraduationCap,
+  Users,
+  Shield,
+  Building,
+  TrendingUp,
+  Zap,
+  LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CombinedSchool } from "../../app/[lang]/(routes)/schools/page";
+import { CombinedSchool } from "../../app/[lang]/(routes)/schools/page copy";
 
 type RatingKeys =
   | "academic_results_rating"
@@ -13,7 +26,6 @@ type RatingKeys =
   | "safety_climate_rating"
   | "gis_rating"
   | "digital_rating";
-
 
 type CombinedSchoolRatings = Pick<CombinedSchool, RatingKeys> & CombinedSchool;
 
@@ -45,12 +57,17 @@ const modalVariants: Variants = {
   exit: { opacity: 0, scale: 0.95, y: 50, transition: { duration: 0.2 } },
 };
 
-
-export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingInfo }: Props) {
+export default function SchoolDetailPopup({
+  isOpen,
+  school,
+  onClose,
+  getRatingInfo,
+}: Props) {
   if (!school) return null;
-  
-  const formatRating = (v?: number | null) => v === undefined || v === null ? "—" : `${v.toFixed(1)}%`;
-  
+
+  const formatRating = (v?: number | null) =>
+    v === undefined || v === null ? "—" : `${v.toFixed(1)}%`;
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -61,7 +78,10 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
           animate="visible"
           exit="exit"
         >
-          <motion.div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={onClose} />
+          <motion.div
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={onClose}
+          />
           <motion.div
             className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-slate-200"
             variants={modalVariants}
@@ -87,7 +107,9 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
                   </h2>
                   <div className="flex items-center gap-2 text-blue-100">
                     <MapPin className="w-4 h-4" />
-                    <span className="text-sm font-medium">{school.district}</span>
+                    <span className="text-sm font-medium">
+                      {school.district}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -96,7 +118,9 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
             {/* Content */}
             <div className="p-8 max-h-[60vh] overflow-y-auto">
               <div className="mb-8 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-900">Паспорт организации</h3>
+                <h3 className="text-lg font-semibold text-slate-900">
+                  Паспорт организации
+                </h3>
               </div>
 
               {school.gis_rating && (
@@ -106,8 +130,12 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
                       <Award className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm font-medium text-slate-600">Общий рейтинг</p>
-                      <p className="text-xl font-bold text-blue-700">{formatRating(school.digital_rating)}</p>
+                      <p className="text-sm font-medium text-slate-600">
+                        Общий рейтинг
+                      </p>
+                      <p className="text-xl font-bold text-blue-700">
+                        {formatRating(school.digital_rating)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -115,22 +143,50 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
 
               {/* Ratings */}
               {[
-                { key: "academic_results_rating", label: "Качество знаний", icon: GraduationCap },
-                { key: "graduate_success_rating", label: "Динамика результатов школы", icon: TrendingUp },
-                { key: "pedagogical_potential_rating", label: "Квалификация педагогов", icon: Users },
-                { key: "infrastructure_rating", label: "Оснащенность школы", icon: Building },
-                { key: "safety_climate_rating", label: "Безопасность", icon: Shield },
+                {
+                  key: "academic_results_rating",
+                  label: "Качество знаний",
+                  icon: GraduationCap,
+                },
+                {
+                  key: "graduate_success_rating",
+                  label: "Динамика результатов школы",
+                  icon: TrendingUp,
+                },
+                {
+                  key: "pedagogical_potential_rating",
+                  label: "Квалификация педагогов",
+                  icon: Users,
+                },
+                {
+                  key: "infrastructure_rating",
+                  label: "Оснащенность школы",
+                  icon: Building,
+                },
+                {
+                  key: "safety_climate_rating",
+                  label: "Безопасность",
+                  icon: Shield,
+                },
                 { key: "gis_rating", label: "GIS рейтинг", icon: Zap },
               ].map(({ key, label, icon: Icon }) => {
-                const value = (school as CombinedSchoolRatings)[key as RatingKeys];
+                const value = (school as CombinedSchoolRatings)[
+                  key as RatingKeys
+                ];
                 return (
                   value !== undefined && (
                     <div
                       key={key}
                       className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors mb-4"
                     >
-                      <div className={`p-3 rounded-lg ${getRatingInfo(value).bgColor}`}>
-                        <Icon className={`w-5 h-5 ${getRatingInfo(value).color}`} />
+                      <div
+                        className={`p-3 rounded-lg ${
+                          getRatingInfo(value).bgColor
+                        }`}
+                      >
+                        <Icon
+                          className={`w-5 h-5 ${getRatingInfo(value).color}`}
+                        />
                       </div>
                       <div className="flex-1">
                         <p className="font-medium text-slate-900">{label}</p>
@@ -138,11 +194,19 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
                       <div
                         className={`px-3 py-1 rounded-full text-sm font-medium ${
                           key === "gis_rating"
-                            ? getRatingInfo(value !== null && value !== undefined ? (value / 5) * 100 : null).bgColor
+                            ? getRatingInfo(
+                                value !== null && value !== undefined
+                                  ? (value / 5) * 100
+                                  : null
+                              ).bgColor
                             : getRatingInfo(value).bgColor
                         } ${
                           key === "gis_rating"
-                            ? getRatingInfo(value !== null && value !== undefined ? (value / 5) * 100 : null).color
+                            ? getRatingInfo(
+                                value !== null && value !== undefined
+                                  ? (value / 5) * 100
+                                  : null
+                              ).color
                             : getRatingInfo(value).color
                         }`}
                       >
@@ -157,7 +221,10 @@ export default function SchoolDetailPopup({ isOpen, school, onClose, getRatingIn
             {/* Footer */}
             <div className="px-8 py-6 bg-slate-50 border-t border-slate-200">
               <div className="flex justify-end">
-                <Button onClick={onClose} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                <Button
+                  onClick={onClose}
+                  className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg"
+                >
                   Экспорт
                 </Button>
               </div>

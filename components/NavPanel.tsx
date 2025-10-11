@@ -56,14 +56,14 @@ export function NavPanel() {
     const mainGroup = [
       {
         label: "Главная",
-        href: "/ru",
+        href: "/ru/dashboard",
         icon: Home,
         description: "",
         external: false,
       },
       {
         label: "Рейтинг школ",
-        href: "/ru/schools",
+        href: "/ru/schools/rating",
         icon: Trophy,
         description: "",
         external: false,

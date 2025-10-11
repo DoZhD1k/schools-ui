@@ -349,7 +349,7 @@ function SchoolForecastPage({ params }: SchoolForecastPageProps) {
                   Главная
                 </Button>
               </Link>
-              <Link href={`/${params.lang}/schools`}>
+              <Link href={`/${params.lang}/schools/organizations`}>
                 <Button
                   variant="outline"
                   size="sm"

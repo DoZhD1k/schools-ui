@@ -223,54 +223,6 @@ const RecentActivity = () => {
   );
 };
 
-// System health component
-const SystemHealth = () => {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-lg font-semibold">
-          Состояние системы
-        </CardTitle>
-        <CardDescription>Мониторинг ключевых показателей</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Использование CPU</span>
-            <span className="font-medium">23%</span>
-          </div>
-          <Progress value={23} className="h-2" />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Использование памяти</span>
-            <span className="font-medium">67%</span>
-          </div>
-          <Progress value={67} className="h-2" />
-        </div>
-
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span>Использование диска</span>
-            <span className="font-medium">45%</span>
-          </div>
-          <Progress value={45} className="h-2" />
-        </div>
-
-        <div className="pt-3 border-t">
-          <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm font-medium text-green-600 dark:text-green-400">
-              Все сервисы работают нормально
-            </span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-};
-
 // Main dashboard component
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -390,7 +342,6 @@ export default function AdminDashboard() {
         {/* Left Column */}
         <div className="space-y-6">
           <QuickActions />
-          <SystemHealth />
         </div>
 
         {/* Right Column */}

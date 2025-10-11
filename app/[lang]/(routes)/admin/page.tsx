@@ -241,7 +241,7 @@ function AdminPage({ params }: AdminPageProps) {
             <div className="flex items-center justify-between">
               <div className="max-w-3xl">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                  Добро пожаловать, {userName}!
+                  Добро пожаловать!
                 </h1>
                 <p className="text-xl text-white/90 mb-6 leading-relaxed">
                   Панель администратора для управления системой образовательных
@@ -509,52 +509,6 @@ function AdminPage({ params }: AdminPageProps) {
                     Открыть прогноз
                   </Button>
                 </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* System Status */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-slate-800/90 rounded-3xl"></div>
-          <div className="absolute inset-0 rounded-3xl border border-[hsl(0_0%_100%_/_0.1)] shadow-lg"></div>
-          <div className="relative rounded-3xl p-8 text-white overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/3 rounded-full blur-xl animate-pulse delay-1000"></div>
-            <div className="absolute top-1/2 right-1/4 w-16 h-16 bg-white/7 rounded-full blur-lg animate-pulse delay-2000"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-bold mb-2">Состояние системы</h3>
-                  <p className="text-white/90 text-lg mb-4">
-                    Мониторинг работы административной панели
-                  </p>
-                  <div className="flex items-center space-x-6">
-                    <div className="text-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
-                      <div className="text-2xl font-bold text-green-400">
-                        99.9%
-                      </div>
-                      <div className="text-sm text-white/80">Время работы</div>
-                    </div>
-                    <div className="text-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
-                      <div className="text-2xl font-bold text-blue-400">
-                        24/7
-                      </div>
-                      <div className="text-sm text-white/80">Доступность</div>
-                    </div>
-                    <div className="text-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
-                      <div className="text-2xl font-bold text-amber-400">
-                        Secure
-                      </div>
-                      <div className="text-sm text-white/80">Защита</div>
-                    </div>
-                  </div>
-                </div>
-                <div className="hidden md:block">
-                  <div className="w-64 h-64 bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-[hsl(0_0%_100%_/_0.1)] shadow-lg">
-                    <Database className="h-16 w-16 text-white/90" />
-                  </div>
-                </div>
               </div>
             </div>
           </div>

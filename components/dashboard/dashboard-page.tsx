@@ -213,7 +213,7 @@ function DashboardPage({ params }: DashboardPageProps) {
             <div className="flex items-center justify-between">
               <div className="max-w-3xl">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                  Добро пожаловать, {userName}!
+                  Добро пожаловать!
                 </h1>
                 <p className="text-xl text-white/90 mb-6 leading-relaxed">
                   Система управления образовательными учреждениями Казахстана.

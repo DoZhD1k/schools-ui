@@ -42,6 +42,8 @@ import {
   Cell,
 } from "recharts";
 
+import { IntegratedSchoolsService } from "@/services/integrated-schools.service";
+
 interface SchoolPassportPageProps {
   params: {
     id: string;
@@ -69,113 +71,42 @@ function decodeJWT(token: string) {
   }
 }
 
-// Мок данные для паспорта школы
-const mockSchoolPassport = {
-  school: {
-    id: "1",
-    nameRu: "Школа-лицей №165 имени Гани Муратбаева",
-    nameKz: "Ғани Мұратбаев атындағы №165 мектеп-лицей",
-    organizationType: "Государственное учреждение",
-    district: { nameRu: "Алмалинский район" },
-    address: "ул. Толе би, 273/1",
-    phone: "+7 (727) 292-15-46",
-    director: "Ахметова Айгуль Кайратовна",
-    currentRating: 85,
-    ratingZone: "green" as const,
-    foundedYear: 1965,
-    commissionedYear: 1965,
-    capacity: 1400,
-    currentStudents: 1250,
-  },
-  qualityKnowledge: {
-    year1: 82,
-    year2: 84,
-    year3: 85,
-    trend: "up" as const,
-  },
-  resultsDynamics: {
-    graduates: 145,
-    altynBelgi: 12,
-    averageEntScore: 108,
-    grants: 68,
-    yearOverYearChange: {
-      graduates: 8,
-      altynBelgi: 3,
-      averageEntScore: 5,
-      grants: 12,
-    },
-  },
-  talentDevelopment: {
-    schoolLevel: { participants: 245, winners: 78 },
-    cityLevel: { participants: 89, winners: 34 },
-    regionalLevel: { participants: 45, winners: 18 },
-    nationalLevel: { participants: 23, winners: 8 },
-    internationalLevel: { participants: 12, winners: 4 },
-  },
-  teacherQualification: {
-    categories: {
-      highest: 34,
-      first: 28,
-      second: 15,
-      noCategory: 8,
-    },
-    certifications: {
-      certified: 77,
-      total: 85,
-      percentage: 91,
-    },
-  },
-  teacherAchievements: {
-    schoolLevel: 45,
-    cityLevel: 23,
-    regionalLevel: 12,
-    nationalLevel: 6,
-    internationalLevel: 3,
-  },
-  schoolEquipment: {
-    totalRooms: 45,
-    newRooms: 28,
-    modernEquipmentPercentage: 78,
-    computerRooms: 3,
-    laboratories: 8,
-    libraries: 2,
-  },
-  internationalRelations: {
-    partnerships: 5,
-    exchangePrograms: 3,
-    internationalProjects: 4,
-    foreignLanguagePrograms: ["Английский", "Немецкий", "Французский"],
-  },
-  schoolSafety: {
-    cctv: { total: 24, indoor: 16, outdoor: 8 },
-    turnstiles: 2,
-    panicButtons: 12,
-    securityGuards: 4,
-  },
-  educationalWork: {
-    incidents: 3,
-    violations: 1,
-    staffTurnover: 8,
-    disciplinaryActions: 2,
-  },
-  inclusionAndImprovement: {
-    homeSchooling: 8,
-    improvementProjects: 12,
-    greenSpaces: 5,
-    accessibilityFeatures: [
-      "Пандусы",
-      "Широкие двери",
-      "Лифт",
-      "Специальные туалеты",
-    ],
-  },
-};
+// Пустой объект - будем загружать данные из API
 
 function SchoolPassportPage({ params }: SchoolPassportPageProps) {
   const { accessToken, logout } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Пользователь");
-  const [passportData] = useState(mockSchoolPassport);
+  const [passportData, setPassportData] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchSchoolPassport = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Загружаем данные паспорта школы
+        const passport = await IntegratedSchoolsService.getSchoolPassport(
+          params.id
+        );
+
+        if (!passport) {
+          setError("Данные школы не найдены");
+          return;
+        }
+
+        setPassportData(passport);
+      } catch (err) {
+        console.error("Ошибка загрузки паспорта школы:", err);
+        setError("Не удалось загрузить данные школы. Проверьте подключение к API.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSchoolPassport();
+  }, [params.id]);
 
   useEffect(() => {
     if (accessToken) {
@@ -187,13 +118,6 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
       }
     }
   }, [accessToken]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
 
   const formatTrend = (current: number, previous: number) => {
     const diff = current - previous;
@@ -233,6 +157,17 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (!passportData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-bold text-red-600 mb-2">Ошибка</h2>
+          <p className="text-slate-600">{error || "Данные не найдены"}</p>
+        </div>
       </div>
     );
   }
@@ -344,7 +279,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   Главная
                 </Button>
               </Link>
-              <Link href={`/${params.lang}/schools`}>
+              <Link href={`/${params.lang}/schools/organizations`}>
                 <Button
                   variant="outline"
                   size="sm"
