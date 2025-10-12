@@ -31,6 +31,27 @@ interface MapContextProps {
   setShowPolygons: (show: boolean) => void;
   polygons: PolygonFeature[];
   setPolygons: (polygons: PolygonFeature[]) => void;
+  // Добавляем недостающие свойства для полигонов
+  selectedPolygon: number | null;
+  setSelectedPolygon: (id: number | null) => void;
+  polygonFilters: Record<string, string | number | boolean> | null;
+  setPolygonFilters: (
+    filters: Record<string, string | number | boolean> | null
+  ) => void;
+  polygonStyleConfig: {
+    surplusColor: string;
+    deficitColor: string;
+    opacity: number;
+    strokeColor: string;
+    strokeWidth: number;
+  };
+  setPolygonStyleConfig: (config: {
+    surplusColor: string;
+    deficitColor: string;
+    opacity: number;
+    strokeColor: string;
+    strokeWidth: number;
+  }) => void;
 }
 
 const MapContext = createContext<MapContextProps | undefined>(undefined);
@@ -59,6 +80,20 @@ export function MapProvider({ children }: { children: ReactNode }) {
   >({});
   const [showPolygons, setShowPolygons] = useState<boolean>(true);
   const [polygons, setPolygons] = useState<PolygonFeature[]>([]);
+
+  // Новые состояния для полигонов
+  const [selectedPolygon, setSelectedPolygon] = useState<number | null>(null);
+  const [polygonFilters, setPolygonFilters] = useState<Record<
+    string,
+    string | number | boolean
+  > | null>(null);
+  const [polygonStyleConfig, setPolygonStyleConfig] = useState({
+    surplusColor: "#a5b8bd", // Gray for surplus
+    deficitColor: "#a5b8bd", // Red for deficit
+    opacity: 0.1,
+    strokeColor: "#555656", // Dark gray stroke
+    strokeWidth: 1,
+  });
 
   // Reset filters to default values
   const resetFilters = useCallback(() => {
@@ -93,6 +128,13 @@ export function MapProvider({ children }: { children: ReactNode }) {
         setShowPolygons,
         polygons,
         setPolygons,
+        // Добавляем новые свойства
+        selectedPolygon,
+        setSelectedPolygon,
+        polygonFilters,
+        setPolygonFilters,
+        polygonStyleConfig,
+        setPolygonStyleConfig,
       }}
     >
       {children}

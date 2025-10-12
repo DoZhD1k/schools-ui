@@ -105,11 +105,11 @@ export default function PolygonsLayer({
 
   // Default style configuration if not provided by context
   const defaultPolygonStyle = {
-    surplusColor: "#2ecc71", // Green for surplus
-    deficitColor: "#e74c3c", // Red for deficit
-    opacity: 0.6,
-    strokeColor: "#333333", // Dark gray for borders
-    strokeWidth: 1,
+    surplusColor: "#a5b8bd", // Gray for surplus
+    deficitColor: "#a5b8bd", // Red for deficit
+    opacity: 0.1,
+    strokeColor: "#555656", // Dark gray for borders
+    strokeWidth: 0.5,
   };
 
   const activePolygonStyle = polygonStyleConfig || defaultPolygonStyle;
@@ -312,9 +312,16 @@ export default function PolygonsLayer({
           beforeLayerId
         );
       } else {
-        beforeLayerId = undefined; // Если школьного слоя нет, добавляем в верх
+        // Если школьного слоя нет, все равно добавляем в фоне
+        // Найдем любой существующий слой, чтобы районы были снизу
+        const layers = mapInstance.getStyle().layers;
+        const firstSymbolLayer = layers.find(
+          (layer) => layer.type === "symbol"
+        );
+        beforeLayerId = firstSymbolLayer ? firstSymbolLayer.id : undefined;
         console.log(
-          "📍 Adding district polygons at the TOP (no schools layer found)"
+          "📍 Adding district polygons BELOW symbol layers:",
+          beforeLayerId || "at bottom"
         );
       }
       mapInstance.addLayer(
@@ -326,7 +333,12 @@ export default function PolygonsLayer({
             visibility: "visible",
           },
           paint: {
-            "fill-color": activePolygonStyle.surplusColor, // Используем цвет из конфигурации
+            "fill-color": [
+              "case",
+              ["==", ["get", "status"], "surplus"],
+              activePolygonStyle.surplusColor,
+              activePolygonStyle.deficitColor,
+            ],
             "fill-opacity": activePolygonStyle.opacity,
           },
         },
@@ -375,8 +387,23 @@ export default function PolygonsLayer({
       const schoolsFillLayer = "schools-polygons-fill";
       if (mapInstance.getLayer(schoolsFillLayer)) {
         strokeBeforeLayerId = schoolsFillLayer;
+        console.log(
+          "📍 Adding district stroke BEFORE schools layer:",
+          strokeBeforeLayerId
+        );
       } else {
-        strokeBeforeLayerId = undefined;
+        // Если школьного слоя нет, добавляем перед символьными слоями
+        const layers = mapInstance.getStyle().layers;
+        const firstSymbolLayer = layers.find(
+          (layer) => layer.type === "symbol"
+        );
+        strokeBeforeLayerId = firstSymbolLayer
+          ? firstSymbolLayer.id
+          : undefined;
+        console.log(
+          "📍 Adding district stroke BELOW symbol layers:",
+          strokeBeforeLayerId || "at bottom"
+        );
       }
 
       mapInstance.addLayer(
@@ -514,7 +541,7 @@ export default function PolygonsLayer({
       mapInstance.setFeatureState(
         {
           source: POLYGONS_SOURCE_ID,
-          id: selectedPolygon?.id || selectedPolygon,
+          id: selectedPolygon,
         },
         { selected: true }
       );
@@ -525,7 +552,7 @@ export default function PolygonsLayer({
         mapInstance.setFeatureState(
           {
             source: POLYGONS_SOURCE_ID,
-            id: selectedPolygon?.id || selectedPolygon,
+            id: selectedPolygon,
           },
           { selected: false }
         );
