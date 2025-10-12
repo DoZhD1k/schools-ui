@@ -139,37 +139,43 @@ export const SchoolsTable = ({
             <thead className="bg-slate-50 sticky top-0 z-10">
               <tr className="border-b border-slate-200/50">
                 <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                  Наименование
+                  Наименование школы
                 </th>
-                <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                  Район
+                <th className="text-center p-6 text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-100">
+                  Общий рейтинг ↓
                 </th>
-                <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                  Общий рейтинг
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  За 1-четверть
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  За 2-четверть
+                </th>
+                <th className="text-center p-6 text-sm font-semibold text-slate-700">
+                  За 3-четверть
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
                   Качество знаний
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                  Квалификация педагогов
+                  Динамика результатов
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                  Безопасность
+                  Квалификация педагогов
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
                   Оснащенность
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                  Динамика результатов школы
+                  Развитие талантов
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
                   Профилактика нарушений
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                  Рейтинг GIS
+                  Инклюзивное образование
                 </th>
                 <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                  Паспорт организации
+                  Просмотр паспорта
                 </th>
               </tr>
             </thead>
@@ -196,59 +202,47 @@ export const SchoolsTable = ({
                       </div>
                     </div>
                   </td>
-                  <td className="p-6">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                      {school.district}
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center text-sm text-white">
-                      {getColoredPercentage(school.digital_rating)}
-                    </div>
+                  <td className="p-6 text-center">
+                    {getColoredPercentage(school.digital_rating)}
                   </td>
                   <td className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-8 bg-blue-50 text-white rounded-lg font-semibold text-sm">
-                      {getColoredPercentage(school.academic_results_rating)}
-                    </div>
+                    {getColoredPercentage(70)}
                   </td>
                   <td className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
-                      {getColoredPercentage(
-                        school.pedagogical_potential_rating
-                      )}
-                    </div>
+                    {getColoredPercentage(75)}
                   </td>
                   <td className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-8 bg-purple-50 text-white rounded-lg font-semibold text-sm">
-                      {getColoredPercentage(school.safety_climate_rating)}
-                    </div>
+                    {getColoredPercentage(80)}
                   </td>
                   <td className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
-                      {getColoredPercentage(school.infrastructure_rating)}
-                    </div>
+                    {getColoredPercentage(school.academic_results_rating)}
                   </td>
                   <td className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-8 bg-amber-50 text-white rounded-lg font-semibold text-sm">
-                      {getColoredPercentage(school.graduate_success_rating)}
-                    </div>
-                  </td>
-                  <td className="p-6">
-                    <div className="flex items-center text-sm text-white">
-                      {getColoredPercentage(school.penalty_rating)}
-                    </div>
+                    {getColoredPercentage(school.graduate_success_rating)}
                   </td>
                   <td className="p-6 text-center">
-                    <div className="inline-flex items-center justify-center w-12 h-8 bg-emerald-50 text-white rounded-lg font-semibold text-sm">
-                      {getColoredRating(school.gis_rating)}
-                    </div>
+                    {getColoredPercentage(school.pedagogical_potential_rating)}
+                  </td>
+                  <td className="p-6 text-center">
+                    {getColoredPercentage(school.infrastructure_rating)}
+                  </td>
+                  <td className="p-6 text-center">
+                    {getColoredPercentage(85)}
+                  </td>
+                  <td className="p-6 text-center">
+                    {getColoredPercentage(school.penalty_rating)}
+                  </td>
+                  <td className="p-6 text-center">
+                    {getColoredPercentage(90)}
                   </td>
                   <td className="p-6 text-center">
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onView(school)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onView(school);
+                      }}
                       className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
                     >
                       <Eye className="h-4 w-4 mr-1" />

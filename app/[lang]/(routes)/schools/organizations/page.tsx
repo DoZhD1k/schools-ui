@@ -8,15 +8,9 @@ import {
   School,
   Building2,
   Users,
-  MapPin,
   LogOut,
   Search,
-  Eye,
   Download,
-  User,
-  Phone,
-  Grid3X3,
-  List,
   ChevronLeft,
   ChevronRight,
   BarChart3,
@@ -33,13 +27,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 
 import { IntegratedSchoolsService } from "@/services/integrated-schools.service";
 import {
   StatCard,
-  OrganizationCard,
   OrganizationsTable,
   type OrganizationData,
 } from "@/components/schools/organizations";
@@ -73,8 +65,9 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Пользователь");
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("all");
-  const [viewMode, setViewMode] = useState<"cards" | "table">("table");
+  // Убрали выбор вида - всегда таблица
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState("nameRu");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -83,10 +76,12 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
 
   // Инициализация сервиса
-  const ITEMS_PER_PAGE = 12;
+  const ITEMS_PER_PAGE = 10;
 
   // Функция для конвертации School в формат организаций
-  const convertToOrganizationData = (school: any): OrganizationData => {
+  const convertToOrganizationData = (
+    school: Record<string, any>
+  ): OrganizationData => {
     return {
       id: school.id.toString(),
       nameRu: school.nameRu,
@@ -130,15 +125,28 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
   };
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Сбрасываем страницу при изменении поиска
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Сбрасываем страницу при изменении района
+  }, [selectedDistrict]);
+
+  useEffect(() => {
     const fetchOrganizations = async () => {
       try {
         setIsLoadingOrgs(true);
 
         // Используем IntegratedSchoolsService вместо прямых fetch запросов
-        const filters: any = {};
+        const filters: Record<string, string> = {};
 
-        if (searchTerm) {
-          filters.search = searchTerm;
+        if (debouncedSearchTerm) {
+          filters.search = debouncedSearchTerm;
         }
 
         if (selectedDistrict !== "all") {
@@ -165,7 +173,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
     };
 
     fetchOrganizations();
-  }, [currentPage, selectedDistrict, searchTerm]);
+  }, [currentPage, selectedDistrict, debouncedSearchTerm]);
 
   useEffect(() => {
     if (accessToken) {
@@ -388,84 +396,51 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
           />
         </div>
 
-        {/* Search and Filters */}
-        <div className="mb-8">
-          <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-            <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-            <div className="relative p-6">
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
-                <div className="flex-1 max-w-lg">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                      placeholder="Поиск по названию, району, директору, адресу..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10 bg-white/50 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] focus:bg-white/80"
-                    />
-                  </div>
+        {/* Organizations Content with Integrated Filters */}
+        <div className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/80 backdrop-blur-md shadow-lg">
+          {/* Integrated Filters Header */}
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 p-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+              <div className="flex-1 max-w-lg">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Поиск по названию, району, директору, адресу..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200/60 focus:bg-white/90"
+                  />
                 </div>
-                <div className="flex items-center space-x-3">
-                  <div className="flex items-center bg-white/50 backdrop-blur-sm rounded-xl border border-[hsl(0_0%_100%_/_0.2)] p-1">
-                    <Button
-                      variant={viewMode === "table" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setViewMode("table")}
-                      className={`h-8 px-3 ${
-                        viewMode === "table"
-                          ? "bg-white shadow-sm text-slate-700"
-                          : "text-slate-600 hover:text-slate-700"
-                      }`}
-                    >
-                      <List className="h-4 w-4 mr-1" />
-                      Таблица
-                    </Button>
-                    <Button
-                      variant={viewMode === "cards" ? "default" : "ghost"}
-                      size="sm"
-                      onClick={() => setViewMode("cards")}
-                      className={`h-8 px-3 ${
-                        viewMode === "cards"
-                          ? "bg-white shadow-sm text-slate-700"
-                          : "text-slate-600 hover:text-slate-700"
-                      }`}
-                    >
-                      <Grid3X3 className="h-4 w-4 mr-1" />
-                      Карточки
-                    </Button>
-                  </div>
-                  <Select
-                    value={selectedDistrict}
-                    onValueChange={setSelectedDistrict}
-                  >
-                    <SelectTrigger className="w-48 bg-white/50 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] focus:bg-white/80">
-                      <SelectValue placeholder="Выберите район" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {districts.map((district) => (
-                        <SelectItem key={district.id} value={district.id}>
-                          {district.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button
-                    variant="outline"
-                    onClick={handleExport}
-                    className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Экспорт
-                  </Button>
-                </div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Select
+                  value={selectedDistrict}
+                  onValueChange={setSelectedDistrict}
+                >
+                  <SelectTrigger className="w-48 bg-white/70 backdrop-blur-sm border-slate-200/60 focus:bg-white/90">
+                    <SelectValue placeholder="Выберите район" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {districts.map((district) => (
+                      <SelectItem key={district.id} value={district.id}>
+                        {district.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  onClick={handleExport}
+                  className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Экспорт
+                </Button>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* Organizations Content */}
-        {viewMode === "table" ? (
+          {/* Table */}
           <OrganizationsTable
             organizations={currentOrganizations}
             onView={handleViewOrganization}
@@ -473,98 +448,77 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
             sortBy={sortBy}
             sortOrder={sortOrder}
           />
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-            {currentOrganizations.map((org) => (
-              <OrganizationCard
-                key={org.id}
-                organization={org}
-                onView={handleViewOrganization}
-              />
-            ))}
-          </div>
-        )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="mt-12">
-            <div className="relative overflow-hidden">
-              <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-              <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-              <div className="relative p-6">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-slate-600">
-                    Показано {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
-                    {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} из{" "}
-                    {totalCount}
-                  </div>
+          {/* Integrated Pagination */}
+          {totalPages > 1 && (
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600">
+                  Показано {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
+                  {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} из{" "}
+                  {totalCount}
+                </div>
 
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(currentPage - 1)}
-                      disabled={currentPage === 1}
-                      className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
-                    >
-                      <ChevronLeft className="h-4 w-4 mr-1" />
-                      Назад
-                    </Button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Назад
+                  </Button>
 
-                    <div className="flex items-center space-x-1">
-                      {Array.from(
-                        { length: Math.min(5, totalPages) },
-                        (_, i) => {
-                          let pageNumber;
-                          if (totalPages <= 5) {
-                            pageNumber = i + 1;
-                          } else if (currentPage <= 3) {
-                            pageNumber = i + 1;
-                          } else if (currentPage >= totalPages - 2) {
-                            pageNumber = totalPages - 4 + i;
-                          } else {
-                            pageNumber = currentPage - 2 + i;
+                  <div className="flex items-center space-x-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNumber;
+                      if (totalPages <= 5) {
+                        pageNumber = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNumber = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNumber = totalPages - 4 + i;
+                      } else {
+                        pageNumber = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <Button
+                          key={pageNumber}
+                          variant={
+                            currentPage === pageNumber ? "default" : "outline"
                           }
-
-                          return (
-                            <Button
-                              key={pageNumber}
-                              variant={
-                                currentPage === pageNumber
-                                  ? "default"
-                                  : "outline"
-                              }
-                              size="sm"
-                              onClick={() => goToPage(pageNumber)}
-                              className={`w-10 h-10 p-0 ${
-                                currentPage === pageNumber
-                                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                                  : "bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
-                              }`}
-                            >
-                              {pageNumber}
-                            </Button>
-                          );
-                        }
-                      )}
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => goToPage(currentPage + 1)}
-                      disabled={currentPage === totalPages}
-                      className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
-                    >
-                      Далее
-                      <ChevronRight className="h-4 w-4 ml-1" />
-                    </Button>
+                          size="sm"
+                          onClick={() => goToPage(pageNumber)}
+                          className={`w-10 h-10 p-0 ${
+                            currentPage === pageNumber
+                              ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                              : "bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
+                          }`}
+                        >
+                          {pageNumber}
+                        </Button>
+                      );
+                    })}
                   </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
+                  >
+                    Далее
+                    <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {currentOrganizations.length === 0 && !isLoadingOrgs && (
           <div className="relative overflow-hidden mt-12">
@@ -581,6 +535,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
               <Button
                 onClick={() => {
                   setSearchTerm("");
+                  setDebouncedSearchTerm("");
                   setSelectedDistrict("all");
                 }}
                 className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white"

@@ -77,69 +77,11 @@ export class IntegratedSchoolsService {
           params
         );
 
-        // Конвертируем данные в формат School
-        const schools = await Promise.all(
-          academicData.results.map(async (academicSchool) => {
-            try {
-              // Получаем дополнительные данные для более точного рейтинга
-              const [
-                goldenSign,
-                teacherCategory,
-                videoSurveillance,
-                securitySystem,
-                scienceRoom,
-              ] = await Promise.allSettled([
-                realApiService.getGoldenSign({ school: academicSchool.school }),
-                realApiService.getTeacherCategory({
-                  school: academicSchool.school,
-                }),
-                realApiService.getVideoSurveillance({
-                  school: academicSchool.school,
-                }),
-                realApiService.getSecuritySystem({
-                  school: academicSchool.school,
-                }),
-                realApiService.getScienceRoomAnalysis({
-                  school: academicSchool.school,
-                }),
-              ]);
-
-              const additionalData = {
-                goldenSign:
-                  goldenSign.status === "fulfilled"
-                    ? goldenSign.value.results[0]
-                    : undefined,
-                teacherCategory:
-                  teacherCategory.status === "fulfilled"
-                    ? teacherCategory.value.results[0]
-                    : undefined,
-                videoSurveillance:
-                  videoSurveillance.status === "fulfilled"
-                    ? videoSurveillance.value.results[0]
-                    : undefined,
-                securitySystem:
-                  securitySystem.status === "fulfilled"
-                    ? securitySystem.value.results[0]
-                    : undefined,
-                scienceRoom:
-                  scienceRoom.status === "fulfilled"
-                    ? scienceRoom.value.results[0]
-                    : undefined,
-              };
-
-              return adaptAcademicPerformanceToSchool(
-                academicSchool,
-                additionalData
-              );
-            } catch (error) {
-              console.warn(
-                `Error processing school ${academicSchool.school}:`,
-                error
-              );
-              return adaptAcademicPerformanceToSchool(academicSchool);
-            }
-          })
-        );
+        // Конвертируем данные в формат School БЕЗ дополнительных запросов
+        // Дополнительные данные загружаются только при просмотре паспорта конкретной школы
+        const schools = academicData.results.map((academicSchool) => {
+          return adaptAcademicPerformanceToSchool(academicSchool);
+        });
 
         // Применяем фильтры
         let filteredSchools = schools;
@@ -176,15 +118,21 @@ export class IntegratedSchoolsService {
   static async getSchool(id: string): Promise<School | null> {
     try {
       const schoolId = parseInt(id);
+
+      // ИСПРАВЛЕНИЕ: Получаем ВСЕ школы и ищем нужную по ID
       const academicData = await realApiService.getAcademicPerformance({
-        school: schoolId,
+        limit: 1000,
       });
 
-      if (academicData.results.length === 0) {
+      // Ищем школу с нужным ID
+      const schoolData = academicData.results.find(
+        (school) => school.school === schoolId
+      );
+
+      if (!schoolData) {
+        console.error(`School with ID ${schoolId} not found`);
         return null;
       }
-
-      const schoolData = academicData.results[0];
 
       // Получаем дополнительные данные
       const additionalData = await realApiService.getSchoolData(schoolId);
@@ -209,15 +157,24 @@ export class IntegratedSchoolsService {
   ): Promise<SchoolPassportData | null> {
     try {
       const schoolId = parseInt(id);
+
+      // ИСПРАВЛЕНИЕ: Получаем ВСЕ школы и ищем нужную по ID
+      // Потому что параметр school в API не работает правильно
       const academicData = await realApiService.getAcademicPerformance({
-        school: schoolId,
+        limit: 1000,
       });
 
-      if (academicData.results.length === 0) {
+      // Ищем школу с нужным ID
+      const schoolData = academicData.results.find(
+        (school) => school.school === schoolId
+      );
+
+      if (!schoolData) {
+        console.error(`School with ID ${schoolId} not found`);
         return null;
       }
 
-      const schoolData = academicData.results[0];
+      console.log(`Found school: ${schoolData.name_of_the_organization} (ID: ${schoolId})`);
 
       // Получаем все данные для паспорта
       const additionalData = await realApiService.getSchoolData(schoolId);

@@ -1,9 +1,25 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, Eye, MapPin, Phone, User } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Building2,
+  Eye,
+  User,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+} from "lucide-react";
 import { OrganizationData } from "./organization-card";
 
 interface OrganizationsTableProps {
@@ -21,197 +37,167 @@ export const OrganizationsTable = ({
   sortBy,
   sortOrder,
 }: OrganizationsTableProps) => {
+  const [selectedOrgs, setSelectedOrgs] = useState<Set<string>>(new Set());
+
   const getRatingZoneColor = (zone: string) => {
     switch (zone) {
       case "green":
-        return "bg-emerald-500";
+        return "#22c55e";
       case "yellow":
-        return "bg-amber-500";
+        return "#eab308";
       case "red":
-        return "bg-red-500";
+        return "#ef4444";
       default:
-        return "bg-gray-500";
+        return "#6b7280";
     }
   };
 
-  const getZoneName = (zone: string) => {
-    switch (zone) {
-      case "green":
-        return "Зеленая зона";
-      case "yellow":
-        return "Желтая зона";
-      case "red":
-        return "Красная зона";
-      default:
-        return "Неизвестно";
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedOrgs(new Set(organizations.map((org) => org.id)));
+    } else {
+      setSelectedOrgs(new Set());
     }
   };
 
-  const SortHeader = ({
+  const handleSelectOrg = (orgId: string, checked: boolean) => {
+    const newSelected = new Set(selectedOrgs);
+    if (checked) {
+      newSelected.add(orgId);
+    } else {
+      newSelected.delete(orgId);
+    }
+    setSelectedOrgs(newSelected);
+  };
+
+  const SortButton = ({
     column,
     children,
   }: {
     column: string;
     children: React.ReactNode;
   }) => (
-    <th
-      className="text-left p-6 text-sm font-semibold text-slate-700 cursor-pointer hover:bg-slate-50/50 transition-colors"
+    <div
+      className="flex items-center space-x-2 cursor-pointer hover:text-blue-600 transition-colors select-none"
       onClick={() => onSort(column)}
     >
-      <div className="flex items-center space-x-1">
-        <span>{children}</span>
-        {sortBy === column && (
-          <div className="text-xs">{sortOrder === "asc" ? "↑" : "↓"}</div>
-        )}
-      </div>
-    </th>
+      <span>{children}</span>
+      {sortBy === column ? (
+        sortOrder === "asc" ? (
+          <ArrowUp className="h-4 w-4" />
+        ) : (
+          <ArrowDown className="h-4 w-4" />
+        )
+      ) : (
+        <ArrowUpDown className="h-4 w-4 opacity-50" />
+      )}
+    </div>
   );
 
   return (
-    <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-      <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-      <div className="relative overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-slate-200/50">
-              <SortHeader column="nameRu">Организация</SortHeader>
-              <SortHeader column="district">Район</SortHeader>
-              <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Контакты
-              </th>
-              <SortHeader column="currentRating">Рейтинг</SortHeader>
-              <SortHeader column="currentStudents">Учащиеся</SortHeader>
-              <th className="text-left p-6 text-sm font-semibold text-slate-700">
-                Заполненность
-              </th>
-              <th className="text-center p-6 text-sm font-semibold text-slate-700">
-                Действия
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {organizations.map((org, index) => (
-              <tr
-                key={org.id}
-                className={`border-b border-slate-200/30 hover:bg-slate-50/50 transition-colors ${
-                  index % 2 === 0 ? "bg-slate-25/30" : ""
-                }`}
-              >
-                <td className="p-6">
-                  <div>
-                    <div className="font-semibold text-slate-800 mb-1">
-                      {org.nameRu}
-                    </div>
-                    <div className="text-sm text-slate-600 mb-1">
-                      {org.nameKz}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {org.organizationType}
-                    </div>
-                    <div className="text-xs text-slate-500 mt-1 flex items-center">
-                      <Building2 className="h-3 w-3 mr-1" />
-                      {org.address}
-                    </div>
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader className="bg-gradient-to-r from-slate-50 to-slate-100">
+          <TableRow className="border-slate-200">
+            <TableHead className="w-12">
+              <Checkbox
+                checked={
+                  selectedOrgs.size === organizations.length &&
+                  organizations.length > 0
+                }
+                onCheckedChange={handleSelectAll}
+              />
+            </TableHead>
+            <TableHead className="min-w-[250px]">
+              <SortButton column="nameRu">Организация</SortButton>
+            </TableHead>
+            <TableHead className="w-32">
+              <SortButton column="district">Район</SortButton>
+            </TableHead>
+            <TableHead className="w-32 text-center">
+              <SortButton column="currentRating">Рейтинг</SortButton>
+            </TableHead>
+            <TableHead className="w-28 text-center">
+              <SortButton column="currentStudents">Учащиеся</SortButton>
+            </TableHead>
+            <TableHead className="w-24 text-center">Действия</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {organizations.map((org) => (
+            <TableRow
+              key={org.id}
+              className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 transition-all duration-200"
+            >
+              <TableCell>
+                <Checkbox
+                  checked={selectedOrgs.has(org.id)}
+                  onCheckedChange={(checked) =>
+                    handleSelectOrg(org.id, !!checked)
+                  }
+                />
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm leading-tight mb-1">
+                    {org.nameRu}
+                  </p>
+                  <p className="text-xs text-slate-500 mb-1">
+                    {org.organizationType}
+                  </p>
+                  <div className="flex items-center text-xs text-slate-500">
+                    <User className="h-3 w-3 mr-1" />
+                    <span className="truncate">{org.director}</span>
                   </div>
-                </td>
-                <td className="p-6">
-                  <div className="flex items-center text-sm text-slate-600">
-                    <MapPin className="h-4 w-4 mr-2 text-slate-400" />
-                    {org.district}
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm text-slate-600">{org.district}</div>
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge
+                  variant="secondary"
+                  style={{
+                    backgroundColor: getRatingZoneColor(org.ratingZone),
+                  }}
+                  className="text-white font-bold px-2 py-1 text-sm"
+                >
+                  {org.currentRating}%
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <div>
+                  <div className="font-semibold text-slate-900 text-sm">
+                    {org.currentStudents.toLocaleString()}
                   </div>
-                </td>
-                <td className="p-6">
-                  <div className="space-y-1">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <User className="h-4 w-4 mr-2 text-slate-400" />
-                      <span className="truncate max-w-xs">{org.director}</span>
-                    </div>
-                    {org.phone && (
-                      <div className="flex items-center text-sm text-slate-600">
-                        <Phone className="h-4 w-4 mr-2 text-slate-400" />
-                        {org.phone}
-                      </div>
-                    )}
+                  <div className="text-xs text-slate-500">
+                    / {org.capacity.toLocaleString()}
                   </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="flex flex-col items-center space-y-1">
-                    <div
-                      className={`w-10 h-10 rounded-xl ${getRatingZoneColor(
-                        org.ratingZone
-                      )} flex items-center justify-center shadow-sm`}
-                    >
-                      <span className="text-white font-bold text-sm">
-                        {org.currentRating}
-                      </span>
-                    </div>
-                    <Badge
-                      className={`text-xs font-medium ${getRatingZoneColor(
-                        org.ratingZone
-                      )} text-white border-0`}
-                    >
-                      {getZoneName(org.ratingZone)}
-                    </Badge>
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <div className="text-center">
-                    <div className="font-semibold text-slate-800">
-                      {org.currentStudents.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      из {org.capacity.toLocaleString()}
-                    </div>
-                  </div>
-                </td>
-                <td className="p-6">
-                  <div className="w-full">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-600">
-                        {Math.round((org.currentStudents / org.capacity) * 100)}
-                        %
-                      </span>
-                    </div>
-                    <div className="w-full bg-slate-200 rounded-full h-2">
-                      <div
-                        className={`h-2 rounded-full transition-all duration-300 ${
-                          (org.currentStudents / org.capacity) * 100 > 90
-                            ? "bg-red-500"
-                            : (org.currentStudents / org.capacity) * 100 > 75
-                            ? "bg-amber-500"
-                            : "bg-emerald-500"
-                        }`}
-                        data-width={`${Math.min(
-                          (org.currentStudents / org.capacity) * 100,
-                          100
-                        )}%`}
-                        style={{
-                          width: `${Math.min(
-                            (org.currentStudents / org.capacity) * 100,
-                            100
-                          )}%`,
-                        }}
-                      ></div>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-6 text-center">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onView(org)}
-                    className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    Паспорт
-                  </Button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onView(org)}
+                  className="h-8 px-2 text-xs"
+                >
+                  <Eye className="h-3 w-3" />
+                </Button>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+
+      {organizations.length === 0 && (
+        <div className="text-center py-12">
+          <Building2 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-500">
+            Организации не найдены. Попробуйте изменить параметры фильтрации.
+          </p>
+        </div>
+      )}
     </div>
   );
 };

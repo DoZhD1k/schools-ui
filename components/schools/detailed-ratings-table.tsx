@@ -58,6 +58,8 @@ export default function DetailedRatingsTable({
     column: "currentRating",
     order: "desc",
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10; // Показываем 20 школ на странице
 
   // Применение фильтров и сортировки
   const filteredSchools = schools
@@ -157,7 +159,14 @@ export default function DetailedRatingsTable({
     setFilters({});
     setSearchTerm("");
     setSelectedSchools(new Set());
+    setCurrentPage(1);
   };
+
+  // Пагинация
+  const totalPages = Math.ceil(filteredSchools.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedSchools = filteredSchools.slice(startIndex, endIndex);
 
   const SortButton = ({
     column,
@@ -356,7 +365,7 @@ export default function DetailedRatingsTable({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSchools.map((school) => (
+              {paginatedSchools.map((school) => (
                 <TableRow
                   key={school.id}
                   className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 dark:hover:from-slate-800 dark:hover:to-slate-700 transition-all duration-200"
@@ -462,6 +471,69 @@ export default function DetailedRatingsTable({
             <p className="text-slate-500 dark:text-slate-400">
               Школы не найдены. Попробуйте изменить параметры фильтрации.
             </p>
+          </div>
+        )}
+
+        {/* Pagination */}
+        {filteredSchools.length > 0 && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
+            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+              Показано {startIndex + 1}–
+              {Math.min(endIndex, filteredSchools.length)} из{" "}
+              {filteredSchools.length} школ
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="border-slate-300 dark:border-slate-600"
+              >
+                Назад
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 7) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 4) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 3) {
+                    pageNum = totalPages - 6 + i;
+                  } else {
+                    pageNum = currentPage - 3 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`min-w-[40px] ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white hover:bg-blue-700"
+                          : "border-slate-300 dark:border-slate-600"
+                      }`}
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                }
+                disabled={currentPage === totalPages}
+                className="border-slate-300 dark:border-slate-600"
+              >
+                Вперед
+              </Button>
+            </div>
           </div>
         )}
       </CardContent>

@@ -4,115 +4,60 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { AnimatePresence } from "framer-motion";
-import SchoolDetailPopup from "@/components/schools/school-detail-popup";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getRatingZone } from "@/lib/rating-utils";
+import { GraduationCap, LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-import {
-  School,
-  Trophy,
-  Users,
-  Star,
-  TrendingDown,
-  Target,
-  TrendingUp,
-  AlertTriangle,
-  CheckCircle,
-} from "lucide-react";
-
-import {
-  StatCard,
-  SchoolCard,
-  SchoolsTable,
-  SearchAndFilters,
-  Charts,
-  PageHeader,
-  WelcomeBanner,
-  EmptyState,
-  type CombinedSchool,
-} from "@/components/schools/rating";
+// Импорт компонентов schools-rating
+import DistrictSchoolsChart from "@/components/schools/district-schools-chart";
+import RatingZonesChart from "@/components/schools/rating-zones-chart";
+import RatingIndicators from "@/components/schools/rating-indicators";
+import DetailedRatingsTable from "@/components/schools/detailed-ratings-table";
 
 // Import integrated service
 import { IntegratedSchoolsService } from "@/services/integrated-schools.service";
-
-// Type definitions
-interface StatsData {
-  totalSchools: number;
-  topRated: number;
-  averageRating: number;
-  totalStudents: number;
-  totalTeachers: number;
-  lowPerformance: number;
-}
-
-interface DistrictData {
-  id: string;
-  name: string;
-  schools: number;
-  highRated: number;
-  mediumRated: number;
-  lowRated: number;
-}
+import { Card, CardContent } from "@/components/ui/card";
+import { School, District, DistrictStats } from "@/types/schools";
 
 interface SchoolsPageProps {
   params: { lang: string };
 }
 
 function SchoolsRatingPage({ params }: SchoolsPageProps) {
-  const { logout } = useAuth();
+  const { logout, accessToken } = useAuth();
 
   // State management
-  const [schools, setSchools] = useState<CombinedSchool[]>([]);
-  const [stats, setStats] = useState<StatsData | null>(null);
-  const [districts, setDistricts] = useState<DistrictData[]>([]);
+  const [schools, setSchools] = useState<School[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
+  const [districtStats, setDistrictStats] = useState<DistrictStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedDistrict, setSelectedDistrict] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
-  const [selectedSchool, setSelectedSchool] = useState<CombinedSchool | null>(
-    null
-  );
-  const [showDetailPopup, setShowDetailPopup] = useState(false);
+  const [userName, setUserName] = useState<string>("Пользователь");
 
-  // Rating info helper function
-  const getRatingInfo = (rating: number | null | undefined) => {
-    if (!rating) {
-      return {
-        color: "text-gray-500",
-        bgColor: "bg-gray-100",
-        icon: AlertTriangle,
-      };
+  // Decode JWT to get username
+  useEffect(() => {
+    if (accessToken) {
+      try {
+        const base64Url = accessToken.split(".")[1];
+        const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split("")
+            .map(function (c) {
+              return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join("")
+        );
+        const decoded = JSON.parse(jsonPayload);
+        if (decoded && decoded.sub) {
+          const email = decoded.sub;
+          const name = email.split("@")[0];
+          setUserName(name.charAt(0).toUpperCase() + name.slice(1));
+        }
+      } catch (error) {
+        console.error("Error decoding JWT:", error);
+      }
     }
-
-    const zone = getRatingZone(rating);
-    switch (zone) {
-      case "green":
-        return {
-          color: "text-green-600",
-          bgColor: "bg-green-100",
-          icon: CheckCircle,
-        };
-      case "yellow":
-        return {
-          color: "text-yellow-600",
-          bgColor: "bg-yellow-100",
-          icon: TrendingUp,
-        };
-      case "red":
-        return {
-          color: "text-red-600",
-          bgColor: "bg-red-100",
-          icon: AlertTriangle,
-        };
-      default:
-        return {
-          color: "text-gray-500",
-          bgColor: "bg-gray-100",
-          icon: AlertTriangle,
-        };
-    }
-  };
+  }, [accessToken]);
 
   // Data fetching
   useEffect(() => {
@@ -120,125 +65,17 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
       try {
         setLoading(true);
 
-        // Попробуем загрузить данные, но с fallback на моковые данные
-        try {
-          // Загружаем школы
-          const schoolsData = await IntegratedSchoolsService.getSchools();
+        // Загружаем все данные параллельно
+        const [schoolsData, districtsData, districtStatsData] =
+          await Promise.all([
+            IntegratedSchoolsService.getSchools(),
+            IntegratedSchoolsService.getDistricts(),
+            IntegratedSchoolsService.getDistrictStats(),
+          ]);
 
-          // Загружаем статистику
-          const overallStats = await IntegratedSchoolsService.getOverallStats();
-
-          // Загружаем данные о районах
-          const districtStatsData =
-            await IntegratedSchoolsService.getDistrictStats();
-
-          // Преобразуем данные о школах в нужный формат
-          const transformedSchools = schoolsData.map((school) => ({
-            id: parseInt(school.id),
-            name_of_the_organization: school.nameRu,
-            district: school.district.nameRu,
-            types_of_educational_institutions: school.organizationType,
-            gis_rating: school.currentRating,
-            academic_results_rating: school.indicators.K,
-            pedagogical_potential_rating: school.indicators.P,
-            safety_climate_rating: school.indicators.M,
-            infrastructure_rating: school.indicators.A,
-            graduate_success_rating: school.indicators.C,
-            penalty_rating: school.indicators.V,
-            digital_rating: school.currentRating,
-          }));
-
-          // Преобразуем статистику
-          const transformedStats = {
-            totalSchools: overallStats.totalSchools,
-            topRated: overallStats.greenZone,
-            averageRating: overallStats.averageRating,
-            totalStudents: schoolsData.length * 300, // Приблизительный подсчет
-            totalTeachers: 0, // TODO: Добавить подсчет учителей
-            lowPerformance: overallStats.redZone,
-          };
-
-          // Преобразуем данные о районах
-          const transformedDistricts = districtStatsData.map((d) => ({
-            id: d.district.id,
-            name: d.district.nameRu,
-            schools: d.totalSchools,
-            highRated: d.greenZone,
-            mediumRated: d.yellowZone,
-            lowRated: d.redZone,
-          }));
-
-          setSchools(transformedSchools as CombinedSchool[]);
-          setStats(transformedStats);
-          setDistricts(transformedDistricts);
-        } catch (apiError) {
-          console.warn("API недоступен, используем моковые данные:", apiError);
-
-          // Fallback на моковые данные
-          const mockSchools = [
-            {
-              id: 1,
-              name_of_the_organization:
-                "Школа-лицей №165 имени Гани Муратбаева",
-              types_of_educational_institutions: "Государственное учреждение",
-              district: "Алмалинский район",
-              gis_rating: 4.5,
-              academic_results_rating: 85,
-              pedagogical_potential_rating: 90,
-              safety_climate_rating: 88,
-              infrastructure_rating: 82,
-              graduate_success_rating: 87,
-              penalty_rating: 95,
-              digital_rating: 86,
-            },
-            {
-              id: 2,
-              name_of_the_organization: "Гимназия №148",
-              types_of_educational_institutions: "Государственное учреждение",
-              district: "Бостандыкский район",
-              gis_rating: 4.2,
-              academic_results_rating: 78,
-              pedagogical_potential_rating: 82,
-              safety_climate_rating: 85,
-              infrastructure_rating: 75,
-              graduate_success_rating: 80,
-              penalty_rating: 90,
-              digital_rating: 79,
-            },
-          ];
-
-          const mockStats = {
-            totalSchools: 450,
-            topRated: 85,
-            averageRating: 4.1,
-            totalStudents: 125000,
-            totalTeachers: 8500,
-            lowPerformance: 25,
-          };
-
-          const mockDistricts = [
-            {
-              id: "almalinsky",
-              name: "Алмалинский район",
-              schools: 65,
-              highRated: 15,
-              mediumRated: 35,
-              lowRated: 15,
-            },
-            {
-              id: "bostandyksky",
-              name: "Бостандыкский район",
-              schools: 72,
-              highRated: 18,
-              mediumRated: 40,
-              lowRated: 14,
-            },
-          ];
-
-          setSchools(mockSchools);
-          setStats(mockStats);
-          setDistricts(mockDistricts);
-        }
+        setSchools(schoolsData);
+        setDistricts(districtsData);
+        setDistrictStats(districtStatsData);
       } catch (error) {
         console.error("Error loading data:", error);
       } finally {
@@ -249,30 +86,37 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
     loadData();
   }, []);
 
-  // Filtered data
-  const filteredSchools = schools.filter((school) => {
-    const matchesSearch = school.name_of_the_organization
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesDistrict =
-      selectedDistrict === "all" || school.district === selectedDistrict;
-    return matchesSearch && matchesDistrict;
-  });
+  const handleExport = async (exportSchools: School[], title: string) => {
+    try {
+      const exportData = await IntegratedSchoolsService.exportSchools();
 
-  // Event handlers
-  const handleSchoolSelect = (school: CombinedSchool) => {
-    setSelectedSchool(school);
-    setShowDetailPopup(true);
+      console.log("Экспорт данных:", {
+        title,
+        count: exportSchools.length,
+        data: exportData,
+      });
+
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataUri =
+        "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+      const exportFileDefaultName = `${title.replace(
+        /[^a-zA-Z0-9]/g,
+        "_"
+      )}.json`;
+      const linkElement = document.createElement("a");
+      linkElement.setAttribute("href", dataUri);
+      linkElement.setAttribute("download", exportFileDefaultName);
+      linkElement.click();
+
+      alert(`Экспорт "${title}" выполнен успешно!`);
+    } catch (err) {
+      console.error("Ошибка экспорта:", err);
+      alert("Ошибка при экспорте данных");
+    }
   };
 
-  const handleCloseDetailPopup = () => {
-    setShowDetailPopup(false);
-    setSelectedSchool(null);
-  };
-
-  const handleReset = () => {
-    setSearchTerm("");
-    setSelectedDistrict("all");
+  const handleViewPassport = (schoolId: string) => {
+    window.location.href = `/${params.lang}/schools/passport/${schoolId}`;
   };
 
   if (loading) {
@@ -284,126 +128,206 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
-      <PageHeader
-        userName="Пользователь"
-        onLogout={logout}
-        lang={params.lang}
-      />
-
-      <div className="max-w-7xl mx-auto p-4 pt-8 space-y-8">
-        <WelcomeBanner /> {/* Statistics Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
-            <StatCard
-              title="Всего школ"
-              value={stats.totalSchools}
-              subtitle="учреждений"
-              icon={<School className="h-4 w-4" />}
-              variant="default"
-            />
-            <StatCard
-              title="Топ рейтинг"
-              value={stats.topRated}
-              subtitle="школ"
-              icon={<Trophy className="h-4 w-4" />}
-              variant="success"
-            />
-            <StatCard
-              title="Ср. рейтинг"
-              value={stats.averageRating}
-              subtitle="балл"
-              icon={<Star className="h-4 w-4" />}
-              variant="warning"
-            />
-            <StatCard
-              title="Учеников"
-              value={stats.totalStudents}
-              subtitle="человек"
-              icon={<Users className="h-4 w-4" />}
-              variant="default"
-            />
-            <StatCard
-              title="Учителей"
-              value={stats.totalTeachers}
-              subtitle="человек"
-              icon={<Target className="h-4 w-4" />}
-              variant="default"
-            />
-            <StatCard
-              title="Низкий рейтинг"
-              value={stats.lowPerformance}
-              subtitle="школ"
-              icon={<TrendingDown className="h-4 w-4" />}
-              variant="danger"
-            />
-          </div>
-        )}
-        <Tabs defaultValue="schools" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="schools">Список школ</TabsTrigger>
-            <TabsTrigger value="analytics">Аналитика</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="schools" className="space-y-6">
-            <SearchAndFilters
-              searchTerm={searchTerm}
-              setSearchTerm={setSearchTerm}
-              selectedDistrict={selectedDistrict}
-              setSelectedDistrict={setSelectedDistrict}
-              viewMode={viewMode}
-              setViewMode={setViewMode}
-              onExport={() => console.log("Export")}
-            />
-
-            {filteredSchools.length === 0 ? (
-              <EmptyState onReset={handleReset} />
-            ) : viewMode === "cards" ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredSchools.map((school) => (
-                  <SchoolCard
-                    key={school.id}
-                    school={school}
-                    onView={handleSchoolSelect}
-                  />
-                ))}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      {/* Header */}
+      <header className="relative bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20"></div>
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/60 shadow-lg transform hover:scale-105 transition-all duration-300">
+                  <GraduationCap className="h-6 w-6 text-slate-700" />
+                </div>
               </div>
-            ) : (
-              <SchoolsTable
-                schools={filteredSchools}
-                setSchools={setSchools}
-                onRowClick={handleSchoolSelect}
-                onView={handleSchoolSelect}
-                selectedDistrict={selectedDistrict}
-                searchQuery={searchTerm}
-              />
-            )}
-          </TabsContent>
+              <div>
+                <h1 className="text-xl font-bold text-slate-800">
+                  Рейтинг школ
+                </h1>
+                <p className="text-sm text-slate-600 font-medium">
+                  Система мониторинга образовательных организаций
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20"></div>
+                <Avatar className="relative h-9 w-9 bg-white/90 backdrop-blur-sm border border-slate-200/60">
+                  <AvatarFallback className="bg-transparent text-slate-700 text-sm font-semibold">
+                    {userName.charAt(0).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                className="text-slate-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm border border-transparent hover:border-red-200/50 rounded-xl transition-all duration-300"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Выйти
+              </Button>
+            </div>
+          </div>
+        </div>
+      </header>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <Charts
-              data={districts.map((d) => ({
-                district: d.name,
-                count: d.schools,
-                high: d.highRated,
-                medium: d.mediumRated,
-                low: d.lowRated,
-              }))}
-            />
-          </TabsContent>
-        </Tabs>
+      {/* Hero Section */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-slate-700/90">
+        <div className="absolute inset-0">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)] bg-[length:60px_60px]"></div>
+        </div>
+        <div className="absolute inset-0">
+          <div className="absolute top-20 left-20 w-40 h-40 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
+          <div className="absolute bottom-20 right-20 w-60 h-60 bg-white/3 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-white/7 rounded-full blur-xl animate-pulse delay-2000"></div>
+        </div>
+        <div className="relative container mx-auto px-6 py-16">
+          <div className="text-center max-w-4xl mx-auto">
+            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+              Общий рейтинг школ
+            </h1>
+            <p className="text-xl md:text-2xl text-white/90 font-medium leading-relaxed">
+              Модуль для анализа рейтинга образовательных организаций города
+              Алматы
+            </p>
+          </div>
+        </div>
       </div>
 
-      <AnimatePresence>
-        {showDetailPopup && selectedSchool && (
-          <SchoolDetailPopup
-            isOpen={showDetailPopup}
-            school={selectedSchool}
-            onClose={handleCloseDetailPopup}
-            getRatingInfo={getRatingInfo}
-          />
+      <div className="container mx-auto p-8 space-y-10">
+        {/* Общие показатели */}
+        {schools && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200/60 bg-gradient-to-br from-white/80 to-slate-50/60 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <GraduationCap className="h-8 w-8 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                      Всего школ
+                    </p>
+                    <p className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                      {schools.length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-bold text-lg">
+                      {schools.length > 0
+                        ? Math.round(
+                            (schools.filter((s) => s.ratingZone === "green")
+                              .length /
+                              schools.length) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                      Зеленая зона
+                    </p>
+                    <p className="text-3xl font-bold text-emerald-600">
+                      {schools.filter((s) => s.ratingZone === "green").length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-bold text-lg">
+                      {schools.length > 0
+                        ? Math.round(
+                            (schools.filter((s) => s.ratingZone === "yellow")
+                              .length /
+                              schools.length) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                      Желтая зона
+                    </p>
+                    <p className="text-3xl font-bold text-amber-600">
+                      {schools.filter((s) => s.ratingZone === "yellow").length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-red-200/60 bg-gradient-to-br from-red-50/80 to-white backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-bold text-lg">
+                      {schools.length > 0
+                        ? Math.round(
+                            (schools.filter((s) => s.ratingZone === "red")
+                              .length /
+                              schools.length) *
+                              100
+                          )
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                      Красная зона
+                    </p>
+                    <p className="text-3xl font-bold text-red-600">
+                      {schools.filter((s) => s.ratingZone === "red").length}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
-      </AnimatePresence>
+
+        {/* Графики распределения школ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <DistrictSchoolsChart
+            districtStats={districtStats}
+            schools={schools}
+            onExport={handleExport}
+          />
+          <RatingZonesChart
+            districtStats={districtStats}
+            schools={schools}
+            onExport={handleExport}
+          />
+        </div>
+
+        {/* Круговые индикаторы рейтинга */}
+        <RatingIndicators schools={schools} onExport={handleExport} />
+
+        {/* Главная таблица рейтингов с пагинацией */}
+        <DetailedRatingsTable
+          schools={schools}
+          districts={districts}
+          onExport={handleExport}
+          onViewPassport={handleViewPassport}
+        />
+      </div>
     </div>
   );
 }
