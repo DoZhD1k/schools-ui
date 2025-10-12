@@ -30,6 +30,7 @@ import {
 import Link from "next/link";
 
 import { IntegratedSchoolsService } from "@/services/integrated-schools.service";
+import { School as SchoolType } from "@/types/schools";
 import {
   StatCard,
   OrganizationsTable,
@@ -79,9 +80,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
   const ITEMS_PER_PAGE = 10;
 
   // Функция для конвертации School в формат организаций
-  const convertToOrganizationData = (
-    school: Record<string, any>
-  ): OrganizationData => {
+  const convertToOrganizationData = (school: SchoolType): OrganizationData => {
     return {
       id: school.id.toString(),
       nameRu: school.nameRu,
@@ -108,72 +107,9 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
     { id: "auezovsky", name: "Ауэзовский район" },
   ];
 
-  const stats = {
-    totalOrganizations: totalCount,
-    greenZone: organizations.filter((o) => o.ratingZone === "green").length,
-    yellowZone: organizations.filter((o) => o.ratingZone === "yellow").length,
-    redZone: organizations.filter((o) => o.ratingZone === "red").length,
-    totalStudents: organizations.reduce((sum, o) => sum + o.currentStudents, 0),
-    totalCapacity: organizations.reduce((sum, o) => sum + o.capacity, 0),
-    averageRating:
-      organizations.length > 0
-        ? Math.round(
-            organizations.reduce((sum, o) => sum + o.currentRating, 0) /
-              organizations.length
-          )
-        : 0,
-  };
-
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-      setCurrentPage(1); // Сбрасываем страницу при изменении поиска
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
-  useEffect(() => {
-    setCurrentPage(1); // Сбрасываем страницу при изменении района
-  }, [selectedDistrict]);
-
-  useEffect(() => {
-    const fetchOrganizations = async () => {
-      try {
-        setIsLoadingOrgs(true);
-
-        // Используем IntegratedSchoolsService вместо прямых fetch запросов
-        const filters: Record<string, string> = {};
-
-        if (debouncedSearchTerm) {
-          filters.search = debouncedSearchTerm;
-        }
-
-        if (selectedDistrict !== "all") {
-          filters.districtId = selectedDistrict;
-        }
-
-        // Загружаем все школы с фильтрами
-        const schools = await IntegratedSchoolsService.getSchools(filters);
-
-        // Пагинация на клиенте
-        const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-        const endIndex = startIndex + ITEMS_PER_PAGE;
-        const paginatedSchools = schools.slice(startIndex, endIndex);
-
-        // Конвертируем в формат организаций
-        const orgsData = paginatedSchools.map(convertToOrganizationData);
-        setOrganizations(orgsData);
-        setTotalCount(schools.length);
-      } catch (error) {
-        console.error("Ошибка загрузки организаций:", error);
-      } finally {
-        setIsLoadingOrgs(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, [currentPage, selectedDistrict, debouncedSearchTerm]);
+    setCurrentPage(1); // Сбрасываем страницу при изменении поиска или района
+  }, [selectedDistrict, debouncedSearchTerm]);
 
   useEffect(() => {
     if (accessToken) {
@@ -193,11 +129,111 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  const filteredOrganizations = organizations; // Фильтрация теперь происходит на сервере
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+      setCurrentPage(1); // Сбрасываем страницу при изменении поиска
+    }, 500);
 
-  // Пагинация теперь управляется сервером
-  const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
-  const currentOrganizations = filteredOrganizations;
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    setCurrentPage(1); // Сбрасываем страницу при изменении района
+  }, [selectedDistrict]);
+
+  useEffect(() => {
+    const fetchOrganizations = async () => {
+      try {
+        setIsLoadingOrgs(true);
+
+        // Загружаем ВСЕ школы без серверной фильтрации
+        // Фильтрацию будем делать на клиенте, как на странице рейтинга
+        const schools = await IntegratedSchoolsService.getSchools();
+
+        // Конвертируем в формат организаций
+        const orgsData = schools.map(convertToOrganizationData);
+        setOrganizations(orgsData);
+        setTotalCount(schools.length);
+      } catch (error) {
+        console.error("Ошибка загрузки организаций:", error);
+      } finally {
+        setIsLoadingOrgs(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, []); // Убираем зависимости - загружаем данные только один раз
+
+  // Применяем фильтрацию локально, как на странице рейтинга
+  const filteredAndSearchedOrganizations = organizations.filter((org) => {
+    // Фильтр по району
+    if (selectedDistrict !== "all") {
+      const districtName = districts.find(
+        (d) => d.id === selectedDistrict
+      )?.name;
+      if (districtName && org.district !== districtName) {
+        return false;
+      }
+    }
+
+    // Фильтр по поиску (как в DetailedRatingsTable)
+    if (debouncedSearchTerm) {
+      const searchLower = debouncedSearchTerm.toLowerCase();
+      if (
+        !org.nameRu.toLowerCase().includes(searchLower) &&
+        !org.nameKz.toLowerCase().includes(searchLower) &&
+        !org.address.toLowerCase().includes(searchLower) &&
+        !(org.director && org.director.toLowerCase().includes(searchLower))
+      ) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Пагинация на клиенте
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const currentOrganizations = filteredAndSearchedOrganizations.slice(
+    startIndex,
+    endIndex
+  );
+  const totalPages = Math.ceil(
+    filteredAndSearchedOrganizations.length / ITEMS_PER_PAGE
+  );
+
+  // Обновляем статистику на основе отфильтрованных данных
+  const stats = {
+    totalOrganizations: filteredAndSearchedOrganizations.length,
+    greenZone: filteredAndSearchedOrganizations.filter(
+      (o) => o.ratingZone === "green"
+    ).length,
+    yellowZone: filteredAndSearchedOrganizations.filter(
+      (o) => o.ratingZone === "yellow"
+    ).length,
+    redZone: filteredAndSearchedOrganizations.filter(
+      (o) => o.ratingZone === "red"
+    ).length,
+    totalStudents: filteredAndSearchedOrganizations.reduce(
+      (sum, o) => sum + o.currentStudents,
+      0
+    ),
+    totalCapacity: filteredAndSearchedOrganizations.reduce(
+      (sum, o) => sum + o.capacity,
+      0
+    ),
+    averageRating:
+      filteredAndSearchedOrganizations.length > 0
+        ? Math.round(
+            filteredAndSearchedOrganizations.reduce(
+              (sum, o) => sum + o.currentRating,
+              0
+            ) / filteredAndSearchedOrganizations.length
+          )
+        : 0,
+  };
 
   const handleViewOrganization = (org: OrganizationData) => {
     window.location.href = `/${params.lang}/schools/passport/${org.id}`;
@@ -213,7 +249,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
   };
 
   const handleExport = () => {
-    console.log("Экспорт данных:", filteredOrganizations);
+    console.log("Экспорт данных:", filteredAndSearchedOrganizations);
     alert("Экспорт выполнен успешно!");
   };
 
@@ -239,7 +275,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
       </div>
 
       {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
+      {/* <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -301,7 +337,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Welcome Banner */}
       <div className="relative overflow-hidden">
@@ -324,6 +360,11 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
                 Полная база данных образовательных учреждений с детальной
                 информацией о рейтингах, контактах и статистике.
               </p>
+              <p className="text-sm text-white/70 mb-6 leading-relaxed">
+                Общий рейтинг рассчитывается по взвешенной формуле с учетом
+                качества знаний, динамики результатов, развития талантов,
+                квалификации педагогов и других показателей.
+              </p>
               <div className="flex items-center space-x-6 text-white/90">
                 <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-6 py-3 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_0_rgba(34,197,94,0.6)]"></div>
@@ -338,7 +379,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
         </div>
       </div>
 
-      <main className="relative container mx-auto px-6 py-12">
+      <main className="relative mx-auto px-6 py-12">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-12">
           <StatCard

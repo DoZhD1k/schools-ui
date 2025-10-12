@@ -259,7 +259,7 @@ export default function RatingIndicators({
 
       {/* Модальное окно со списком школ по шкале */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+        <DialogContent className="min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
           <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
               {modalTitle}

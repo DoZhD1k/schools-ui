@@ -20,7 +20,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
+import {
+  adminApiService,
+  User,
+  UserFilters,
+} from "@/services/admin-api.service";
 
 interface AdminUsersPageProps {
   params: { lang: string };
@@ -46,17 +52,6 @@ function decodeJWT(token: string) {
   }
 }
 
-// Типы для пользователя
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  organization: string;
-  lastLogin: string;
-}
-
 interface UserCardProps {
   user: User;
   onEdit: (user: User) => void;
@@ -79,17 +74,11 @@ const UserCard = ({ user, onEdit, onDelete, onView }: UserCardProps) => {
     }
   };
 
-  const getRoleColor = (role: string) => {
-    switch (role) {
-      case "Администратор":
-        return "bg-purple-100 text-purple-800 border-purple-200";
-      case "Управление образования":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      case "Организации образования":
-        return "bg-emerald-100 text-emerald-800 border-emerald-200";
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200";
-    }
+  const getRoleColor = (roles: number[]) => {
+    // Простая логика для определения цвета на основе количества ролей
+    if (roles.length === 0) return "bg-gray-100 text-gray-800 border-gray-200";
+    if (roles.length === 1) return "bg-blue-100 text-blue-800 border-blue-200";
+    return "bg-purple-100 text-purple-800 border-purple-200";
   };
 
   return (
@@ -103,34 +92,35 @@ const UserCard = ({ user, onEdit, onDelete, onView }: UserCardProps) => {
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20"></div>
               <Avatar className="relative h-12 w-12 bg-white/90 backdrop-blur-sm border border-[hsl(0_0%_100%_/_0.2)]">
                 <AvatarFallback className="bg-transparent text-slate-700 font-semibold">
-                  {user.name?.charAt(0).toUpperCase() ||
-                    user.email?.charAt(0).toUpperCase()}
+                  {user.first_name?.charAt(0).toUpperCase() ||
+                    user.username?.charAt(0).toUpperCase() ||
+                    "?"}
                 </AvatarFallback>
               </Avatar>
             </div>
             <div>
               <h3 className="text-lg font-bold text-slate-800">
-                {user.name || "Не указано"}
+                {`${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+                  user.username}
               </h3>
               <p className="text-sm text-slate-600">{user.email}</p>
               <div className="flex items-center space-x-2 mt-2">
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getStatusColor(
-                    user.status
+                    user.school_profile?.status || "inactive"
                   )}`}
                 >
-                  {user.status === "active"
+                  {user.school_profile?.status === "active"
                     ? "Активен"
-                    : user.status === "inactive"
-                    ? "Неактивен"
-                    : "Ожидание"}
+                    : "Неактивен"}
                 </span>
                 <span
                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${getRoleColor(
-                    user.role
+                    user.roles
                   )}`}
                 >
-                  {user.role}
+                  {user.roles.length}{" "}
+                  {user.roles.length === 1 ? "роль" : "ролей"}
                 </span>
               </div>
             </div>
@@ -166,13 +156,27 @@ const UserCard = ({ user, onEdit, onDelete, onView }: UserCardProps) => {
           <div>
             <span className="text-slate-500">Организация:</span>
             <p className="font-medium text-slate-800">
-              {user.organization || "Не указана"}
+              {user.school_profile?.organization || "Не указана"}
             </p>
           </div>
           <div>
-            <span className="text-slate-500">Последний вход:</span>
+            <span className="text-slate-500">Позиция:</span>
             <p className="font-medium text-slate-800">
-              {user.lastLogin || "Никогда"}
+              {user.school_profile?.position || "Не указана"}
+            </p>
+          </div>
+          <div>
+            <span className="text-slate-500">Район:</span>
+            <p className="font-medium text-slate-800">
+              {user.school_profile?.district || "Не указан"}
+            </p>
+          </div>
+          <div>
+            <span className="text-slate-500">Дата регистрации:</span>
+            <p className="font-medium text-slate-800">
+              {user.date_joined
+                ? new Date(user.date_joined).toLocaleDateString("ru-RU")
+                : "Не указана"}
             </p>
           </div>
         </div>
@@ -186,53 +190,54 @@ function AdminUsersPage({ params }: AdminUsersPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Администратор");
   const [searchTerm, setSearchTerm] = useState("");
-  const [users] = useState([
-    {
-      id: 1,
-      name: "Иван Иванов",
-      email: "ivan@education.kz",
-      role: "Администратор",
-      status: "active",
-      organization: "Министерство образования",
-      lastLogin: "2 часа назад",
-    },
-    {
-      id: 2,
-      name: "Мария Петрова",
-      email: "maria@school1.kz",
-      role: "Управление образования",
-      status: "active",
-      organization: "Управление образования г. Алматы",
-      lastLogin: "1 день назад",
-    },
-    {
-      id: 3,
-      name: "Алексей Сидоров",
-      email: "alex@gymnasium5.kz",
-      role: "Организации образования",
-      status: "active",
-      organization: "МБОУ Гимназия №5",
-      lastLogin: "3 дня назад",
-    },
-    {
-      id: 4,
-      name: "Анна Козлова",
-      email: "anna@lyceum3.kz",
-      role: "Организации образования",
-      status: "inactive",
-      organization: "МБОУ Лицей №3",
-      lastLogin: "Никогда",
-    },
-    {
-      id: 5,
-      name: "Дмитрий Новиков",
-      email: "dmitry@school7.kz",
-      role: "Организации образования",
-      status: "pending",
-      organization: "МБОУ Школа №7",
-      lastLogin: "Никогда",
-    },
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
+  const limit = 20;
+
+  // Загрузка пользователей с API
+  const loadUsers = async (page: number = 1, search: string = "") => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const filters: UserFilters = {
+        limit,
+        offset: (page - 1) * limit,
+      };
+
+      if (search.trim()) {
+        filters.search = search.trim();
+      }
+
+      const response = await adminApiService.getUsers(filters);
+      setUsers(response.results);
+      setTotalUsers(response.count);
+    } catch (err) {
+      console.error("Error loading users:", err);
+      setError("Не удалось загрузить список пользователей");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadUsers(currentPage, searchTerm);
+  }, [currentPage]);
+
+  // Поиск с задержкой
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (currentPage === 1) {
+        loadUsers(1, searchTerm);
+      } else {
+        setCurrentPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (accessToken) {
@@ -252,23 +257,31 @@ function AdminUsersPage({ params }: AdminUsersPageProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  const filteredUsers = users.filter(
-    (user) =>
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.organization.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   const handleViewUser = (user: User) => {
     console.log("View user:", user);
+    // TODO: Открыть модальное окно с детальной информацией
   };
 
   const handleEditUser = (user: User) => {
     console.log("Edit user:", user);
+    // TODO: Перенаправить на страницу редактирования
   };
 
-  const handleDeleteUser = (user: User) => {
-    console.log("Delete user:", user);
+  const handleDeleteUser = async (user: User) => {
+    if (
+      window.confirm(
+        `Вы уверены, что хотите удалить пользователя ${user.username}?`
+      )
+    ) {
+      try {
+        await adminApiService.deleteUser(user.id);
+        // Перезагрузить список пользователей
+        loadUsers(currentPage, searchTerm);
+      } catch (err) {
+        console.error("Error deleting user:", err);
+        alert("Не удалось удалить пользователя");
+      }
+    }
   };
 
   if (isLoading) {
@@ -314,7 +327,7 @@ function AdminUsersPage({ params }: AdminUsersPageProps) {
                   Управление пользователями
                 </h1>
                 <p className="text-sm text-slate-600 font-medium">
-                  {filteredUsers.length} пользователей
+                  {users.length} пользователей
                 </p>
               </div>
             </div>
@@ -405,7 +418,7 @@ function AdminUsersPage({ params }: AdminUsersPageProps) {
 
         {/* Users Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredUsers.map((user) => (
+          {users.map((user) => (
             <UserCard
               key={user.id}
               user={user}
@@ -416,7 +429,7 @@ function AdminUsersPage({ params }: AdminUsersPageProps) {
           ))}
         </div>
 
-        {filteredUsers.length === 0 && (
+        {users.length === 0 && (
           <div className="relative overflow-hidden mt-12">
             <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
             <div className="absolute inset-0 rounded-3xl shadow-lg"></div>

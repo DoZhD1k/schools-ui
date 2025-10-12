@@ -91,12 +91,12 @@ export default function SchoolDetailPopup({
           >
             {/* Header */}
             <div className="relative bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-6 text-white">
-              <button
+              <Button
                 className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
                 onClick={onClose}
               >
                 <X className="w-5 h-5" />
-              </button>
+              </Button>
               <div className="flex items-start gap-4">
                 <div className="p-3 bg-white/10 rounded-xl">
                   <School className="w-8 h-8" />

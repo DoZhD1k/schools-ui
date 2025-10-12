@@ -184,7 +184,7 @@ export default function RatingZonesChart({
 
       {/* Модальное окно со списком школ зоны */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+        <DialogContent className="min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
           <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
               {modalTitle}
@@ -210,36 +210,36 @@ export default function RatingZonesChart({
             </div>
 
             {/* Таблица школ */}
-            <div className="overflow-x-auto bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-              <table className="w-full table-auto">
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+              <table className="w-full table-fixed">
                 <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
                   <tr className="border-b border-slate-200 dark:border-slate-600">
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-12">
                       №
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-48">
                       Наименование школы
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-32">
                       Район
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-40">
                       Адрес
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      Текущий рейтинг
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-24">
+                      Текущий
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      За 3-четверть
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-20">
+                      3-чет
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      За 2-четверть
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-20">
+                      2-чет
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      За 1-четверть
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-20">
+                      1-чет
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      Общий годовой рейтинг
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-24">
+                      Годовой
                     </th>
                   </tr>
                 </thead>
@@ -249,29 +249,33 @@ export default function RatingZonesChart({
                       key={school.id}
                       className="border-b border-slate-200 dark:border-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 dark:hover:from-slate-800 dark:hover:to-slate-700 transition-all duration-200"
                     >
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-medium">
+                      <td className="p-2 text-slate-700 dark:text-slate-300 font-medium text-sm">
                         {index + 1}
                       </td>
-                      <td className="p-4">
-                        <p className="font-semibold text-slate-900 dark:text-slate-100">
-                          {school.nameRu}
-                        </p>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                          {school.organizationType}
-                        </p>
-                      </td>
-                      <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
-                        {school.district.nameRu}
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
-                          <div className="p-1 rounded-full bg-gradient-to-r from-blue-100 to-emerald-100 dark:from-blue-900 dark:to-emerald-900">
-                            <MapPin className="h-3 w-3 text-blue-600 dark:text-blue-400" />
-                          </div>
-                          <span className="font-medium">{school.address}</span>
+                      <td className="p-2">
+                        <div className="w-48 overflow-hidden">
+                          <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm break-words">
+                            {school.nameRu}
+                          </p>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium truncate">
+                            {school.organizationType}
+                          </p>
                         </div>
                       </td>
-                      <td className="p-4">
+                      <td className="p-2 font-medium text-slate-700 dark:text-slate-300 text-sm">
+                        {school.district.nameRu}
+                      </td>
+                      <td className="p-2">
+                        <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
+                          <div className="p-1 rounded-full bg-gradient-to-r from-blue-100 to-emerald-100 dark:from-blue-900 dark:to-emerald-900">
+                            <MapPin className="h-2 w-2 text-blue-600 dark:text-blue-400" />
+                          </div>
+                          <span className="font-medium truncate">
+                            {school.address}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="p-2">
                         <Badge
                           variant="secondary"
                           style={{
@@ -279,28 +283,28 @@ export default function RatingZonesChart({
                               school.ratingZone
                             ),
                           }}
-                          className="text-white font-bold shadow-lg"
+                          className="text-white font-bold text-xs"
                         >
                           {school.currentRating}%
                         </Badge>
                       </td>
-                      <td className="p-4">
-                        <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-900 rounded-lg font-bold text-purple-700 dark:text-purple-300">
+                      <td className="p-2">
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {school.q3Rating}%
                         </span>
                       </td>
-                      <td className="p-4">
-                        <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-emerald-100 to-emerald-200 dark:from-emerald-800 dark:to-emerald-900 rounded-lg font-bold text-emerald-700 dark:text-emerald-300">
+                      <td className="p-2">
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {school.q2Rating}%
                         </span>
                       </td>
-                      <td className="p-4">
-                        <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-900 rounded-lg font-bold text-blue-700 dark:text-blue-300">
+                      <td className="p-2">
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {school.q1Rating}%
                         </span>
                       </td>
-                      <td className="p-4">
-                        <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-amber-100 to-amber-200 dark:from-amber-800 dark:to-amber-900 rounded-lg font-bold text-amber-700 dark:text-amber-300">
+                      <td className="p-2">
+                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
                           {school.yearlyRating}%
                         </span>
                       </td>

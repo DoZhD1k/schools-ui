@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, use } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
@@ -21,6 +21,12 @@ import {
   Minus,
   BookOpen,
   Award,
+  Monitor,
+  Shield,
+  Camera,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -42,13 +48,16 @@ import {
   Cell,
 } from "recharts";
 
-import { IntegratedSchoolsService } from "@/services/integrated-schools.service";
+import {
+  SchoolPassportService,
+  SchoolPassportData,
+} from "@/services/school-passport.service";
 
 interface SchoolPassportPageProps {
-  params: {
+  params: Promise<{
     id: string;
     lang: string;
-  };
+  }>;
 }
 
 // Утилита для декодирования JWT токена
@@ -75,9 +84,12 @@ function decodeJWT(token: string) {
 
 function SchoolPassportPage({ params }: SchoolPassportPageProps) {
   const { accessToken, logout } = useAuth();
+  const resolvedParams = use(params);
   const [isLoading, setIsLoading] = useState(true);
   const [userName, setUserName] = useState<string>("Пользователь");
-  const [passportData, setPassportData] = useState<any>(null);
+  const [passportData, setPassportData] = useState<SchoolPassportData | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -86,9 +98,9 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
         setIsLoading(true);
         setError(null);
 
-        // Загружаем данные паспорта школы
-        const passport = await IntegratedSchoolsService.getSchoolPassport(
-          params.id
+        // Загружаем данные паспорта школы используя новый сервис
+        const passport = await SchoolPassportService.getSchoolPassport(
+          resolvedParams.id
         );
 
         if (!passport) {
@@ -99,14 +111,16 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
         setPassportData(passport);
       } catch (err) {
         console.error("Ошибка загрузки паспорта школы:", err);
-        setError("Не удалось загрузить данные школы. Проверьте подключение к API.");
+        setError(
+          "Не удалось загрузить данные школы. Проверьте подключение к API."
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchSchoolPassport();
-  }, [params.id]);
+  }, [resolvedParams.id]);
 
   useEffect(() => {
     if (accessToken) {
@@ -153,6 +167,13 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
     }
   };
 
+  // Функция для определения зоны по рейтингу
+  const getRatingZoneByScore = (rating: number): string => {
+    if (rating >= 86) return "green";
+    if (rating >= 50) return "yellow";
+    return "red";
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -173,68 +194,67 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
   }
 
   const {
-    school,
+    basicInfo,
     qualityKnowledge,
-    resultsDynamics,
+    schoolResults,
     talentDevelopment,
-    teacherQualification,
-    teacherAchievements,
+    teacherClassification,
+    schoolEquipment,
+    internationalRelations,
+    security,
+    educationalWork,
+    inclusion,
   } = passportData;
 
   // Подготовка данных для графиков
   const qualityData = [
-    { year: "1-й год", value: qualityKnowledge.year1 },
-    { year: "2-й год", value: qualityKnowledge.year2 },
-    { year: "3-й год", value: qualityKnowledge.year3 },
+    { year: "Отлично", value: qualityKnowledge.excellent },
+    { year: "Хорошо", value: qualityKnowledge.good },
+    { year: "Удовл.", value: qualityKnowledge.satisfactory },
   ];
 
   const talentData = [
     {
-      level: "Школьный",
-      participants: talentDevelopment.schoolLevel.participants,
-      winners: talentDevelopment.schoolLevel.winners,
-    },
-    {
       level: "Городской",
-      participants: talentDevelopment.cityLevel.participants,
-      winners: talentDevelopment.cityLevel.winners,
-    },
-    {
-      level: "Областной",
-      participants: talentDevelopment.regionalLevel.participants,
-      winners: talentDevelopment.regionalLevel.winners,
+      participants: talentDevelopment.cityWinners,
+      winners: talentDevelopment.cityWinners,
     },
     {
       level: "Республиканский",
-      participants: talentDevelopment.nationalLevel.participants,
-      winners: talentDevelopment.nationalLevel.winners,
+      participants: talentDevelopment.republicWinners,
+      winners: talentDevelopment.republicWinners,
     },
     {
       level: "Международный",
-      participants: talentDevelopment.internationalLevel.participants,
-      winners: talentDevelopment.internationalLevel.winners,
+      participants: talentDevelopment.internationalWinners,
+      winners: talentDevelopment.internationalWinners,
     },
   ];
 
   const categoryData = [
     {
-      name: "Высшая",
-      value: teacherQualification.categories.highest,
+      name: "Учитель-мастер",
+      value: teacherClassification.teacherMaster,
       color: "#22c55e",
     },
     {
-      name: "Первая",
-      value: teacherQualification.categories.first,
+      name: "Учитель-исследователь",
+      value: teacherClassification.teacherResearcher,
       color: "#3b82f6",
     },
     {
-      name: "Вторая",
-      value: teacherQualification.categories.second,
+      name: "Учитель-эксперт",
+      value: teacherClassification.teacherExpert,
       color: "#eab308",
     },
     {
-      name: "Без категории",
-      value: teacherQualification.categories.noCategory,
+      name: "Учитель-модератор",
+      value: teacherClassification.teacherModerator,
+      color: "#f59e0b",
+    },
+    {
+      name: "Учитель",
+      value: teacherClassification.teacher,
       color: "#ef4444",
     },
   ];
@@ -249,7 +269,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
       </div>
 
       {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
+      {/* <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -269,7 +289,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Link href={`/${params.lang}/dashboard`}>
+              <Link href={`/${resolvedParams.lang}/dashboard`}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -279,7 +299,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   Главная
                 </Button>
               </Link>
-              <Link href={`/${params.lang}/schools/organizations`}>
+              <Link href={`/${resolvedParams.lang}/schools/organizations`}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -310,7 +330,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* School Header */}
       <div className="relative overflow-hidden">
@@ -328,28 +348,28 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-6 lg:space-y-0">
               <div className="max-w-3xl">
                 <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
-                  {school.nameRu}
+                  {basicInfo.nameRu}
                 </h1>
                 <p className="text-xl text-white/90 mb-4 leading-relaxed">
-                  {school.nameKz}
+                  {basicInfo.nameKz}
                 </p>
                 <div className="flex flex-wrap items-center gap-4 text-white/90">
                   <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
                     <MapPin className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      {school.district.nameRu}
+                      {basicInfo.district}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
                     <Building2 className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      {school.organizationType}
+                      {basicInfo.organizationTypes}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
                     <Calendar className="h-4 w-4" />
                     <span className="text-sm font-medium">
-                      Основана в {school.foundedYear}
+                      Основана в {basicInfo.constructionYear || "н/д"}
                     </span>
                   </div>
                 </div>
@@ -357,16 +377,16 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
               <div className="text-center lg:text-right">
                 <div className="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-white/10 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] shadow-lg mb-4">
                   <span className="text-3xl font-bold text-white">
-                    {school.currentRating}
+                    {Math.round(basicInfo.overallRating)}
                   </span>
                 </div>
                 <div className="text-white/90">
                   <Badge
                     className={`${getRatingZoneColor(
-                      school.ratingZone
+                      getRatingZoneByScore(basicInfo.overallRating)
                     )} text-white border-0 text-sm px-4 py-2`}
                   >
-                    {getZoneName(school.ratingZone)}
+                    {getZoneName(getRatingZoneByScore(basicInfo.overallRating))}
                   </Badge>
                 </div>
               </div>
@@ -375,7 +395,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
         </div>
       </div>
 
-      <main className="relative container mx-auto px-6 py-12 space-y-12">
+      <main className="relative mx-auto px-6 py-12 space-y-12">
         {/* Основная информация */}
         <div className="relative overflow-hidden">
           <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
@@ -396,11 +416,11 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   <span className="font-bold text-slate-900">Адрес:</span>
                 </div>
                 <p className="text-slate-600 ml-12 font-medium leading-relaxed">
-                  {school.address}
+                  {basicInfo.address}
                 </p>
               </div>
 
-              {school.phone && (
+              {basicInfo.phone && (
                 <div className="space-y-3 p-6 bg-slate-50/60 rounded-xl border border-slate-200/60">
                   <div className="flex items-center space-x-3">
                     <div className="p-2 bg-emerald-100 rounded-lg">
@@ -409,7 +429,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                     <span className="font-bold text-slate-900">Телефон:</span>
                   </div>
                   <p className="text-slate-600 ml-12 font-medium">
-                    {school.phone}
+                    {basicInfo.phone}
                   </p>
                 </div>
               )}
@@ -422,7 +442,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   <span className="font-bold text-slate-900">Директор:</span>
                 </div>
                 <p className="text-slate-600 ml-12 font-medium">
-                  {school.director}
+                  {basicInfo.director || "Не указано"}
                 </p>
               </div>
 
@@ -436,7 +456,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   </span>
                 </div>
                 <p className="text-slate-600 ml-12 font-medium">
-                  {school.foundedYear}
+                  {basicInfo.constructionYear || "Не указано"}
                 </p>
               </div>
 
@@ -450,7 +470,8 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   </span>
                 </div>
                 <p className="text-slate-600 ml-12 font-medium">
-                  {school.capacity.toLocaleString()} учащихся
+                  {basicInfo.designCapacity?.toLocaleString() || "Не указано"}{" "}
+                  учащихся
                 </p>
               </div>
 
@@ -464,17 +485,27 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                   </span>
                 </div>
                 <p className="text-slate-600 ml-12 font-medium mb-3">
-                  {school.currentStudents.toLocaleString()} учащихся
+                  {basicInfo.currentStudentCount.toLocaleString()} учащихся
                 </p>
                 <div className="ml-12">
                   <Progress
-                    value={(school.currentStudents / school.capacity) * 100}
+                    value={
+                      basicInfo.designCapacity
+                        ? (basicInfo.currentStudentCount /
+                            basicInfo.designCapacity) *
+                          100
+                        : 0
+                    }
                     className="h-3 bg-slate-200"
                   />
                   <p className="text-xs text-slate-500 mt-2 font-semibold">
-                    {Math.round(
-                      (school.currentStudents / school.capacity) * 100
-                    )}
+                    {basicInfo.designCapacity
+                      ? Math.round(
+                          (basicInfo.currentStudentCount /
+                            basicInfo.designCapacity) *
+                            100
+                        )
+                      : 0}
                     % заполненности
                   </p>
                 </div>
@@ -524,35 +555,18 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                 <div className="text-center">
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <span className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
-                      {qualityKnowledge.year3}%
+                      {qualityKnowledge.qualityRating}%
                     </span>
                     <div className="p-2 bg-white rounded-lg shadow-md">
-                      {formatTrend(
-                        qualityKnowledge.year3,
-                        qualityKnowledge.year2
-                      )}
+                      <TrendingUp className="h-5 w-5 text-emerald-600" />
                     </div>
                   </div>
                   <p className="text-slate-600 font-semibold text-lg">
-                    Текущий показатель
+                    Рейтинг качества знаний
                   </p>
                   <p className="text-sm text-slate-500 mt-3 font-medium bg-white px-4 py-2 rounded-lg">
-                    Динамика:{" "}
-                    <span
-                      className={`font-bold ${
-                        qualityKnowledge.trend === "up"
-                          ? "text-emerald-600"
-                          : qualityKnowledge.trend === "down"
-                          ? "text-red-600"
-                          : "text-slate-600"
-                      }`}
-                    >
-                      {qualityKnowledge.trend === "up"
-                        ? "Рост"
-                        : qualityKnowledge.trend === "down"
-                        ? "Снижение"
-                        : "Стабильно"}
-                    </span>
+                    Отлично: {qualityKnowledge.excellent}%, Хорошо:{" "}
+                    {qualityKnowledge.good}%
                   </p>
                 </div>
               </div>
@@ -574,86 +588,60 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200/60">
                 <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {resultsDynamics.graduates}
+                  {schoolResults.graduatesCount}
                 </div>
                 <p className="text-sm text-slate-600 mb-3 font-semibold">
                   Выпускники
                 </p>
                 <div className="flex items-center justify-center gap-2">
-                  {formatTrend(
-                    resultsDynamics.graduates,
-                    resultsDynamics.graduates -
-                      resultsDynamics.yearOverYearChange.graduates
-                  )}
+                  <TrendingUp className="h-4 w-4 text-blue-600" />
                   <span className="text-xs text-slate-500 font-medium">
-                    {resultsDynamics.yearOverYearChange.graduates > 0
-                      ? "+"
-                      : ""}
-                    {resultsDynamics.yearOverYearChange.graduates}
+                    Текущий год
                   </span>
                 </div>
               </div>
 
               <div className="text-center p-6 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200/60">
                 <div className="text-3xl font-bold text-yellow-600 mb-2">
-                  {resultsDynamics.altynBelgi}
+                  {schoolResults.altynBelgiCount}
                 </div>
                 <p className="text-sm text-slate-600 mb-3 font-semibold">
                   Алтын белги
                 </p>
                 <div className="flex items-center justify-center gap-2">
-                  {formatTrend(
-                    resultsDynamics.altynBelgi,
-                    resultsDynamics.altynBelgi -
-                      resultsDynamics.yearOverYearChange.altynBelgi
-                  )}
+                  <Award className="h-4 w-4 text-yellow-600" />
                   <span className="text-xs text-slate-500 font-medium">
-                    {resultsDynamics.yearOverYearChange.altynBelgi > 0
-                      ? "+"
-                      : ""}
-                    {resultsDynamics.yearOverYearChange.altynBelgi}
+                    Золотые медали
                   </span>
                 </div>
               </div>
 
               <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200/60">
                 <div className="text-3xl font-bold text-green-600 mb-2">
-                  {resultsDynamics.averageEntScore}
+                  {schoolResults.averageUNTScore || "н/д"}
                 </div>
                 <p className="text-sm text-slate-600 mb-3 font-semibold">
                   Средний балл ЕНТ
                 </p>
                 <div className="flex items-center justify-center gap-2">
-                  {formatTrend(
-                    resultsDynamics.averageEntScore,
-                    resultsDynamics.averageEntScore -
-                      resultsDynamics.yearOverYearChange.averageEntScore
-                  )}
+                  <BookOpen className="h-4 w-4 text-green-600" />
                   <span className="text-xs text-slate-500 font-medium">
-                    {resultsDynamics.yearOverYearChange.averageEntScore > 0
-                      ? "+"
-                      : ""}
-                    {resultsDynamics.yearOverYearChange.averageEntScore}
+                    Академический результат
                   </span>
                 </div>
               </div>
 
               <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200/60">
                 <div className="text-3xl font-bold text-purple-600 mb-2">
-                  {resultsDynamics.grants}
+                  {schoolResults.grantReceiversCount}
                 </div>
                 <p className="text-sm text-slate-600 mb-3 font-semibold">
                   Гранты
                 </p>
                 <div className="flex items-center justify-center gap-2">
-                  {formatTrend(
-                    resultsDynamics.grants,
-                    resultsDynamics.grants -
-                      resultsDynamics.yearOverYearChange.grants
-                  )}
+                  <Award className="h-4 w-4 text-purple-600" />
                   <span className="text-xs text-slate-500 font-medium">
-                    {resultsDynamics.yearOverYearChange.grants > 0 ? "+" : ""}
-                    {resultsDynamics.yearOverYearChange.grants}
+                    Обладатели грантов
                   </span>
                 </div>
               </div>
@@ -661,89 +649,9 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
           </div>
         </div>
 
-        {/* Развитие талантов */}
-        <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-          <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-          <div className="relative p-8">
-            <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
-              <div className="w-8 h-8 bg-gradient-to-r from-amber-500 to-orange-500 rounded-xl mr-3 flex items-center justify-center">
-                <Award className="h-5 w-5 text-white" />
-              </div>
-              Развитие талантов (участие и победы в конкурсах)
-            </h2>
-            <div className="p-6 bg-slate-50/60 rounded-xl border border-slate-200/60">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={talentData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                  <XAxis dataKey="level" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="participants" fill="#3b82f6" name="Участники" />
-                  <Bar dataKey="winners" fill="#22c55e" name="Победители" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Квалификация педагогов */}
+        {/* Развитие талантов и Квалификация педагогов */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="relative overflow-hidden">
-            <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-            <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
-            <div className="relative p-8">
-              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
-                <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg mr-3 flex items-center justify-center">
-                  <User className="h-4 w-4 text-white" />
-                </div>
-                Квалификация педагогов
-              </h2>
-              <div className="space-y-6">
-                <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
-                  <ResponsiveContainer width="100%" height={200}>
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        dataKey="value"
-                        label={({ name, value }) => `${name}: ${value}`}
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                <div className="space-y-3">
-                  <p className="font-medium text-slate-800">
-                    Аттестация педагогов:
-                  </p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-600">
-                      Аттестованы:{" "}
-                      {teacherQualification.certifications.certified} из{" "}
-                      {teacherQualification.certifications.total}
-                    </span>
-                    <Badge className="bg-emerald-100 text-emerald-800">
-                      {teacherQualification.certifications.percentage}%
-                    </Badge>
-                  </div>
-                  <Progress
-                    value={teacherQualification.certifications.percentage}
-                    className="h-3 bg-slate-200"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Достижения педагогов */}
+          {/* Развитие талантов */}
           <div className="relative overflow-hidden">
             <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
             <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
@@ -752,50 +660,361 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
                 <div className="w-7 h-7 bg-gradient-to-r from-amber-500 to-orange-500 rounded-lg mr-3 flex items-center justify-center">
                   <Award className="h-4 w-4 text-white" />
                 </div>
-                Достижения педагогов
+                Развитие талантов
               </h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200/60">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {teacherAchievements.schoolLevel}
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium">
-                      Школьный уровень
+              <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
+                <ResponsiveContainer width="100%" height={250}>
+                  <BarChart data={talentData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                    <XAxis dataKey="level" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar
+                      dataKey="participants"
+                      fill="#3b82f6"
+                      name="Участники"
+                    />
+                    <Bar dataKey="winners" fill="#22c55e" name="Победители" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          {/* Квалификация педагогов */}
+          <div className="relative overflow-hidden">
+            <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
+            <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
+            <div className="relative p-8">
+              <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+                <div className="w-7 h-7 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg mr-3 flex items-center justify-center">
+                  <User className="h-4 w-4 text-white" />
+                </div>
+                Педагогический состав
+              </h2>
+
+              {/* Общая информация */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200/60">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-lg font-bold text-slate-800">
+                      Всего педагогов: {teacherClassification.total}
+                    </p>
+                    <p className="text-sm text-slate-600 mt-1">
+                      Распределение по квалификационным уровням
                     </p>
                   </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200/60">
-                    <div className="text-2xl font-bold text-green-600">
-                      {teacherAchievements.cityLevel}
+                  <div className="flex items-center">
+                    <div className="text-3xl font-bold text-blue-600">
+                      {teacherClassification.total}
                     </div>
-                    <p className="text-xs text-slate-600 font-medium">
-                      Городской уровень
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl border border-yellow-200/60">
-                    <div className="text-2xl font-bold text-yellow-600">
-                      {teacherAchievements.regionalLevel}
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium">
-                      Областной уровень
-                    </p>
-                  </div>
-                  <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200/60">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {teacherAchievements.nationalLevel}
-                    </div>
-                    <p className="text-xs text-slate-600 font-medium">
-                      Республиканский
-                    </p>
                   </div>
                 </div>
-                <div className="text-center p-4 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200/60">
-                  <div className="text-2xl font-bold text-red-600">
-                    {teacherAchievements.internationalLevel}
-                  </div>
-                  <p className="text-xs text-slate-600 font-medium">
-                    Международный уровень
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={90}
+                        dataKey="value"
+                        label={({ name, value, percent }) =>
+                          `${name}: ${value} (${(percent * 100).toFixed(1)}%)`
+                        }
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value, name) => [
+                          `${value} педагогов`,
+                          name,
+                        ]}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Детализация по уровням */}
+                {/* <div className="space-y-3">
+                  <p className="font-medium text-slate-800">
+                    Квалификационные уровни педагогов:
                   </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {categoryData.map((category, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-3 bg-white rounded-lg border border-slate-200/60 shadow-sm"
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div
+                            className="w-4 h-4 rounded-full"
+                            style={{ backgroundColor: category.color }}
+                          ></div>
+                          <span className="text-sm font-medium text-slate-700">
+                            {category.name}
+                          </span>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-lg font-bold text-slate-800">
+                            {category.value}
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            (
+                            {Math.round(
+                              (category.value / teacherClassification.total) *
+                                100
+                            )}
+                            %)
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div> */}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Оснащенность школы */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
+          <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
+          <div className="relative p-8">
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+              <div className="w-7 h-7 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg mr-3 flex items-center justify-center">
+                <Monitor className="h-4 w-4 text-white" />
+              </div>
+              Оснащенность школы
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200/60">
+                <div className="text-3xl font-bold text-purple-600 mb-2">
+                  {schoolEquipment.totalClassrooms}
+                </div>
+                <p className="text-sm text-slate-600 font-semibold">
+                  Всего кабинетов
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl border border-indigo-200/60">
+                <div className="text-3xl font-bold text-indigo-600 mb-2">
+                  {schoolEquipment.newModificationClassrooms}
+                </div>
+                <p className="text-sm text-slate-600 font-semibold">
+                  Новых/модернизированных
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl border border-pink-200/60">
+                <div className="text-3xl font-bold text-pink-600 mb-2">
+                  {Math.round(schoolEquipment.equipmentRating)}%
+                </div>
+                <p className="text-sm text-slate-600 font-semibold">
+                  Рейтинг оснащенности
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-slate-800 font-medium">
+                  Процент оснащенности кабинетов
+                </span>
+                <span className="text-lg font-bold text-purple-600">
+                  {Math.round(
+                    (schoolEquipment.newModificationClassrooms /
+                      schoolEquipment.totalClassrooms) *
+                      100
+                  )}
+                  %
+                </span>
+              </div>
+              <Progress
+                value={
+                  (schoolEquipment.newModificationClassrooms /
+                    schoolEquipment.totalClassrooms) *
+                  100
+                }
+                className="h-3 bg-slate-200"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Безопасность */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
+          <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
+          <div className="relative p-8">
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+              <div className="w-7 h-7 bg-gradient-to-r from-red-500 to-orange-500 rounded-lg mr-3 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-white" />
+              </div>
+              Безопасность
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center justify-between p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      security.videoSurveillanceSystem
+                        ? "bg-green-100"
+                        : "bg-red-100"
+                    }`}
+                  >
+                    <Camera
+                      className={`h-5 w-5 ${
+                        security.videoSurveillanceSystem
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">
+                    Видеонаблюдение
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  {security.videoSurveillanceSystem ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      security.turnstileSystem ? "bg-green-100" : "bg-red-100"
+                    }`}
+                  >
+                    <Users
+                      className={`h-5 w-5 ${
+                        security.turnstileSystem
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">
+                    Турникеты
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  {security.turnstileSystem ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between p-4 bg-slate-50/60 rounded-xl border border-slate-200/60">
+                <div className="flex items-center space-x-3">
+                  <div
+                    className={`p-2 rounded-lg ${
+                      security.warningSystem ? "bg-green-100" : "bg-red-100"
+                    }`}
+                  >
+                    <AlertTriangle
+                      className={`h-5 w-5 ${
+                        security.warningSystem
+                          ? "text-green-600"
+                          : "text-red-600"
+                      }`}
+                    />
+                  </div>
+                  <span className="text-sm font-medium text-slate-700">
+                    Система оповещения
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  {security.warningSystem ? (
+                    <CheckCircle className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <XCircle className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl border border-red-200/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-bold text-slate-800">
+                    Рейтинг безопасности
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    На основе систем безопасности
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-3xl font-bold text-red-600">
+                    {Math.round(security.securityRating)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Международные отношения */}
+        <div className="relative overflow-hidden">
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
+          <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
+          <div className="relative p-8">
+            <h2 className="text-xl font-bold text-slate-800 mb-6 flex items-center">
+              <div className="w-7 h-7 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg mr-3 flex items-center justify-center">
+                <Award className="h-4 w-4 text-white" />
+              </div>
+              Международные отношения
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="text-center p-6 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border border-green-200/60">
+                <div className="text-3xl font-bold text-green-600 mb-2">
+                  {internationalRelations.studentParticipation}
+                </div>
+                <p className="text-sm text-slate-600 font-semibold">
+                  Участие учащихся в международных программах
+                </p>
+              </div>
+
+              <div className="text-center p-6 bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl border border-teal-200/60">
+                <div className="text-3xl font-bold text-teal-600 mb-2">
+                  {internationalRelations.teacherParticipation}
+                </div>
+                <p className="text-sm text-slate-600 font-semibold">
+                  Участие педагогов в международных программах
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 p-4 bg-gradient-to-r from-green-50 to-teal-50 rounded-xl border border-green-200/60">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-bold text-slate-800">
+                    Рейтинг международных отношений
+                  </p>
+                  <p className="text-sm text-slate-600 mt-1">
+                    Участие в международных программах и проектах
+                  </p>
+                </div>
+                <div className="flex items-center">
+                  <div className="text-3xl font-bold text-green-600">
+                    {Math.round(internationalRelations.internationalRating)}%
+                  </div>
                 </div>
               </div>
             </div>
@@ -810,7 +1029,7 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
             <div className="relative p-6">
               <Button
                 onClick={() => {
-                  console.log("Экспорт паспорта школы:", school.id);
+                  console.log("Экспорт паспорта школы:", basicInfo.id);
                   alert("Экспорт паспорта школы выполнен успешно!");
                 }}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 text-lg font-semibold"

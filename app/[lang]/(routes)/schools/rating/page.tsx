@@ -130,8 +130,8 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
-        <div className="container mx-auto px-6 py-4">
+      {/* <header className="relative bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
+        <div className="mx-12 px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -170,7 +170,7 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-slate-700/90">
@@ -195,7 +195,7 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
         </div>
       </div>
 
-      <div className="container mx-auto p-8 space-y-10">
+      <div className="mx-auto p-8 space-y-10">
         {/* Общие показатели */}
         {schools && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

@@ -263,17 +263,17 @@ export const SchoolsTable = ({
         </div>
 
         <div className="flex items-center gap-2">
-          <button
+          <Button
             onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
             disabled={currentPage === 1}
             className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronLeft className="w-4 h-4" />
-          </button>
+          </Button>
 
           <div className="flex items-center gap-1">
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
+              <Button
                 key={page}
                 onClick={() => setCurrentPage(page)}
                 className={`px-3 py-1 text-sm rounded-md transition-colors ${
@@ -283,11 +283,11 @@ export const SchoolsTable = ({
                 }`}
               >
                 {page}
-              </button>
+              </Button>
             ))}
           </div>
 
-          <button
+          <Button
             onClick={() =>
               setCurrentPage((prev) => Math.min(prev + 1, totalPages))
             }
@@ -295,7 +295,7 @@ export const SchoolsTable = ({
             className="p-2 text-slate-400 hover:text-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <ChevronRight className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
     </div>

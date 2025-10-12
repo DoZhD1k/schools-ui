@@ -14,9 +14,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Datapolis",
+  title: "Цифровой рейтинг школ",
   description:
-    "Datapolis is a web application that provides a platform for data visualization and analysis.",
+    "Цифровой рейтинг школ - это веб-приложение, которое предоставляет платформу для визуализации и анализа данных.",
 };
 
 export async function generateStaticParams() {

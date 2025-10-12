@@ -115,7 +115,14 @@ export const OrganizationsTable = ({
               <SortButton column="district">Район</SortButton>
             </TableHead>
             <TableHead className="w-32 text-center">
-              <SortButton column="currentRating">Рейтинг</SortButton>
+              <SortButton column="currentRating">
+                <div className="flex flex-col items-center">
+                  <span>Общий рейтинг</span>
+                  <span className="text-xs font-normal text-slate-500">
+                    (взвешенный)
+                  </span>
+                </div>
+              </SortButton>
             </TableHead>
             <TableHead className="w-28 text-center">
               <SortButton column="currentStudents">Учащиеся</SortButton>

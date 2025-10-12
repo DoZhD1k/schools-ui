@@ -339,7 +339,7 @@ export default function DetailedRatingsTable({
                     onCheckedChange={handleSelectAll}
                   />
                 </TableHead>
-                <TableHead>
+                <TableHead className="w-48 max-w-48">
                   <SortButton column="nameRu">Наименование школы</SortButton>
                 </TableHead>
                 <TableHead>
@@ -378,8 +378,8 @@ export default function DetailedRatingsTable({
                       }
                     />
                   </TableCell>
-                  <TableCell>
-                    <div>
+                  <TableCell className="w-48 max-w-48">
+                    <div className="break-words whitespace-normal">
                       <p className="font-semibold text-slate-900 dark:text-slate-100">
                         {school.nameRu}
                       </p>
@@ -400,17 +400,17 @@ export default function DetailedRatingsTable({
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-900 rounded-lg font-bold text-blue-700 dark:text-blue-300">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.q1Rating}%
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-emerald-100 to-emerald-200 dark:from-emerald-800 dark:to-emerald-900 rounded-lg font-bold text-emerald-700 dark:text-emerald-300">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.q2Rating}%
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="inline-flex items-center justify-center w-16 h-8 bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-900 rounded-lg font-bold text-purple-700 dark:text-purple-300">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.q3Rating}%
                     </span>
                   </TableCell>
@@ -425,27 +425,27 @@ export default function DetailedRatingsTable({
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-blue-600 dark:text-blue-400 font-bold">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.indicators.P}%
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-purple-600 dark:text-purple-400 font-bold">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.indicators.A}%
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.indicators.T}%
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-teal-600 dark:text-teal-400 font-bold">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.indicators.V}%
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-pink-600 dark:text-pink-400 font-bold">
+                    <span className="font-bold text-slate-900 dark:text-slate-100">
                       {school.indicators.I}%
                     </span>
                   </TableCell>

@@ -319,7 +319,7 @@ function SchoolForecastPage({ params }: SchoolForecastPageProps) {
       </div>
 
       {/* Header */}
-      <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
+      {/* <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -380,7 +380,7 @@ function SchoolForecastPage({ params }: SchoolForecastPageProps) {
             </div>
           </div>
         </div>
-      </header>
+      </header> */}
 
       {/* Hero Banner */}
       <div className="relative overflow-hidden">

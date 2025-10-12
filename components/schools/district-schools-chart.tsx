@@ -162,7 +162,7 @@ export default function DistrictSchoolsChart({
 
       {/* Модальное окно со списком школ района */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+        <DialogContent className="min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
           <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-4">
             <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
               {modalTitle}
@@ -204,33 +204,33 @@ export default function DistrictSchoolsChart({
             </div>
 
             {/* Таблица школ */}
-            <div className="overflow-x-auto bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-              <table className="w-full table-auto">
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+              <table className="w-full table-fixed">
                 <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
                   <tr className="border-b border-slate-200 dark:border-slate-600">
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-12">
                       №
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-48">
                       Наименование школы
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-32">
                       Район
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-40">
                       Адрес
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      Виды организаций образования
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-32">
+                      Тип организации
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      Форма собственности
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-32">
+                      Собственность
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      Ведомственная принадлежность
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-32">
+                      Ведомство
                     </th>
-                    <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
-                      Количество обучающихся
+                    <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-24">
+                      Учащихся
                     </th>
                   </tr>
                 </thead>
@@ -240,12 +240,12 @@ export default function DistrictSchoolsChart({
                       key={school.id}
                       className="border-b border-slate-200 dark:border-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 dark:hover:from-slate-800 dark:hover:to-slate-700 transition-all duration-200"
                     >
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-medium">
+                      <td className="p-2 text-slate-700 dark:text-slate-300 font-medium text-sm">
                         {index + 1}
                       </td>
-                      <td className="p-4">
-                        <div>
-                          <p className="font-semibold text-slate-900 dark:text-slate-100">
+                      <td className="p-2">
+                        <div className="w-48 overflow-hidden">
+                          <p className="font-semibold text-slate-900 dark:text-slate-100 text-sm break-words">
                             {school.nameRu}
                           </p>
                           <div className="mt-1">
@@ -263,27 +263,29 @@ export default function DistrictSchoolsChart({
                           </div>
                         </div>
                       </td>
-                      <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
+                      <td className="p-2 font-medium text-slate-700 dark:text-slate-300 text-sm">
                         {school.district.nameRu}
                       </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+                      <td className="p-2">
+                        <div className="flex items-center gap-1 text-xs text-slate-600 dark:text-slate-400">
                           <div className="p-1 rounded-full bg-gradient-to-r from-blue-100 to-emerald-100 dark:from-blue-900 dark:to-emerald-900">
-                            <MapPin className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                            <MapPin className="h-2 w-2 text-blue-600 dark:text-blue-400" />
                           </div>
-                          <span className="font-medium">{school.address}</span>
+                          <span className="font-medium truncate">
+                            {school.address}
+                          </span>
                         </div>
                       </td>
-                      <td className="p-4 text-sm text-slate-600 dark:text-slate-400">
+                      <td className="p-2 text-xs text-slate-600 dark:text-slate-400 truncate">
                         {school.organizationType}
                       </td>
-                      <td className="p-4 text-sm text-slate-600 dark:text-slate-400">
-                        Коммунальная собственность
+                      <td className="p-2 text-xs text-slate-600 dark:text-slate-400">
+                        Коммунальная
                       </td>
-                      <td className="p-4 text-sm text-slate-600 dark:text-slate-400">
-                        Местные исполнительные органы
+                      <td className="p-2 text-xs text-slate-600 dark:text-slate-400">
+                        МИО
                       </td>
-                      <td className="p-4 text-slate-700 dark:text-slate-300 font-semibold">
+                      <td className="p-2 text-slate-700 dark:text-slate-300 font-semibold text-sm">
                         {school.currentStudents}
                       </td>
                     </tr>
