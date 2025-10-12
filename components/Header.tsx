@@ -10,8 +10,8 @@ export default function Header() {
   const pathname = usePathname();
   const lang = pathname.split("/")[1] || "ru";
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
-      <div className="container mx-auto px-6 py-4">
+    <header className="top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
+      <div className="mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -24,12 +24,19 @@ export default function Header() {
               <h1 className="text-xl font-bold text-slate-800">
                 Цифровой рейтинг школ
               </h1>
-              <p className="text-sm text-slate-600 font-medium">
-                Алматы, Казахстан
-              </p>
             </div>
           </div>
           <div className="flex items-center space-x-3">
+            <Link href={`/${lang}/dashboard`}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90 hover:border-[hsl(0_0%_100%_/_0.3)] shadow-sm transition-all duration-300"
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                Главная
+              </Button>
+            </Link>
             <Link href={`/${lang}/schools/rating`}>
               <Button
                 variant="outline"

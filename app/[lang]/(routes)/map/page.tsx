@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useDistrictFilters } from "@/hooks/useDistrictFilters";
 import { MapProvider } from "@/contexts/map-context";
-import DistrictFilters from "@/components/map/DistrictFilters";
+import UnifiedFilters from "@/components/map/UnifiedFilters";
 import MapLoading from "@/components/map/MapLoading";
 
 // Dynamically import the MapWithPolygons to avoid SSR issues with mapbox-gl
@@ -23,11 +23,13 @@ export default function MapPage() {
     filteredSchools,
     filters,
     selectSchool,
-    selectLanguage,
     searchSchool,
     resetFilters,
     getUniqueSchools,
+    getUniqueDistricts,
+    getUniqueEducationTypes,
     getAvailableLanguages,
+    selectDistricts,
   } = useDistrictFilters();
 
   if (loading) {
@@ -48,7 +50,7 @@ export default function MapPage() {
 
   if (error) {
     return (
-      <div className="h-[100vh] w-full flex items-center justify-center bg-red-50">
+      <div className="h-[90vh] w-full flex items-center justify-center bg-red-50">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
           <h3 className="font-bold text-red-600 mb-2">
             Ошибка загрузки данных
@@ -76,18 +78,19 @@ export default function MapPage() {
           districtPolygons={filteredPolygons}
         />
 
-        {/* Новые фильтры для районов */}
+        {/* Объединенные фильтры */}
         <div className="absolute top-4 left-4 z-20 max-w-md">
-          <DistrictFilters
+          <UnifiedFilters
             selectedSchool={filters.selectedSchool}
-            selectedLanguage={filters.selectedLanguage}
             schoolSearchQuery={filters.schoolSearchQuery}
             uniqueSchools={getUniqueSchools()}
+            uniqueDistricts={getUniqueDistricts()}
+            selectedDistricts={filters.district || []}
             filteredSchoolsCount={filteredSchools.length}
-            availableLanguages={getAvailableLanguages(filters.selectedSchool)}
+            filteredPolygonsCount={filteredPolygons.length}
             onSchoolSelect={selectSchool}
-            onLanguageSelect={selectLanguage}
             onSchoolSearch={searchSchool}
+            onDistrictChange={selectDistricts}
             onReset={resetFilters}
           />
         </div>

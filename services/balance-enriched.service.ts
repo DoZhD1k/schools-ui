@@ -37,6 +37,16 @@ export class BalanceEnrichedService {
         result = data.results;
       } else if (data.data && Array.isArray(data.data)) {
         result = data.data;
+      } else if (data.features && Array.isArray(data.features)) {
+        // Обработка GeoJSON FeatureCollection
+        console.log(
+          "🔍 Found GeoJSON FeatureCollection with features:",
+          data.features.length
+        );
+        result = data.features.map((feature: any) => ({
+          ...feature.properties,
+          geometry: feature.geometry,
+        }));
       } else {
         console.error("❌ Unexpected data structure:", data);
         // Если это объект, попробуем найти массив в его свойствах

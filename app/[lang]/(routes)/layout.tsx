@@ -5,7 +5,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <AuthProvider>
       <DisabledNav />
-      <main className="pt-20">{children}</main>
+      <main>{children}</main>
     </AuthProvider>
   );
 }

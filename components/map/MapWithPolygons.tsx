@@ -3,7 +3,6 @@
 import React from "react";
 import MapContainer from "./MapContainer";
 import SchoolsMapContainer from "./SchoolsMapContainer";
-import PolygonControls from "./PolygonControls";
 import { useMapContext } from "@/contexts/map-context";
 import type { SchoolFeature, DistrictPolygon } from "@/types/schools-map";
 
@@ -32,7 +31,7 @@ export default function MapWithPolygons({
   console.log("MapWithPolygons render:", {
     mode,
     showPolygons,
-    polygonsCount: polygons.length,
+    polygonsCount: polygons?.length || 0,
   });
 
   return (
@@ -41,7 +40,6 @@ export default function MapWithPolygons({
       {mode === "polygons" && (
         <MapContainer districtPolygons={districtPolygons} schools={schools} />
       )}
-
       {mode === "schools" && (
         <SchoolsMapContainer
           schools={schools}
@@ -49,7 +47,6 @@ export default function MapWithPolygons({
           onSchoolSelect={onSchoolSelect || (() => {})}
         />
       )}
-
       {mode === "both" && (
         <>
           {showPolygons ? (
@@ -66,11 +63,6 @@ export default function MapWithPolygons({
           )}
         </>
       )}
-
-      {/* Polygon controls panel - always visible */}
-      <div className="absolute top-4 left-4 z-10">
-        <PolygonControls />
-      </div>
 
       {/* Loading indicator styles */}
       <style jsx global>{`

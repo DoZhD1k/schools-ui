@@ -1,14 +1,13 @@
+"use client";
+
 import { useState, useEffect, useCallback } from "react";
+import { BalanceEnrichedService } from "@/services/balance-enriched.service";
+import { DistrictPolygonsService } from "@/services/district-polygons.service";
 import {
   MapState,
   MapFilters,
   SchoolLanguageMapping,
-  DistrictPolygon,
-  BalanceEnrichedItem,
-  SchoolProperties,
 } from "@/types/schools-map";
-import { BalanceEnrichedService } from "@/services/balance-enriched.service";
-import { SchoolsMapService } from "@/services/schools-map.service";
 
 const initialFilters: MapFilters = {
   searchQuery: "",
@@ -47,10 +46,12 @@ export function useDistrictFilters() {
       console.log("🔄 Loading balance-enriched and schools data...");
 
       // Загружаем данные параллельно
-      const [balanceData, schoolsData] = await Promise.all([
-        BalanceEnrichedService.getBalanceEnrichedData(),
-        BalanceEnrichedService.getSchoolsData(),
-      ]);
+      const [balanceData, schoolsData, loadedDistrictPolygons] =
+        await Promise.all([
+          BalanceEnrichedService.getBalanceEnrichedData(),
+          BalanceEnrichedService.getSchoolsData(),
+          DistrictPolygonsService.fetchDistrictPolygons(),
+        ]);
 
       console.log("📊 Loaded data:", {
         balanceData: balanceData,
@@ -60,44 +61,50 @@ export function useDistrictFilters() {
           ? balanceData.length
           : "not array",
         schools: Array.isArray(schoolsData) ? schoolsData.length : "not array",
+        districtPolygons: loadedDistrictPolygons.length,
       });
 
-      // Создаем маппинги школ по языкам
-      const mappings = BalanceEnrichedService.createSchoolLanguageMappings(
-        balanceData,
-        schoolsData
-      );
+      // Создаем упрощенные маппинги (временно для отладки)
+      const mappings: SchoolLanguageMapping[] = [];
 
       console.log("🗺️ Created school mappings:", mappings.length);
 
-      // Создаем полигоны из balance data
-      const districtPolygons: DistrictPolygon[] = balanceData
-        .filter((item) => item.geometry)
-        .map((item) => ({
-          id: item.id,
-          type: "Feature" as const,
-          geometry: item.geometry,
-          properties: item,
-        }));
+      // Используем полигоны, загруженные через DistrictPolygonsService
+      console.log(
+        "✅ Using district polygons from service:",
+        loadedDistrictPolygons.length
+      );
 
-      // Конвертируем школы в SchoolFeature формат (если нужно)
+      // Конвертируем школы в SchoolFeature формат
+      // Для полигонов используем origin_geom, для точек - origin_marker
       const schoolFeatures = schoolsData
-        .filter((school) => school.infra?.origin_marker)
+        .filter(
+          (school) => school.infra?.origin_geom || school.infra?.origin_marker
+        )
         .map((school) => ({
           id: school.id,
           type: "Feature" as const,
-          geometry: school.infra!.origin_marker,
+          // Приоритет полигонам для отображения зданий школ
+          geometry: school.infra!.origin_geom || school.infra!.origin_marker,
           properties: school,
         }));
+
+      console.log("🏫 School features created:", {
+        total: schoolsData.length,
+        withInfra: schoolsData.filter((s) => s.infra).length,
+        withGeom: schoolsData.filter((s) => s.infra?.origin_geom).length,
+        withMarker: schoolsData.filter((s) => s.infra?.origin_marker).length,
+        features: schoolFeatures.length,
+      });
 
       setState((prev) => ({
         ...prev,
         balanceData,
         schools: schoolFeatures,
         filteredSchools: schoolFeatures,
-        districtPolygons,
+        districtPolygons: loadedDistrictPolygons,
         schoolLanguageMappings: mappings,
-        filteredPolygons: districtPolygons,
+        filteredPolygons: loadedDistrictPolygons,
         loading: false,
       }));
     } catch (error) {
@@ -117,58 +124,63 @@ export function useDistrictFilters() {
 
       console.log("🔍 Applying filters:", updatedFilters);
 
-      // Фильтруем полигоны по школе и языку
-      let filteredPolygons = BalanceEnrichedService.filterPolygonsBySchool(
-        prev.schoolLanguageMappings,
-        updatedFilters.selectedSchool,
-        updatedFilters.selectedLanguage
-      );
-
-      // Дополнительная фильтрация по поиску школы
-      if (updatedFilters.schoolSearchQuery) {
-        console.log(
-          "🔍 Searching for schools with query:",
-          updatedFilters.schoolSearchQuery
-        );
-        console.log(
-          "📊 Total mappings available:",
-          prev.schoolLanguageMappings.length
-        );
-        console.log(
-          "📋 First 3 mappings:",
-          prev.schoolLanguageMappings.slice(0, 3).map((m) => ({
-            schoolNumber: m.schoolNumber,
-            language: m.language,
-            hasSchoolInfo: !!m.schoolInfo,
-            schoolName: m.schoolInfo?.name_of_the_organization,
-            polygonsCount: m.districtPolygons.length,
-          }))
-        );
-
-        const searchResults = BalanceEnrichedService.searchSchools(
-          prev.schoolLanguageMappings,
-          updatedFilters.schoolSearchQuery
-        );
-
-        // Берем полигоны из результатов поиска (без дополнительной фильтрации)
-        filteredPolygons = [];
-        searchResults.forEach((mapping) => {
-          filteredPolygons.push(...mapping.districtPolygons);
-        });
-
-        console.log("🔍 Search results mappings:", searchResults.length);
-        console.log("🗺️ Polygons from search:", filteredPolygons.length);
-      }
-
-      // Фильтруем школы (если нужно)
+      // Изначально показываем все полигоны и школы
+      const filteredPolygons = prev.districtPolygons;
       let filteredSchools = prev.schools;
-      if (updatedFilters.schoolSearchQuery) {
+
+      // Фильтрация школ по поисковому запросу
+      if (
+        updatedFilters.schoolSearchQuery &&
+        updatedFilters.schoolSearchQuery.trim()
+      ) {
         const query = updatedFilters.schoolSearchQuery.toLowerCase();
         filteredSchools = prev.schools.filter((school) =>
           school.properties.name_of_the_organization
             .toLowerCase()
             .includes(query)
         );
+        console.log("🔍 Search filtered schools:", filteredSchools.length);
+      }
+
+      // Фильтрация школ по району
+      if (updatedFilters.district && updatedFilters.district.length > 0) {
+        filteredSchools = filteredSchools.filter((school) =>
+          updatedFilters.district!.includes(school.properties.district)
+        );
+        console.log("🏘️ District filtered schools:", filteredSchools.length);
+      }
+
+      // Фильтрация школ по типу образования
+      if (
+        updatedFilters.educationType &&
+        updatedFilters.educationType.length > 0
+      ) {
+        filteredSchools = filteredSchools.filter((school) =>
+          updatedFilters.educationType!.some((type) =>
+            school.properties.types_of_educational_institutions
+              .toLowerCase()
+              .includes(type.toLowerCase())
+          )
+        );
+        console.log(
+          "📚 Education type filtered schools:",
+          filteredSchools.length
+        );
+      }
+
+      // Фильтрация школ по форме собственности
+      if (updatedFilters.isPrivate !== null) {
+        const isPrivateSchool = (ownership: string) =>
+          ownership.toLowerCase().includes("частн") ||
+          ownership.toLowerCase().includes("собственность граждан");
+
+        filteredSchools = filteredSchools.filter((school) => {
+          const isPrivate = isPrivateSchool(
+            school.properties.form_of_ownership
+          );
+          return updatedFilters.isPrivate ? isPrivate : !isPrivate;
+        });
+        console.log("🏛️ Ownership filtered schools:", filteredSchools.length);
       }
 
       console.log("📍 Filtered results:", {
@@ -191,6 +203,27 @@ export function useDistrictFilters() {
       state.schoolLanguageMappings
     );
   }, [state.schoolLanguageMappings]);
+
+  // Получение уникальных районов из школ
+  const getUniqueDistricts = useCallback(() => {
+    const districts = state.schools.map((school) => school.properties.district);
+    const uniqueDistricts = [...new Set(districts)].filter(Boolean).sort();
+    console.log("🏘️ Unique districts:", uniqueDistricts);
+    return uniqueDistricts;
+  }, [state.schools]);
+
+  // Получение уникальных типов образования
+  const getUniqueEducationTypes = useCallback(() => {
+    const types = state.schools.flatMap((school) =>
+      school.properties.types_of_educational_institutions
+        .split(",")
+        .map((type) => type.trim())
+        .filter(Boolean)
+    );
+    const uniqueTypes = [...new Set(types)].sort();
+    console.log("📚 Unique education types:", uniqueTypes);
+    return uniqueTypes;
+  }, [state.schools]);
 
   // Получение доступных языков для выбранной школы
   const getAvailableLanguages = useCallback(
@@ -240,6 +273,14 @@ export function useDistrictFilters() {
     [applyFilters]
   );
 
+  // Выбор районов
+  const selectDistricts = useCallback(
+    (districts: string[]) => {
+      applyFilters({ district: districts });
+    },
+    [applyFilters]
+  );
+
   // Загружаем данные при монтировании
   useEffect(() => {
     loadData();
@@ -253,7 +294,10 @@ export function useDistrictFilters() {
     selectSchool,
     selectLanguage,
     searchSchool,
+    selectDistricts,
     getUniqueSchools,
+    getUniqueDistricts,
+    getUniqueEducationTypes,
     getAvailableLanguages,
   };
 }

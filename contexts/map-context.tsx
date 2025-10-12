@@ -10,11 +10,7 @@ import {
 } from "react";
 import type mapboxgl from "mapbox-gl";
 import type { EnrichedGridProperties } from "@/types/geojson";
-import type {
-  PolygonFeature,
-  PolygonFilters,
-  PolygonStyleConfig,
-} from "@/types/polygons";
+import type { PolygonFeature } from "@/types/polygons";
 import { FilterRange } from "@/lib/map-constants";
 
 interface MapContextProps {
@@ -31,18 +27,10 @@ interface MapContextProps {
   metricMaxValues: Record<string, number>;
   setMetricMaxValues: (values: Record<string, number>) => void;
   resetFilters: () => void;
-
-  // Polygons state
-  polygons: PolygonFeature[];
-  setPolygons: (polygons: PolygonFeature[]) => void;
-  polygonFilters: PolygonFilters;
-  setPolygonFilters: (filters: PolygonFilters) => void;
-  polygonStyleConfig: PolygonStyleConfig;
-  setPolygonStyleConfig: (config: PolygonStyleConfig) => void;
   showPolygons: boolean;
   setShowPolygons: (show: boolean) => void;
-  selectedPolygon: PolygonFeature | null;
-  setSelectedPolygon: (polygon: PolygonFeature | null) => void;
+  polygons: PolygonFeature[];
+  setPolygons: (polygons: PolygonFeature[]) => void;
 }
 
 const MapContext = createContext<MapContextProps | undefined>(undefined);
@@ -57,20 +45,6 @@ const DEFAULT_COLOR_SCHEME = [
   "#e74c3c",
 ];
 
-const DEFAULT_POLYGON_STYLE: PolygonStyleConfig = {
-  surplusColor: "#e0e7ff", // Очень светло-синий для фона районов
-  deficitColor: "#e0e7ff", // Очень светло-синий для фона районов
-  opacity: 0.3, // Умеренная прозрачность для видимости границ
-  strokeColor: "#3b82f6", // Яркие синие границы районов
-  strokeWidth: 2, // Четкие границы для разделения районов
-  highlightColor: "#3b82f6",
-};
-
-const DEFAULT_POLYGON_FILTERS: PolygonFilters = {
-  status: "all",
-  year: undefined, // Убираем дефолтный год
-};
-
 export function MapProvider({ children }: { children: ReactNode }) {
   const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
   const [activeMetric, setActiveMetric] =
@@ -83,18 +57,8 @@ export function MapProvider({ children }: { children: ReactNode }) {
   const [metricMaxValues, setMetricMaxValues] = useState<
     Record<string, number>
   >({});
-
-  // Polygons state
-  const [polygons, setPolygons] = useState<PolygonFeature[]>([]);
-  const [polygonFilters, setPolygonFilters] = useState<PolygonFilters>(
-    DEFAULT_POLYGON_FILTERS
-  );
-  const [polygonStyleConfig, setPolygonStyleConfig] =
-    useState<PolygonStyleConfig>(DEFAULT_POLYGON_STYLE);
   const [showPolygons, setShowPolygons] = useState<boolean>(true);
-  const [selectedPolygon, setSelectedPolygon] = useState<PolygonFeature | null>(
-    null
-  );
+  const [polygons, setPolygons] = useState<PolygonFeature[]>([]);
 
   // Reset filters to default values
   const resetFilters = useCallback(() => {
@@ -125,16 +89,10 @@ export function MapProvider({ children }: { children: ReactNode }) {
         metricMaxValues,
         setMetricMaxValues,
         resetFilters,
-        polygons,
-        setPolygons,
-        polygonFilters,
-        setPolygonFilters,
-        polygonStyleConfig,
-        setPolygonStyleConfig,
         showPolygons,
         setShowPolygons,
-        selectedPolygon,
-        setSelectedPolygon,
+        polygons,
+        setPolygons,
       }}
     >
       {children}

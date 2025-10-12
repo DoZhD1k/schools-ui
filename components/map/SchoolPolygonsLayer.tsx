@@ -479,8 +479,15 @@ export default function SchoolPolygonsLayer({
 
         console.log("🔄 Moving school layers to top...");
 
+        // Проверяем что стиль карты доступен
+        const style = mapInstance.getStyle();
+        if (!style || !style.layers) {
+          console.warn("⚠️ Map style or layers not available yet");
+          return;
+        }
+
         // Находим все слои
-        const layers = mapInstance.getStyle().layers;
+        const layers = style.layers;
         console.log(
           "📋 All layers:",
           layers.map((l) => l.id)
@@ -641,7 +648,11 @@ export default function SchoolPolygonsLayer({
     };
 
     // Добавляем обработчики событий только если слои существуют
-    if (mapInstance.getLayer(SCHOOLS_POLYGONS_FILL_LAYER_ID)) {
+    if (
+      mapInstance &&
+      mapInstance.getLayer &&
+      mapInstance.getLayer(SCHOOLS_POLYGONS_FILL_LAYER_ID)
+    ) {
       mapInstance.on(
         "mouseenter",
         SCHOOLS_POLYGONS_FILL_LAYER_ID,
@@ -662,41 +673,147 @@ export default function SchoolPolygonsLayer({
         popup.current = null;
       }
 
-      if (mapInstance.getLayer(SCHOOLS_POLYGONS_FILL_LAYER_ID)) {
-        mapInstance.off(
-          "mouseenter",
-          SCHOOLS_POLYGONS_FILL_LAYER_ID,
-          handleMouseEnter
-        );
-        mapInstance.off(
-          "mouseleave",
-          SCHOOLS_POLYGONS_FILL_LAYER_ID,
-          handleMouseLeave
-        );
-        mapInstance.off("click", SCHOOLS_POLYGONS_FILL_LAYER_ID, handleClick);
+      if (mapInstance && mapInstance.getLayer) {
+        try {
+          if (mapInstance.getLayer(SCHOOLS_POLYGONS_FILL_LAYER_ID)) {
+            mapInstance.off(
+              "mouseenter",
+              SCHOOLS_POLYGONS_FILL_LAYER_ID,
+              handleMouseEnter
+            );
+            mapInstance.off(
+              "mouseleave",
+              SCHOOLS_POLYGONS_FILL_LAYER_ID,
+              handleMouseLeave
+            );
+            mapInstance.off(
+              "click",
+              SCHOOLS_POLYGONS_FILL_LAYER_ID,
+              handleClick
+            );
+          }
+        } catch (error) {
+          console.warn("⚠️ Error removing event listeners:", error);
+        }
       }
     };
   }, [mapInstance, isInitialized, activeSchools]);
 
+  // Обновление данных слоя при изменении отфильтрованных школ
+  useEffect(() => {
+    if (!mapInstance || !isInitialized || !activeSchools.length) return;
+
+    const updateLayerData = () => {
+      try {
+        console.log(
+          "🔄 Updating school polygons data with",
+          activeSchools.length,
+          "schools"
+        );
+
+        // Создание обновленных GeoJSON данных
+        const geojsonData: GeoJSON.FeatureCollection = {
+          type: "FeatureCollection",
+          features: activeSchools.map((school) => {
+            let geometry: GeoJSON.Geometry =
+              school.geometry as GeoJSON.Geometry;
+
+            if (school.geometry.type === "MultiPolygon") {
+              const coords = school.geometry.coordinates as [
+                number,
+                number
+              ][][][];
+
+              // Валидация геометрии (упрощенная версия)
+              const validatedCoords = coords.map((polygon) => {
+                return polygon.map((ring) => {
+                  if (ring.length >= 4) {
+                    const firstPoint = ring[0];
+                    const lastPoint = ring[ring.length - 1];
+                    if (
+                      firstPoint[0] !== lastPoint[0] ||
+                      firstPoint[1] !== lastPoint[1]
+                    ) {
+                      ring.push([firstPoint[0], firstPoint[1]]);
+                    }
+                  }
+                  return ring;
+                });
+              });
+
+              geometry = {
+                type: "MultiPolygon",
+                coordinates: validatedCoords,
+              };
+            }
+
+            const color = getSchoolPolygonColor(school);
+            const strokeColor = getSchoolStrokeColor(school);
+
+            return {
+              type: "Feature" as const,
+              id: school.id,
+              geometry,
+              properties: {
+                ...school.properties,
+                color,
+                strokeColor,
+              },
+            };
+          }),
+        };
+
+        // Обновляем источник данных
+        const source = mapInstance.getSource(
+          SCHOOLS_POLYGONS_SOURCE_ID
+        ) as mapboxgl.GeoJSONSource;
+        if (source) {
+          source.setData(geojsonData);
+          console.log("✅ School polygons data updated successfully");
+        } else {
+          console.warn("⚠️ School polygons source not found for update");
+        }
+      } catch (error) {
+        console.error("❌ Error updating school polygons data:", error);
+      }
+    };
+
+    updateLayerData();
+  }, [
+    activeSchools,
+    mapInstance,
+    isInitialized,
+    getSchoolPolygonColor,
+    getSchoolStrokeColor,
+  ]);
+
   // Cleanup при размонтировании компонента
   useEffect(() => {
     return () => {
-      if (!mapInstance) return;
+      if (!mapInstance || !mapInstance.getLayer) return;
 
-      // Удаляем слои только при размонтировании компонента
-      [
-        SCHOOLS_POLYGONS_HOVER_LAYER_ID,
-        SCHOOLS_POLYGONS_STROKE_LAYER_ID,
-        SCHOOLS_POLYGONS_FILL_LAYER_ID,
-      ].forEach((layerId) => {
-        if (mapInstance.getLayer(layerId)) {
-          mapInstance.removeLayer(layerId);
+      try {
+        // Удаляем слои только при размонтировании компонента
+        [
+          SCHOOLS_POLYGONS_HOVER_LAYER_ID,
+          SCHOOLS_POLYGONS_STROKE_LAYER_ID,
+          SCHOOLS_POLYGONS_FILL_LAYER_ID,
+        ].forEach((layerId) => {
+          if (
+            mapInstance &&
+            mapInstance.getLayer &&
+            mapInstance.getLayer(layerId)
+          ) {
+            mapInstance.removeLayer(layerId);
+          }
+        });
+
+        // Удаляем источник данных
+        if (mapInstance.getSource(SCHOOLS_POLYGONS_SOURCE_ID)) {
+          mapInstance.removeSource(SCHOOLS_POLYGONS_SOURCE_ID);
         }
-      });
-
-      // Удаляем источник данных
-      if (mapInstance.getSource(SCHOOLS_POLYGONS_SOURCE_ID)) {
-        mapInstance.removeSource(SCHOOLS_POLYGONS_SOURCE_ID);
+      } catch (error) {
+        console.warn("⚠️ Error during school polygons cleanup:", error);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

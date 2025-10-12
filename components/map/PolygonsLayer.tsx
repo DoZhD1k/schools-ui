@@ -57,7 +57,7 @@ const formatPolygonData = (polygonFeature: any) => {
 const createFilterSpecification = (filters: any): FilterSpecification => {
   const conditions: any[] = ["all"];
 
-  if (filters.year) {
+  if (filters && filters.year) {
     conditions.push(["==", ["get", "year"], filters.year]);
   }
 
@@ -103,6 +103,17 @@ export default function PolygonsLayer({
     setSelectedPolygon,
   } = useMapContext();
 
+  // Default style configuration if not provided by context
+  const defaultPolygonStyle = {
+    surplusColor: "#2ecc71", // Green for surplus
+    deficitColor: "#e74c3c", // Red for deficit
+    opacity: 0.6,
+    strokeColor: "#333333", // Dark gray for borders
+    strokeWidth: 1,
+  };
+
+  const activePolygonStyle = polygonStyleConfig || defaultPolygonStyle;
+
   // Используем переданные districtPolygons или polygons из контекста
   const activePolygons = districtPolygons || polygons;
 
@@ -119,6 +130,15 @@ export default function PolygonsLayer({
 
   // Load polygons data when component mounts or filters change
   useEffect(() => {
+    // Если переданы districtPolygons, не загружаем из API
+    if (districtPolygons && districtPolygons.length > 0) {
+      console.log(
+        "🎯 Using provided district polygons:",
+        districtPolygons.length
+      );
+      return;
+    }
+
     const loadPolygons = async () => {
       console.log("🔄 Loading polygons with filters:", polygonFilters);
       setIsLoading(true);
@@ -139,7 +159,7 @@ export default function PolygonsLayer({
     };
 
     loadPolygons();
-  }, [polygonFilters, setPolygons]);
+  }, [polygonFilters, setPolygons, districtPolygons]);
 
   // Add/update polygons on the map when data changes
   useEffect(() => {
@@ -152,17 +172,48 @@ export default function PolygonsLayer({
       return;
     }
 
-    if (!mapInstance.loaded()) {
-      console.log("⏸️ Map not loaded yet, waiting...");
-      const onLoad = () => updatePolygonsOnMap();
+    if (!mapInstance.loaded() || !mapInstance.isStyleLoaded()) {
+      console.log("⏸️ Map not ready yet, waiting...");
+      console.log("🔍 Map state:", {
+        loaded: mapInstance.loaded(),
+        styleLoaded: mapInstance.isStyleLoaded(),
+      });
+
+      // Multiple event handlers for different map ready states
+      const onLoad = () => {
+        console.log("🎉 Map load event triggered");
+        if (mapInstance.loaded() && mapInstance.isStyleLoaded()) {
+          updatePolygonsOnMap();
+        }
+      };
+
+      const onStyleLoad = () => {
+        console.log("🎉 Map style load event triggered");
+        if (mapInstance.loaded() && mapInstance.isStyleLoaded()) {
+          updatePolygonsOnMap();
+        }
+      };
+
       mapInstance.once("load", onLoad);
+      mapInstance.once("styledata", onStyleLoad);
+
+      // Also set a delayed retry as fallback
+      const retryTimeout = setTimeout(() => {
+        console.log("⏰ Retry timeout triggered");
+        if (mapInstance.loaded() && mapInstance.isStyleLoaded()) {
+          updatePolygonsOnMap();
+        }
+      }, 1000); // Increased from 100ms to 1000ms
+
       return () => {
         mapInstance.off("load", onLoad);
+        mapInstance.off("styledata", onStyleLoad);
+        clearTimeout(retryTimeout);
       };
     }
 
     updatePolygonsOnMap();
-  }, [mapInstance, activePolygons, showPolygons, polygonStyleConfig]);
+  }, [mapInstance, activePolygons, showPolygons, activePolygonStyle]);
 
   const updatePolygonsOnMap = () => {
     const POLYGONS_SOURCE_ID = "polygons-source";
@@ -172,11 +223,11 @@ export default function PolygonsLayer({
     console.log("🗺️ Updating polygons on map:", {
       polygonsCount: activePolygons.length,
       mapLoaded: mapInstance.loaded(),
-      polygonStyleConfig,
+      polygonStyleConfig: activePolygonStyle,
     });
 
     // Create filter specification
-    const filterSpec = createFilterSpecification(polygonFilters);
+    const filterSpec = createFilterSpecification(polygonFilters || null);
     console.log("🔍 Created filter specification:", filterSpec);
 
     // Create GeoJSON data
@@ -235,10 +286,10 @@ export default function PolygonsLayer({
           mapInstance.setPaintProperty(
             POLYGONS_FILL_LAYER_ID,
             "fill-opacity",
-            polygonStyleConfig.opacity
+            activePolygonStyle.opacity
           );
           console.log(
-            `🔧 Force-updated fill opacity after data update to ${polygonStyleConfig.opacity}`
+            `🔧 Force-updated fill opacity after data update to ${activePolygonStyle.opacity}`
           );
         }
       }, 100);
@@ -275,15 +326,15 @@ export default function PolygonsLayer({
             visibility: "visible",
           },
           paint: {
-            "fill-color": polygonStyleConfig.surplusColor, // Используем цвет из конфигурации
-            "fill-opacity": polygonStyleConfig.opacity,
+            "fill-color": activePolygonStyle.surplusColor, // Используем цвет из конфигурации
+            "fill-opacity": activePolygonStyle.opacity,
           },
         },
         beforeLayerId
       ); // Insert at the top (beforeLayerId = undefined)
       console.log(
         "✅ Fill layer added successfully at the TOP" +
-          ` with opacity: ${polygonStyleConfig.opacity}`
+          ` with opacity: ${activePolygonStyle.opacity}`
       );
 
       // Принудительно устанавливаем правильную прозрачность
@@ -293,10 +344,10 @@ export default function PolygonsLayer({
           mapInstance.setPaintProperty(
             POLYGONS_FILL_LAYER_ID,
             "fill-opacity",
-            polygonStyleConfig.opacity
+            activePolygonStyle.opacity
           );
           console.log(
-            `🔧 Force-updated fill opacity to ${polygonStyleConfig.opacity}`
+            `🔧 Force-updated fill opacity to ${activePolygonStyle.opacity}`
           );
         }
       }, 100);
@@ -306,12 +357,12 @@ export default function PolygonsLayer({
       mapInstance.setPaintProperty(
         POLYGONS_FILL_LAYER_ID,
         "fill-color",
-        polygonStyleConfig.surplusColor
+        activePolygonStyle.surplusColor
       );
       mapInstance.setPaintProperty(
         POLYGONS_FILL_LAYER_ID,
         "fill-opacity",
-        polygonStyleConfig.opacity
+        activePolygonStyle.opacity
       );
     }
 
@@ -337,8 +388,8 @@ export default function PolygonsLayer({
             visibility: "visible",
           },
           paint: {
-            "line-color": polygonStyleConfig.strokeColor,
-            "line-width": polygonStyleConfig.strokeWidth,
+            "line-color": activePolygonStyle.strokeColor,
+            "line-width": activePolygonStyle.strokeWidth,
             "line-opacity": 1,
           },
         },
@@ -346,7 +397,7 @@ export default function PolygonsLayer({
       );
       console.log(
         "✅ Stroke layer added successfully at the TOP" +
-          ` with width: ${polygonStyleConfig.strokeWidth}`
+          ` with width: ${activePolygonStyle.strokeWidth}`
       );
     } else {
       console.log("🔄 Updating existing stroke layer paint properties");
@@ -354,12 +405,12 @@ export default function PolygonsLayer({
       mapInstance.setPaintProperty(
         POLYGONS_STROKE_LAYER_ID,
         "line-color",
-        polygonStyleConfig.strokeColor
+        activePolygonStyle.strokeColor
       );
       mapInstance.setPaintProperty(
         POLYGONS_STROKE_LAYER_ID,
         "line-width",
-        polygonStyleConfig.strokeWidth
+        activePolygonStyle.strokeWidth
       );
     }
 
@@ -428,10 +479,12 @@ export default function PolygonsLayer({
           );
         }
         hoveredPolygonId = features[0].id || null;
-        mapInstance.setFeatureState(
-          { source: POLYGONS_SOURCE_ID, id: hoveredPolygonId },
-          { hover: true }
-        );
+        if (hoveredPolygonId !== null) {
+          mapInstance.setFeatureState(
+            { source: POLYGONS_SOURCE_ID, id: hoveredPolygonId },
+            { hover: true }
+          );
+        }
       }
     };
 
@@ -483,26 +536,30 @@ export default function PolygonsLayer({
   // Cleanup function to remove layers and source when component unmounts
   useEffect(() => {
     return () => {
-      if (!mapInstance) return;
+      if (!mapInstance || !mapInstance.getLayer) return;
 
       const POLYGONS_FILL_LAYER_ID = "polygons-fill";
       const POLYGONS_STROKE_LAYER_ID = "polygons-stroke";
       const POLYGONS_SOURCE_ID = "polygons-source";
 
-      // Remove layers first
-      if (mapInstance.getLayer(POLYGONS_STROKE_LAYER_ID)) {
-        mapInstance.removeLayer(POLYGONS_STROKE_LAYER_ID);
-      }
-      if (mapInstance.getLayer(POLYGONS_FILL_LAYER_ID)) {
-        mapInstance.removeLayer(POLYGONS_FILL_LAYER_ID);
-      }
+      try {
+        // Remove layers first
+        if (mapInstance.getLayer(POLYGONS_STROKE_LAYER_ID)) {
+          mapInstance.removeLayer(POLYGONS_STROKE_LAYER_ID);
+        }
+        if (mapInstance.getLayer(POLYGONS_FILL_LAYER_ID)) {
+          mapInstance.removeLayer(POLYGONS_FILL_LAYER_ID);
+        }
 
-      // Then remove source
-      if (mapInstance.getSource(POLYGONS_SOURCE_ID)) {
-        mapInstance.removeSource(POLYGONS_SOURCE_ID);
-      }
+        // Then remove source
+        if (mapInstance.getSource(POLYGONS_SOURCE_ID)) {
+          mapInstance.removeSource(POLYGONS_SOURCE_ID);
+        }
 
-      console.log("🧹 Cleaned up polygons layers and source");
+        console.log("🧹 Cleaned up polygons layers and source");
+      } catch (error) {
+        console.warn("⚠️ Error during polygons cleanup:", error);
+      }
     };
   }, [mapInstance]);
 

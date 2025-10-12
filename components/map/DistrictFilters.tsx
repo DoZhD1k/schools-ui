@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Search, X, Filter, MapPin, Globe, School } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface UniqueSchool {
   schoolNumber: string;
@@ -19,6 +20,7 @@ interface DistrictFiltersProps {
   schoolSearchQuery?: string;
   uniqueSchools: UniqueSchool[];
   filteredSchoolsCount?: number; // Добавляем счетчик отфильтрованных школ
+  filteredPolygonsCount?: number; // Добавляем счетчик отфильтрованных полигонов
   availableLanguages: Array<"bilingual" | "kazakh" | "russian" | "uyghur">;
   onSchoolSelect: (schoolNumber: string | undefined) => void;
   onLanguageSelect: (
@@ -41,6 +43,7 @@ export default function DistrictFilters({
   schoolSearchQuery = "",
   uniqueSchools,
   filteredSchoolsCount,
+  filteredPolygonsCount,
   availableLanguages,
   onSchoolSelect,
   onLanguageSelect,
@@ -104,15 +107,15 @@ export default function DistrictFilters({
 
         <div className="flex items-center space-x-2">
           {hasActiveFilters && (
-            <button
+            <Button
               onClick={handleReset}
               className="text-sm text-gray-500 hover:text-red-600 flex items-center space-x-1"
             >
               <X className="h-4 w-4" />
               <span>Сбросить</span>
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-100"
           >
@@ -121,7 +124,7 @@ export default function DistrictFilters({
                 isOpen ? "rotate-180" : ""
               }`}
             />
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -169,7 +172,7 @@ export default function DistrictFilters({
                 className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
               {localSearchQuery && (
-                <button
+                <Button
                   onClick={() => {
                     setLocalSearchQuery("");
                     onSchoolSearch("");
@@ -178,7 +181,7 @@ export default function DistrictFilters({
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                 >
                   <X className="h-4 w-4 text-gray-400 hover:text-gray-600" />
-                </button>
+                </Button>
               )}
             </div>
 
@@ -188,7 +191,7 @@ export default function DistrictFilters({
               filteredSchools.length > 0 && (
                 <div className="absolute z-50 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-60 overflow-y-auto">
                   {filteredSchools.map((school) => (
-                    <button
+                    <Button
                       key={school.schoolNumber}
                       onClick={() => handleSchoolSelect(school)}
                       className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
@@ -205,7 +208,7 @@ export default function DistrictFilters({
                           <span>{school.languages.length} язык(ов)</span>
                         </div>
                       </div>
-                    </button>
+                    </Button>
                   ))}
                 </div>
               )}
@@ -224,12 +227,12 @@ export default function DistrictFilters({
                     {selectedSchoolInfo.schoolInfo?.district}
                   </div>
                 </div>
-                <button
+                <Button
                   onClick={() => onSchoolSelect(undefined)}
                   className="text-blue-600 hover:text-blue-800"
                 >
                   <X className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -246,7 +249,7 @@ export default function DistrictFilters({
                 const isSelected = selectedLanguage === language;
 
                 return (
-                  <button
+                  <Button
                     key={language}
                     onClick={() =>
                       onLanguageSelect(isSelected ? null : language)
@@ -264,7 +267,7 @@ export default function DistrictFilters({
                     `}
                   >
                     {label}
-                  </button>
+                  </Button>
                 );
               })}
             </div>
@@ -273,11 +276,19 @@ export default function DistrictFilters({
           {/* Статистика */}
           <div className="text-sm text-gray-500 pt-2 border-t border-gray-200">
             <div className="flex justify-between">
-              <span>Всего школ:</span>
+              <span>Школ найдено:</span>
               <span className="font-medium">
                 {filteredSchoolsCount !== undefined
                   ? filteredSchoolsCount
                   : uniqueSchools.length}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span>Районов показано:</span>
+              <span className="font-medium">
+                {filteredPolygonsCount !== undefined
+                  ? filteredPolygonsCount
+                  : 0}
               </span>
             </div>
             {selectedSchool && (
