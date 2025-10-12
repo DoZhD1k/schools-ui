@@ -56,7 +56,7 @@ const useGeoJSONData = () => {
 
     try {
       console.log("Fetching fresh GeoJSON data...");
-      const res = await fetch("/api/geo-data", {
+      const res = await fetch("/api/geo", {
         headers: { Authorization: `Bearer ${accessToken}` },
         // Add cache control headers
         cache: "no-cache",
@@ -74,7 +74,7 @@ const useGeoJSONData = () => {
         const features: Array<Feature<MultiPolygon, EnrichedGridProperties>> =
           raw.map((item) => {
             const { id, properties, geometry } = item;
-            const { geometry: _unused, ...cleanProps } = properties;
+            const { geometry: geometryFromProps, ...cleanProps } = properties;
             // Apply normalization to properties
             const normalizedProps = normalizeProperties(cleanProps);
             return {

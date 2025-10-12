@@ -106,7 +106,7 @@ export function cn(...classes: (string | boolean | undefined)[]): string {
 }
 
 // Responsive spacing utility - returns different values based on screen size
-export function responsiveValue<T>(
+export function useResponsiveValue<T>(
   defaultValue: T,
   {
     sm,

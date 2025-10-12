@@ -222,6 +222,17 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
         credentials: "include", // Important for cookies
       });
 
+      // Check if response is JSON
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        // If not JSON, it's likely an HTML error page
+        const text = await response.text();
+        console.error("Non-JSON response received:", text);
+        throw new Error(
+          signIn.errors.generic || "Server returned invalid response"
+        );
+      }
+
       const data = (await response.json()) as LoginResponse;
 
       if (response.ok) {
@@ -438,6 +449,49 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
             >
               {signIn.description}
             </motion.p>
+
+            {/* Admin Mock Data */}
+            <motion.div
+              className="mt-4 p-3 bg-muted/50 border border-border rounded-sm"
+              variants={descVariants}
+            >
+              <p className="text-xs font-medium text-foreground mb-2">
+                Admin Test Account:
+              </p>
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    Username:
+                  </span>
+                  <code
+                    className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText("admin");
+                      toast.success("Username copied!");
+                    }}
+                  >
+                    admin
+                  </code>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">
+                    Password:
+                  </span>
+                  <code
+                    className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
+                    onClick={() => {
+                      navigator.clipboard.writeText("admin123");
+                      toast.success("Password copied!");
+                    }}
+                  >
+                    admin123
+                  </code>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 italic">
+                Click to copy
+              </p>
+            </motion.div>
           </div>
 
           <Form {...form}>

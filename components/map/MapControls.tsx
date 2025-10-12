@@ -29,9 +29,11 @@ import type { EnrichedGridProperties } from "@/types/geojson";
 import { getDictionary } from "@/get-dictionary";
 import type { Locale } from "@/i18n-config";
 
+type Dictionary = Awaited<ReturnType<typeof getDictionary>>;
+
 export default function MapControls() {
   const [isOpen, setIsOpen] = useState(true);
-  const [dictionary, setDictionary] = useState<any>(null);
+  const [dictionary, setDictionary] = useState<Dictionary | null>(null);
   const params = useParams();
 
   const {

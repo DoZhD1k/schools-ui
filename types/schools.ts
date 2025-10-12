@@ -216,6 +216,53 @@ export interface DistrictStats {
   averageRating: number;
 }
 
+// Для модального окна с таблицей школ
+export interface SchoolModalData {
+  title: string;
+  schools: School[];
+  zone?: "green" | "yellow" | "red";
+  district?: District;
+}
+
+// Для круговых индикаторов рейтинга
+export interface RatingIndicator {
+  zone: "green" | "yellow" | "red";
+  count: number;
+  percentage: number;
+  color: string;
+  label: string;
+}
+
+// Данные для главной таблицы рейтингов со всеми показателями
+export interface DetailedSchoolRating extends School {
+  overallRating: number;
+  qualityKnowledge: number;
+  resultsDynamics: number;
+  talentDevelopment: number;
+  teacherQualification: number;
+  teacherAchievements: number;
+  schoolEquipment: number;
+  internationalRelations: number;
+  schoolSafety: number;
+  educationalWork: number;
+  inclusionAndImprovement: number;
+  hasPassport: boolean;
+}
+
+// Настройки сортировки для таблицы
+export interface TableSortConfig {
+  column: keyof DetailedSchoolRating;
+  order: "asc" | "desc";
+}
+
+// Фильтры для главной таблицы
+export interface AdvancedSchoolFilters extends SchoolFilters {
+  selectedSchools?: string[]; // для чекбоксов
+  ratingMin?: number;
+  ratingMax?: number;
+  showPassportOnly?: boolean;
+}
+
 // Пользователи системы
 export interface User {
   id: string;

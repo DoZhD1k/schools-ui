@@ -1,13 +1,14 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useSchoolsMap } from "@/hooks/useSchoolsMap";
-import SchoolsMapFilters from "@/components/map/SchoolsMapFilters";
+import { useDistrictFilters } from "@/hooks/useDistrictFilters";
+import { MapProvider } from "@/contexts/map-context";
+import UnifiedFilters from "@/components/map/UnifiedFilters";
 import MapLoading from "@/components/map/MapLoading";
 
-// Dynamically import the SchoolsMapContainer to avoid SSR issues with mapbox-gl
-const SchoolsMapContainer = dynamic(
-  () => import("@/components/map/SchoolsMapContainer"),
+// Dynamically import the MapWithPolygons to avoid SSR issues with mapbox-gl
+const MapWithPolygons = dynamic(
+  () => import("@/components/map/MapWithPolygons"),
   {
     ssr: false,
     loading: () => <MapLoading />,
@@ -16,17 +17,18 @@ const SchoolsMapContainer = dynamic(
 
 export default function MapPage() {
   const {
-    filteredSchools,
-    selectedSchool,
-    filters,
     loading,
     error,
-    applyFilters,
-    resetFilters,
+    filteredPolygons,
+    filteredSchools,
+    filters,
     selectSchool,
-    getFilterOptions,
-    getStatistics,
-  } = useSchoolsMap();
+    searchSchool,
+    resetFilters,
+    getUniqueSchools,
+    getUniqueDistricts,
+    selectDistricts,
+  } = useDistrictFilters();
 
   if (loading) {
     return (
@@ -46,7 +48,7 @@ export default function MapPage() {
 
   if (error) {
     return (
-      <div className="h-[100vh] w-full flex items-center justify-center bg-red-50">
+      <div className="h-[90vh] w-full flex items-center justify-center bg-red-50">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-md text-center">
           <h3 className="font-bold text-red-600 mb-2">
             Ошибка загрузки данных
@@ -64,20 +66,33 @@ export default function MapPage() {
   }
 
   return (
-    <div className="relative h-[100vh] w-full overflow-hidden">
-      <SchoolsMapContainer
-        schools={filteredSchools}
-        selectedSchool={selectedSchool}
-        onSchoolSelect={selectSchool}
-      />
+    <MapProvider>
+      <div className="relative h-[100vh] w-full overflow-hidden">
+        <MapWithPolygons
+          schools={filteredSchools}
+          selectedSchool={null}
+          onSchoolSelect={() => {}}
+          mode="polygons"
+          districtPolygons={filteredPolygons}
+        />
 
-      <SchoolsMapFilters
-        filters={filters}
-        filterOptions={getFilterOptions()}
-        statistics={getStatistics()}
-        onFiltersChange={applyFilters}
-        onReset={resetFilters}
-      />
-    </div>
+        {/* Объединенные фильтры */}
+        <div className="absolute top-4 left-4 z-20 max-w-md">
+          <UnifiedFilters
+            selectedSchool={filters.selectedSchool}
+            schoolSearchQuery={filters.schoolSearchQuery}
+            uniqueSchools={getUniqueSchools()}
+            uniqueDistricts={getUniqueDistricts()}
+            selectedDistricts={filters.district || []}
+            filteredSchoolsCount={filteredSchools.length}
+            filteredPolygonsCount={filteredPolygons.length}
+            onSchoolSelect={selectSchool}
+            onSchoolSearch={searchSchool}
+            onDistrictChange={selectDistricts}
+            onReset={resetFilters}
+          />
+        </div>
+      </div>
+    </MapProvider>
   );
 }

@@ -30,7 +30,7 @@ import { School, District, SchoolFilters } from "@/types/schools";
 import { SchoolsService } from "@/services/schools.service";
 import { getRatingZoneColor, sortSchools } from "@/lib/rating-utils";
 
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 10;
 
 export default function OrganizationsPage() {
   const [filteredSchools, setFilteredSchools] = useState<School[]>([]);

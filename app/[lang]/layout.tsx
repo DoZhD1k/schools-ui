@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 
-import { i18n, type Locale } from "@/i18n-config";
+import { i18n } from "@/i18n-config";
 
 import "@/app/globals.css";
 
@@ -14,20 +14,22 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Datapolis",
+  title: "Цифровой рейтинг школ",
   description:
-    "Datapolis is a web application that provides a platform for data visualization and analysis.",
+    "Цифровой рейтинг школ - это веб-приложение, которое предоставляет платформу для визуализации и анализа данных.",
 };
 
 export async function generateStaticParams() {
   return i18n.locales.map((locale) => ({ lang: locale }));
 }
 
-export default async function RootLayout(props: {
+export default async function RootLayout({
+  children,
+  params,
+}: {
   children: React.ReactNode;
-  params: { lang: Locale };
-}) {
-  const { children, params } = props;
+  params: Promise<{ lang: string }>;
+}): Promise<React.ReactNode> {
   // Await the params to access the lang property
   const { lang } = await params;
 

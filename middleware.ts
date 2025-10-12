@@ -29,7 +29,8 @@ export function middleware(request: NextRequest) {
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
   // Define regex for public files
-  const PUBLIC_FILE = /\.(?:svg|png|jpe?g|gif|webp|avif|ico|txt|xml|json|mp4|mp3)$/i;
+  const PUBLIC_FILE =
+    /\.(?:svg|png|jpe?g|gif|webp|avif|ico|txt|xml|json|mp4|mp3)$/i;
 
   // Check if pathname should be ignored (public files and Next.js internals)
   if (
@@ -38,7 +39,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/favicon") ||
     pathname.startsWith("/static") ||
     pathname.startsWith("/assets") ||
-    pathname.startsWith("/images") ||   // ВАЖНО: ваша папка со статикой
+    pathname.startsWith("/images") || // ВАЖНО: ваша папка со статикой
     PUBLIC_FILE.test(pathname)
   ) {
     return NextResponse.next();

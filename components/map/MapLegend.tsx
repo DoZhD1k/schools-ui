@@ -7,8 +7,10 @@ import { metricOptions } from "@/lib/map-constants";
 import { getDictionary } from "@/get-dictionary";
 import type { Locale } from "@/i18n-config";
 
+type Dictionary = Awaited<ReturnType<typeof getDictionary>>;
+
 export default function MapLegend() {
-  const [dictionary, setDictionary] = useState<any>(null);
+  const [dictionary, setDictionary] = useState<Dictionary | null>(null);
   const params = useParams();
   const { activeMetric, colorScheme, metricMaxValues } = useMapContext();
 
@@ -29,7 +31,9 @@ export default function MapLegend() {
 
   // Get translated label if dictionary is loaded
   const metricLabel =
-    dictionary?.map.infoPanel.metrics[activeMetric] ||
+    (dictionary?.map.infoPanel.metrics as Record<string, string>)?.[
+      activeMetric
+    ] ||
     metricOption?.label ||
     activeMetric;
 

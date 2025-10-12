@@ -6,8 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
   Filter,
@@ -415,41 +413,6 @@ export default function SchoolsMapFilters({
                       </div>
                     ))}
                   </div>
-                </CollapsibleContent>
-              </Collapsible>
-
-              {/* Rating Range */}
-              <Collapsible
-                open={!collapsedSections.rating}
-                onOpenChange={() => toggleSection("rating")}
-              >
-                <CollapsibleTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-between p-0 h-auto font-medium text-sm"
-                  >
-                    <span>
-                      Рейтинг: {filters.ratingRange?.[0] || 1} -{" "}
-                      {filters.ratingRange?.[1] || 5}
-                    </span>
-                    {collapsedSections.rating ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronUp className="h-4 w-4" />
-                    )}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 pt-2">
-                  <Slider
-                    min={1}
-                    max={5}
-                    step={0.1}
-                    value={filters.ratingRange || [1, 5]}
-                    onValueChange={(value) =>
-                      updateFilter("ratingRange", value as [number, number])
-                    }
-                    className="w-full"
-                  />
                 </CollapsibleContent>
               </Collapsible>
 
