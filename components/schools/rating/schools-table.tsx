@@ -1,13 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Eye,
-  MapPin,
-  Building2,
-  ChevronLeft,
-  ChevronRight,
-} from "lucide-react";
+import { Eye, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CombinedSchool } from "./school-card";
 
@@ -64,27 +58,6 @@ export const SchoolsTable = ({
     return (
       <span className={`${colorClass} font-semibold px-2 py-1 rounded-md`}>
         {value.toFixed(1)}%
-      </span>
-    );
-  };
-
-  const getColoredRating = (rating: number | null) => {
-    if (rating === null || rating === undefined) return "—";
-    if (rating >= 4.3)
-      return (
-        <span className="bg-green-400 font-semibold px-2 py-1 rounded-md">
-          {rating}
-        </span>
-      );
-    if (rating >= 3.0)
-      return (
-        <span className="bg-yellow-400 font-semibold px-2 py-1 rounded-md">
-          {rating}
-        </span>
-      );
-    return (
-      <span className="bg-red-400 font-semibold px-2 py-1 rounded-md">
-        {rating}
       </span>
     );
   };

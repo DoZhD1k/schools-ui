@@ -34,7 +34,7 @@ export function usePolygons(): UsePolygonsReturn {
           filters || polygonFilters
         );
         const data = await PolygonsService.getAllPolygons(
-          filters || polygonFilters
+          filters || polygonFilters || undefined
         );
 
         setPolygons(data);

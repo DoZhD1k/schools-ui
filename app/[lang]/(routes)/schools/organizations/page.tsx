@@ -4,21 +4,19 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import { useParams } from "next/navigation";
 import {
   School,
   Building2,
   Users,
-  LogOut,
   Search,
   Download,
   ChevronLeft,
   ChevronRight,
-  BarChart3,
   Trophy,
   TrendingDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -27,7 +25,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import Link from "next/link";
 
 import { IntegratedSchoolsService } from "@/services/integrated-schools.service";
 import { School as SchoolType } from "@/types/schools";
@@ -36,10 +33,6 @@ import {
   OrganizationsTable,
   type OrganizationData,
 } from "@/components/schools/organizations";
-
-interface OrganizationsPageProps {
-  params: { lang: string };
-}
 
 // Утилита для декодирования JWT токена
 function decodeJWT(token: string) {
@@ -61,10 +54,12 @@ function decodeJWT(token: string) {
   }
 }
 
-function OrganizationsPage({ params }: OrganizationsPageProps) {
-  const { accessToken, logout } = useAuth();
+function OrganizationsPage() {
+  const params = useParams() as { lang: string };
+  const { lang } = params;
+  const { accessToken } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
-  const [userName, setUserName] = useState<string>("Пользователь");
+  const [, setUserName] = useState<string>("Пользователь");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("all");
@@ -236,7 +231,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
   };
 
   const handleViewOrganization = (org: OrganizationData) => {
-    window.location.href = `/${params.lang}/schools/passport/${org.id}`;
+    window.location.href = `/${lang}/schools/passport/${org.id}`;
   };
 
   const handleSort = (column: string) => {
@@ -295,7 +290,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
               </div>
             </div>
             <div className="flex items-center space-x-3">
-              <Link href={`/${params.lang}/dashboard`}>
+              <Link href={`/${lang}/dashboard`}>
                 <Button
                   variant="outline"
                   size="sm"
@@ -305,7 +300,7 @@ function OrganizationsPage({ params }: OrganizationsPageProps) {
                   Главная
                 </Button>
               </Link>
-              <Link href={`/${params.lang}/schools/rating`}>
+              <Link href={`/${lang}/schools/rating`}>
                 <Button
                   variant="outline"
                   size="sm"

@@ -4,7 +4,8 @@ import { redirect } from "next/navigation";
 export default async function HomePage({
   params,
 }: {
-  params: { lang: Locale };
+  params: Promise<{ lang: Locale }>;
 }) {
-  return redirect(`/${params.lang}/dashboard`);
+  const { lang } = await params;
+  return redirect(`/${lang}/dashboard`);
 }

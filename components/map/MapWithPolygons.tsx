@@ -2,7 +2,6 @@
 
 import React from "react";
 import MapContainer from "./MapContainer";
-import SchoolsMapContainer from "./SchoolsMapContainer";
 import { useMapContext } from "@/contexts/map-context";
 import type { SchoolFeature, DistrictPolygon } from "@/types/schools-map";
 
@@ -21,8 +20,6 @@ interface MapWithPolygonsProps {
 export default function MapWithPolygons({
   className = "",
   schools = [],
-  selectedSchool = null,
-  onSchoolSelect,
   mode = "both",
   districtPolygons = [],
 }: MapWithPolygonsProps) {
@@ -39,29 +36,6 @@ export default function MapWithPolygons({
       {/* Render different components based on mode */}
       {mode === "polygons" && (
         <MapContainer districtPolygons={districtPolygons} schools={schools} />
-      )}
-      {mode === "schools" && (
-        <SchoolsMapContainer
-          schools={schools}
-          selectedSchool={selectedSchool}
-          onSchoolSelect={onSchoolSelect || (() => {})}
-        />
-      )}
-      {mode === "both" && (
-        <>
-          {showPolygons ? (
-            <MapContainer
-              districtPolygons={districtPolygons}
-              schools={schools}
-            />
-          ) : (
-            <SchoolsMapContainer
-              schools={schools}
-              selectedSchool={selectedSchool}
-              onSchoolSelect={onSchoolSelect || (() => {})}
-            />
-          )}
-        </>
       )}
 
       {/* Loading indicator styles */}

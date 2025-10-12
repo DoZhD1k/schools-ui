@@ -3,7 +3,6 @@
 import React from "react";
 import { School, BarChart3, MapPin, TrendingDown, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import Link from "next/link";
 
 interface PageHeaderProps {
@@ -12,7 +11,7 @@ interface PageHeaderProps {
   lang: string;
 }
 
-export const PageHeader = ({ userName, onLogout, lang }: PageHeaderProps) => {
+export const PageHeader = ({ onLogout, lang }: PageHeaderProps) => {
   return (
     <header className="hidden relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
       <div className="container mx-auto px-6 py-4">

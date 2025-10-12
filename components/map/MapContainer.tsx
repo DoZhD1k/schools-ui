@@ -7,9 +7,7 @@ import useGeoJSONData from "@/hooks/useGeoJSONData";
 import { useMapContext } from "@/contexts/map-context";
 import { createPopupHtml } from "./MapPopup";
 import PolygonsLayer from "./PolygonsLayer";
-// import SchoolsLayer from "./SchoolsLayer"; // ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ОТЛАДКИ
 import SchoolPolygonsLayer from "./SchoolPolygonsLayer";
-// import MapDebugInfo from "./MapDebugInfo";
 import LayerOrderTest from "./LayerOrderTest";
 import type { FilterSpecification } from "mapbox-gl";
 import { EnrichedGridProperties } from "@/types/geojson";
@@ -550,9 +548,6 @@ export default function MapContainer({
         />
       )}
 
-      {/* Add schools points layer when map is loaded - ВРЕМЕННО ОТКЛЮЧЕНО ДЛЯ ОТЛАДКИ */}
-      {/* {mapLoaded && map.current && <SchoolsLayer mapInstance={map.current} />} */}
-
       {/* Add schools polygons layer when map is loaded */}
       {mapLoaded && map.current && (
         <SchoolPolygonsLayer
@@ -560,9 +555,6 @@ export default function MapContainer({
           filteredSchools={schools}
         />
       )}
-
-      {/* Debug info */}
-      {/* <MapDebugInfo mapInstance={map.current} /> */}
 
       {/* Layer order test - temporary debug component */}
       {mapLoaded && map.current && <LayerOrderTest mapInstance={map.current} />}

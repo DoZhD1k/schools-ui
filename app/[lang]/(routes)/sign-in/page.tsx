@@ -5,7 +5,7 @@ import LoginForm from "./login-form";
 export default async function SignInPage({
   params,
 }: {
-  params: { lang: Locale };
+  params: Promise<{ lang: Locale }>;
 }) {
   // Await the params to access the lang property
   const { lang } = await params;

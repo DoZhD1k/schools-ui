@@ -4,11 +4,10 @@ import { useEffect, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import type { FilterSpecification } from "mapbox-gl";
 import { useMapContext } from "@/contexts/map-context";
-import type { PolygonFeature } from "@/types/polygons";
 import type { DistrictPolygon } from "@/types/schools-map";
 
 // Вспомогательные функции для работы с полигонами
-const getAllPolygons = async (filters: any) => {
+const getAllPolygons = async () => {
   try {
     const response = await fetch(
       "/api/v1/institutions-monitoring/balance-enriched/?limit=10000",
@@ -36,8 +35,25 @@ const getAllPolygons = async (filters: any) => {
   }
 };
 
-const formatPolygonData = (polygonFeature: any) => {
-  const props = polygonFeature.properties || {};
+interface PolygonFeatureProperties {
+  polygon_id: number;
+  year?: number;
+  name?: string;
+  capacity_with_shifts_weighted: number;
+  demand_public_6_17: number;
+  [key: string]: unknown;
+}
+
+interface PolygonGeoJSONFeature {
+  properties?: PolygonFeatureProperties;
+  geometry?: {
+    type: string;
+    coordinates: unknown;
+  };
+}
+
+const formatPolygonData = (polygonFeature: PolygonGeoJSONFeature) => {
+  const props = polygonFeature.properties || ({} as PolygonFeatureProperties);
   return {
     id: props.polygon_id,
     year: props.year,
@@ -54,16 +70,27 @@ const formatPolygonData = (polygonFeature: any) => {
   };
 };
 
-const createFilterSpecification = (filters: any): FilterSpecification => {
+interface PolygonFilters {
+  year?: number;
+  [key: string]: unknown;
+}
+
+const createFilterSpecification = (
+  filters: PolygonFilters | null
+): FilterSpecification => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const conditions: any[] = ["all"];
 
   if (filters && filters.year) {
     conditions.push(["==", ["get", "year"], filters.year]);
   }
 
-  return conditions.length > 1 ? conditions : ["has", "polygon_id"];
+  return (
+    conditions.length > 1 ? conditions : ["has", "polygon_id"]
+  ) as FilterSpecification;
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createGeoJSONFeature = (polygon: any) => {
   const formattedData = formatPolygonData(polygon);
 
@@ -77,6 +104,7 @@ const createGeoJSONFeature = (polygon: any) => {
   };
 };
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const createGeoJSONData = (polygons: any[]) => {
   return {
     type: "FeatureCollection" as const,
@@ -125,7 +153,7 @@ export default function PolygonsLayer({
     usingFilteredPolygons: !!districtPolygons,
   });
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load polygons data when component mounts or filters change
@@ -145,7 +173,7 @@ export default function PolygonsLayer({
       setError(null);
 
       try {
-        const polygonData = await getAllPolygons(polygonFilters);
+        const polygonData = await getAllPolygons();
         setPolygons(polygonData);
         console.log("✅ Polygons loaded successfully:", polygonData.length);
       } catch (err) {
@@ -256,7 +284,9 @@ export default function PolygonsLayer({
           feature.geometry.type === "Polygon" &&
           feature.geometry.coordinates
         ) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           feature.geometry.coordinates.forEach((ring: any) => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             ring.forEach((coord: any) => {
               bounds.extend(coord as [number, number]);
             });

@@ -1,12 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Search, X, Filter, MapPin, School, Eye, EyeOff } from "lucide-react";
-import { useMapContext } from "@/contexts/map-context";
+import { Search, X, Filter, School } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Separator } from "@/components/ui/separator";
+
 import { Button } from "@/components/ui/button";
 
 interface UniqueSchool {
@@ -46,8 +43,6 @@ export default function UnifiedFilters({
   onDistrictChange,
   onReset,
 }: UnifiedFiltersProps) {
-  const { showPolygons, setShowPolygons } = useMapContext();
-
   const [localSearchQuery, setLocalSearchQuery] = useState(schoolSearchQuery);
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
 

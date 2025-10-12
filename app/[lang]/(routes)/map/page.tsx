@@ -27,8 +27,6 @@ export default function MapPage() {
     resetFilters,
     getUniqueSchools,
     getUniqueDistricts,
-    getUniqueEducationTypes,
-    getAvailableLanguages,
     selectDistricts,
   } = useDistrictFilters();
 

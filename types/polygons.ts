@@ -43,6 +43,7 @@ export interface PolygonsApiResponse {
 
 /** Фильтры для полигонов */
 export interface PolygonFilters {
+  year?: number;
   status?: "surplus" | "deficit" | "all";
   minCapacity?: number;
   maxCapacity?: number;

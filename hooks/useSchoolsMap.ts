@@ -6,6 +6,10 @@ export const useSchoolsMap = () => {
   const [state, setState] = useState<MapState>({
     schools: [],
     filteredSchools: [],
+    balanceData: [],
+    districtPolygons: [],
+    schoolLanguageMappings: [],
+    filteredPolygons: [],
     filters: {},
     loading: true,
     error: null,

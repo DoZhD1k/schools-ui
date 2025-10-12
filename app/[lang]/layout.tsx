@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Toaster } from "sonner";
 
-import { i18n, type Locale } from "@/i18n-config";
+import { i18n } from "@/i18n-config";
 
 import "@/app/globals.css";
 
@@ -23,11 +23,13 @@ export async function generateStaticParams() {
   return i18n.locales.map((locale) => ({ lang: locale }));
 }
 
-export default async function RootLayout(props: {
+export default async function RootLayout({
+  children,
+  params,
+}: {
   children: React.ReactNode;
-  params: { lang: Locale };
-}) {
-  const { children, params } = props;
+  params: Promise<{ lang: string }>;
+}): Promise<React.ReactNode> {
   // Await the params to access the lang property
   const { lang } = await params;
 

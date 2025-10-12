@@ -5,20 +5,14 @@ import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
 import {
-  School,
   Building2,
   Users,
   MapPin,
-  LogOut,
-  ArrowLeft,
   Download,
   User,
   Phone,
   Calendar,
-  BarChart3,
   TrendingUp,
-  TrendingDown,
-  Minus,
   BookOpen,
   Award,
   Monitor,
@@ -29,10 +23,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import Link from "next/link";
 import {
   LineChart,
   Line,
@@ -83,10 +75,10 @@ function decodeJWT(token: string) {
 // Пустой объект - будем загружать данные из API
 
 function SchoolPassportPage({ params }: SchoolPassportPageProps) {
-  const { accessToken, logout } = useAuth();
+  const { accessToken } = useAuth();
   const resolvedParams = use(params);
   const [isLoading, setIsLoading] = useState(true);
-  const [userName, setUserName] = useState<string>("Пользователь");
+  const [, setUserName] = useState<string>("Пользователь");
   const [passportData, setPassportData] = useState<SchoolPassportData | null>(
     null
   );
@@ -132,14 +124,6 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
       }
     }
   }, [accessToken]);
-
-  const formatTrend = (current: number, previous: number) => {
-    const diff = current - previous;
-    if (Math.abs(diff) < 0.5)
-      return <Minus className="h-4 w-4 text-gray-400" />;
-    if (diff > 0) return <TrendingUp className="h-4 w-4 text-green-500" />;
-    return <TrendingDown className="h-4 w-4 text-red-500" />;
-  };
 
   const getRatingZoneColor = (zone: string) => {
     switch (zone) {
@@ -202,8 +186,6 @@ function SchoolPassportPage({ params }: SchoolPassportPageProps) {
     schoolEquipment,
     internationalRelations,
     security,
-    educationalWork,
-    inclusion,
   } = passportData;
 
   // Подготовка данных для графиков

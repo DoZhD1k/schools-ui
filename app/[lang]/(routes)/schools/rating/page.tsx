@@ -4,9 +4,8 @@ import React, { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
-import { GraduationCap, LogOut } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { GraduationCap } from "lucide-react";
+import { useParams } from "next/navigation";
 
 // Импорт компонентов schools-rating
 import DistrictSchoolsChart from "@/components/schools/district-schools-chart";
@@ -19,19 +18,17 @@ import { IntegratedSchoolsService } from "@/services/integrated-schools.service"
 import { Card, CardContent } from "@/components/ui/card";
 import { School, District, DistrictStats } from "@/types/schools";
 
-interface SchoolsPageProps {
-  params: { lang: string };
-}
-
-function SchoolsRatingPage({ params }: SchoolsPageProps) {
-  const { logout, accessToken } = useAuth();
+function SchoolsRatingPageClient() {
+  const params = useParams() as { lang: string };
+  const { lang } = params;
+  const { accessToken } = useAuth();
 
   // State management
   const [schools, setSchools] = useState<School[]>([]);
   const [districts, setDistricts] = useState<District[]>([]);
   const [districtStats, setDistrictStats] = useState<DistrictStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [userName, setUserName] = useState<string>("Пользователь");
+  const [, setUserName] = useState<string>("Пользователь");
 
   // Decode JWT to get username
   useEffect(() => {
@@ -116,7 +113,7 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
   };
 
   const handleViewPassport = (schoolId: string) => {
-    window.location.href = `/${params.lang}/schools/passport/${schoolId}`;
+    window.location.href = `/${lang}/schools/passport/${schoolId}`;
   };
 
   if (loading) {
@@ -129,49 +126,6 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
-      {/* Header */}
-      {/* <header className="relative bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm">
-        <div className="mx-12 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20"></div>
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm border border-slate-200/60 shadow-lg transform hover:scale-105 transition-all duration-300">
-                  <GraduationCap className="h-6 w-6 text-slate-700" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-800">
-                  Рейтинг школ
-                </h1>
-                <p className="text-sm text-slate-600 font-medium">
-                  Система мониторинга образовательных организаций
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20"></div>
-                <Avatar className="relative h-9 w-9 bg-white/90 backdrop-blur-sm border border-slate-200/60">
-                  <AvatarFallback className="bg-transparent text-slate-700 text-sm font-semibold">
-                    {userName.charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                className="text-slate-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm border border-transparent hover:border-red-200/50 rounded-xl transition-all duration-300"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Выйти
-              </Button>
-            </div>
-          </div>
-        </div>
-      </header> */}
-
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-slate-700/90">
         <div className="absolute inset-0">
@@ -332,4 +286,4 @@ function SchoolsRatingPage({ params }: SchoolsPageProps) {
   );
 }
 
-export default withAuth(SchoolsRatingPage);
+export default withAuth(SchoolsRatingPageClient);

@@ -5,7 +5,6 @@ import {
   X,
   MapPin,
   School,
-  Trophy,
   Award,
   GraduationCap,
   Users,
@@ -16,7 +15,7 @@ import {
   LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CombinedSchool } from "../../app/[lang]/(routes)/schools/page copy";
+import { CombinedSchool } from "./rating/school-card";
 
 type RatingKeys =
   | "academic_results_rating"
