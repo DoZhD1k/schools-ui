@@ -263,7 +263,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                     характеристиках, контактных данных и показателях
                     деятельности.
                   </p>
-                  <Link href={`/${params.lang}/schools`}>
+                  <Link href={`/${params.lang}/schools/organizations`}>
                     <Button
                       className="w-full bg-white/10 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] text-white hover:bg-white/15 hover:border-[hsl(0_0%_100%_/_0.15)] font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                       size="lg"
@@ -297,7 +297,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                     Комплексная система оценки школ на основе академических
                     результатов, инфраструктуры и качества образования.
                   </p>
-                  <Link href={`/${params.lang}/ratings`}>
+                  <Link href={`/${params.lang}/schools/rating`}>
                     <Button
                       className="w-full bg-white/10 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] text-white hover:bg-white/15 hover:border-[hsl(0_0%_100%_/_0.15)] font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                       size="lg"

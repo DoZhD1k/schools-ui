@@ -7,11 +7,12 @@ import useGeoJSONData from "@/hooks/useGeoJSONData";
 import { useMapContext } from "@/contexts/map-context";
 import { createPopupHtml } from "./MapPopup";
 import PolygonsLayer from "./PolygonsLayer";
-import SchoolPolygonsLayer from "./SchoolPolygonsLayer";
+import SchoolMarkersLayer from "./SchoolMarkersLayer";
 import LayerOrderTest from "./LayerOrderTest";
 import type { FilterSpecification } from "mapbox-gl";
 import { EnrichedGridProperties } from "@/types/geojson";
 import type { DistrictPolygon, SchoolFeature } from "@/types/schools-map";
+import type { School } from "@/types/schools";
 
 // Set Mapbox token from environment variable
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -23,11 +24,17 @@ const DEFAULT_ZOOM = 11;
 interface MapContainerProps {
   districtPolygons?: DistrictPolygon[];
   schools?: SchoolFeature[];
+  selectedSchool?: SchoolFeature | null;
+  onSchoolSelect?: (school: SchoolFeature | null) => void;
+  schoolsWithRatings?: School[];
 }
 
 export default function MapContainer({
   districtPolygons,
   schools,
+  selectedSchool,
+  onSchoolSelect,
+  schoolsWithRatings,
 }: MapContainerProps = {}) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -548,11 +555,13 @@ export default function MapContainer({
         />
       )}
 
-      {/* Add schools polygons layer when map is loaded */}
+      {/* Add schools markers layer when map is loaded */}
       {mapLoaded && map.current && (
-        <SchoolPolygonsLayer
+        <SchoolMarkersLayer
           mapInstance={map.current}
           filteredSchools={schools}
+          onSchoolSelect={onSchoolSelect}
+          schoolsWithRatings={schoolsWithRatings}
         />
       )}
 
