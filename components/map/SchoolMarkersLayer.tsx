@@ -44,8 +44,9 @@ export default function SchoolMarkersLayer({
         if (allSchools && allSchools.length > 0) {
           // Фильтруем школы с координатами (origin_marker)
           const schoolsWithCoordinates = allSchools
-            .filter((school: any) => {
+            .filter((schoolFeature: SchoolFeature) => {
               // Проверяем наличие координат в infra.origin_marker
+              const school = schoolFeature.properties;
               const hasMarker =
                 school.infra?.origin_marker?.coordinates &&
                 Array.isArray(school.infra.origin_marker.coordinates) &&
@@ -57,20 +58,21 @@ export default function SchoolMarkersLayer({
                 console.log("📍 School with coordinates:", {
                   id: school.id,
                   name: school.name_of_the_organization,
-                  coordinates: school.infra.origin_marker.coordinates,
+                  coordinates: school.infra!.origin_marker.coordinates,
                 });
                 return true;
               }
               return false;
             })
-            .map((school: any) => {
+            .map((schoolFeature: SchoolFeature) => {
               // Преобразуем данные в формат SchoolFeature с Point геометрией
+              const school = schoolFeature.properties;
               return {
                 type: "Feature" as const,
                 id: school.id,
                 geometry: {
                   type: "Point" as const,
-                  coordinates: school.infra.origin_marker.coordinates as [
+                  coordinates: school.infra!.origin_marker.coordinates as [
                     number,
                     number
                   ],
@@ -157,103 +159,103 @@ export default function SchoolMarkersLayer({
   }, []);
 
   // Создание содержимого popup для школы
-  const createSchoolPopupContent = (school: SchoolFeature): string => {
-    const props = school.properties;
+  // const createSchoolPopupContent = (school: SchoolFeature): string => {
+  //   const props = school.properties;
 
-    const getTypeLabel = () => {
-      if (
-        props.types_of_educational_institutions
-          ?.toLowerCase()
-          .includes("международн")
-      ) {
-        return '<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">МЕЖДУНАРОДНАЯ</span>';
-      }
-      return props.form_of_ownership?.includes("граждан")
-        ? '<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">ЧАСТНАЯ</span>'
-        : '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">ГОСУДАРСТВЕННАЯ</span>';
-    };
+  //   const getTypeLabel = () => {
+  //     if (
+  //       props.types_of_educational_institutions
+  //         ?.toLowerCase()
+  //         .includes("международн")
+  //     ) {
+  //       return '<span class="bg-purple-100 text-purple-800 px-2 py-1 rounded text-xs font-medium">МЕЖДУНАРОДНАЯ</span>';
+  //     }
+  //     return props.form_of_ownership?.includes("граждан")
+  //       ? '<span class="bg-orange-100 text-orange-800 px-2 py-1 rounded text-xs font-medium">ЧАСТНАЯ</span>'
+  //       : '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">ГОСУДАРСТВЕННАЯ</span>';
+  //   };
 
-    const getStatusBadge = () => {
-      if (props.is_closed_sign) {
-        return '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">Закрыта</span>';
-      } else {
-        return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Активна</span>';
-      }
-    };
+  //   const getStatusBadge = () => {
+  //     if (props.is_closed_sign) {
+  //       return '<span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs">Закрыта</span>';
+  //     } else {
+  //       return '<span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs">Активна</span>';
+  //     }
+  //   };
 
-    const getRatingBadge = () => {
-      const rating = props.gis_rating;
-      if (rating) {
-        const color =
-          rating >= 4.0 ? "green" : rating >= 3.0 ? "yellow" : "red";
-        const bgColor =
-          color === "green"
-            ? "bg-green-100 text-green-800"
-            : color === "yellow"
-            ? "bg-yellow-100 text-yellow-800"
-            : "bg-red-100 text-red-800";
-        return `<span class="${bgColor} px-2 py-1 rounded text-xs font-medium">★ ${rating.toFixed(
-          1
-        )}</span>`;
-      }
-      return '<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">Рейтинг не указан</span>';
-    };
+  //   const getRatingBadge = () => {
+  //     const rating = props.gis_rating;
+  //     if (rating) {
+  //       const color =
+  //         rating >= 4.0 ? "green" : rating >= 3.0 ? "yellow" : "red";
+  //       const bgColor =
+  //         color === "green"
+  //           ? "bg-green-100 text-green-800"
+  //           : color === "yellow"
+  //           ? "bg-yellow-100 text-yellow-800"
+  //           : "bg-red-100 text-red-800";
+  //       return `<span class="${bgColor} px-2 py-1 rounded text-xs font-medium">★ ${rating.toFixed(
+  //         1
+  //       )}</span>`;
+  //     }
+  //     return '<span class="bg-gray-100 text-gray-800 px-2 py-1 rounded text-xs">Рейтинг не указан</span>';
+  //   };
 
-    return `
-      <div class="school-marker-popup" style="min-width: 320px; font-family: system-ui, -apple-system, sans-serif;">
-        <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 12px;">
-          <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1f2937; line-height: 1.3;">
-            ${props.name_of_the_organization}
-          </h3>
-          <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
-            ${getTypeLabel()}
-            ${getStatusBadge()}
-            ${getRatingBadge()}
-          </div>
-        </div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
-          <div>
-            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Район</div>
-            <div style="font-size: 14px; font-weight: 500; color: #374151;">
-              ${props.district || "Не указан"}
-            </div>
-          </div>
-          <div>
-            <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Контингент</div>
-            <div style="font-size: 14px; font-weight: 500; color: #374151;">
-              ${
-                props.contingency_filter
-                  ? props.contingency_filter.toLocaleString()
-                  : "—"
-              }
-            </div>
-          </div>
-        </div>
+  //   return `
+  //     <div class="school-marker-popup" style="min-width: 320px; font-family: system-ui, -apple-system, sans-serif;">
+  //       <div style="border-bottom: 1px solid #e5e7eb; padding-bottom: 12px; margin-bottom: 12px;">
+  //         <h3 style="margin: 0 0 8px 0; font-size: 16px; font-weight: 600; color: #1f2937; line-height: 1.3;">
+  //           ${props.name_of_the_organization}
+  //         </h3>
+  //         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px;">
+  //           ${getTypeLabel()}
+  //           ${getStatusBadge()}
+  //           ${getRatingBadge()}
+  //         </div>
+  //       </div>
 
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Тип школы</div>
-          <div style="font-size: 14px; color: #374151;">${
-            props.group_of_school || "—"
-          }</div>
-        </div>
+  //       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+  //         <div>
+  //           <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Район</div>
+  //           <div style="font-size: 14px; font-weight: 500; color: #374151;">
+  //             ${props.district || "Не указан"}
+  //           </div>
+  //         </div>
+  //         <div>
+  //           <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Контингент</div>
+  //           <div style="font-size: 14px; font-weight: 500; color: #374151;">
+  //             ${
+  //               props.contingency_filter
+  //                 ? props.contingency_filter.toLocaleString()
+  //                 : "—"
+  //             }
+  //           </div>
+  //         </div>
+  //       </div>
 
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Тип образования</div>
-          <div style="font-size: 14px; color: #374151;">${
-            props.types_of_educational_institutions || "Не указан"
-          }</div>
-        </div>
+  //       <div style="margin-bottom: 12px;">
+  //         <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Тип школы</div>
+  //         <div style="font-size: 14px; color: #374151;">${
+  //           props.group_of_school || "—"
+  //         }</div>
+  //       </div>
 
-        <div style="margin-bottom: 12px;">
-          <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Форма собственности</div>
-          <div style="font-size: 14px; color: #374151;">${
-            props.form_of_ownership || "Не указана"
-          }</div>
-        </div>
-      </div>
-    `;
-  };
+  //       <div style="margin-bottom: 12px;">
+  //         <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Тип образования</div>
+  //         <div style="font-size: 14px; color: #374151;">${
+  //           props.types_of_educational_institutions || "Не указан"
+  //         }</div>
+  //       </div>
+
+  //       <div style="margin-bottom: 12px;">
+  //         <div style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Форма собственности</div>
+  //         <div style="font-size: 14px; color: #374151;">${
+  //           props.form_of_ownership || "Не указана"
+  //         }</div>
+  //       </div>
+  //     </div>
+  //   `;
+  // };
 
   // Инициализация слоя при наличии данных
   useEffect(() => {
