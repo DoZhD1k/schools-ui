@@ -4,6 +4,7 @@ import React from "react";
 import MapContainer from "./MapContainer";
 import { useMapContext } from "@/contexts/map-context";
 import type { SchoolFeature, DistrictPolygon } from "@/types/schools-map";
+import type { School } from "@/types/schools";
 
 interface MapWithPolygonsProps {
   className?: string;
@@ -15,13 +16,18 @@ interface MapWithPolygonsProps {
   mode?: "polygons" | "schools" | "both";
   // District polygons for new filtering system
   districtPolygons?: DistrictPolygon[];
+  // Schools with ratings for proper color coding
+  schoolsWithRatings?: School[];
 }
 
 export default function MapWithPolygons({
   className = "",
   schools = [],
+  selectedSchool,
+  onSchoolSelect,
   mode = "both",
   districtPolygons = [],
+  schoolsWithRatings = [],
 }: MapWithPolygonsProps) {
   const { showPolygons, polygons } = useMapContext();
 
@@ -35,7 +41,13 @@ export default function MapWithPolygons({
     <div className={`relative w-full h-full ${className}`}>
       {/* Render different components based on mode */}
       {mode === "polygons" && (
-        <MapContainer districtPolygons={districtPolygons} schools={schools} />
+        <MapContainer
+          districtPolygons={districtPolygons}
+          schools={schools}
+          selectedSchool={selectedSchool}
+          onSchoolSelect={onSchoolSelect}
+          schoolsWithRatings={schoolsWithRatings}
+        />
       )}
 
       {/* Loading indicator styles */}

@@ -203,7 +203,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                     </p>
                     <div className="flex items-center space-x-6">
                       <div className="text-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
-                        <div className="text-2xl font-bold">98.5%</div>
+                        <div className="text-2xl font-bold">+80%</div>
                         <div className="text-sm text-white/80">
                           Покрытие регионов
                         </div>
@@ -213,7 +213,9 @@ function DashboardPage({ params }: DashboardPageProps) {
                         <div className="text-sm text-white/80">Мониторинг</div>
                       </div>
                       <div className="text-center bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
-                        <div className="text-2xl font-bold">2.5M+</div>
+                        <div className="text-2xl font-bold">
+                          {stats.totalStudents.toLocaleString()}
+                        </div>
                         <div className="text-sm text-white/80">Учащихся</div>
                       </div>
                     </div>
@@ -263,7 +265,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                     характеристиках, контактных данных и показателях
                     деятельности.
                   </p>
-                  <Link href={`/${params.lang}/schools`}>
+                  <Link href={`/${params.lang}/schools/organizations`}>
                     <Button
                       className="w-full bg-white/10 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] text-white hover:bg-white/15 hover:border-[hsl(0_0%_100%_/_0.15)] font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                       size="lg"
@@ -297,7 +299,7 @@ function DashboardPage({ params }: DashboardPageProps) {
                     Комплексная система оценки школ на основе академических
                     результатов, инфраструктуры и качества образования.
                   </p>
-                  <Link href={`/${params.lang}/ratings`}>
+                  <Link href={`/${params.lang}/schools/rating`}>
                     <Button
                       className="w-full bg-white/10 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] text-white hover:bg-white/15 hover:border-[hsl(0_0%_100%_/_0.15)] font-semibold shadow-sm hover:shadow-md transition-all duration-300"
                       size="lg"

@@ -329,29 +329,40 @@ export default function PolygonsLayer({
     if (!mapInstance.getLayer(POLYGONS_FILL_LAYER_ID)) {
       console.log("🎨 Adding fill layer:", POLYGONS_FILL_LAYER_ID);
 
-      // Добавляем полигоны ПЕРЕД школьными полигонами
-      // Это поместит районные полигоны под школьными полигонами
+      // Добавляем полигоны ПЕРЕД дорогами и символами
+      // Это поместит районные полигоны под дорогами карты
       let beforeLayerId: string | undefined;
 
-      // Ищем школьный слой, чтобы добавить районные полигоны перед ним
-      const schoolsFillLayer = "schools-polygons-fill";
-      if (mapInstance.getLayer(schoolsFillLayer)) {
-        beforeLayerId = schoolsFillLayer;
+      // Ищем школьный слой маркеров, чтобы добавить районные полигоны перед ним
+      const schoolsMarkersLayer = "schools-markers";
+      if (mapInstance.getLayer(schoolsMarkersLayer)) {
+        beforeLayerId = schoolsMarkersLayer;
         console.log(
-          "📍 Adding district polygons BEFORE schools layer:",
+          "📍 Adding district polygons BEFORE schools markers layer:",
           beforeLayerId
         );
       } else {
-        // Если школьного слоя нет, все равно добавляем в фоне
-        // Найдем любой существующий слой, чтобы районы были снизу
+        // Ищем дорожные или символьные слои карты
         const layers = mapInstance.getStyle().layers;
-        const firstSymbolLayer = layers.find(
-          (layer) => layer.type === "symbol"
+
+        // Ищем первый дорожный слой или символьный слой карты
+        const roadOrSymbolLayer = layers.find(
+          (layer) =>
+            layer.type === "line" ||
+            layer.type === "symbol" ||
+            layer.id.includes("road") ||
+            layer.id.includes("street") ||
+            layer.id.includes("label") ||
+            layer.id.includes("waterway") ||
+            layer.source === "mapbox"
         );
-        beforeLayerId = firstSymbolLayer ? firstSymbolLayer.id : undefined;
+
+        beforeLayerId = roadOrSymbolLayer ? roadOrSymbolLayer.id : undefined;
         console.log(
-          "📍 Adding district polygons BELOW symbol layers:",
-          beforeLayerId || "at bottom"
+          "📍 Adding district polygons BELOW road/symbol layers:",
+          beforeLayerId || "at bottom",
+          "Found layer:",
+          roadOrSymbolLayer?.id
         );
       }
       mapInstance.addLayer(
@@ -414,24 +425,31 @@ export default function PolygonsLayer({
 
       // Тот же beforeLayerId что и для fill слоя
       let strokeBeforeLayerId: string | undefined;
-      const schoolsFillLayer = "schools-polygons-fill";
-      if (mapInstance.getLayer(schoolsFillLayer)) {
-        strokeBeforeLayerId = schoolsFillLayer;
+      const schoolsMarkersLayer = "schools-markers";
+      if (mapInstance.getLayer(schoolsMarkersLayer)) {
+        strokeBeforeLayerId = schoolsMarkersLayer;
         console.log(
-          "📍 Adding district stroke BEFORE schools layer:",
+          "📍 Adding district stroke BEFORE schools markers layer:",
           strokeBeforeLayerId
         );
       } else {
-        // Если школьного слоя нет, добавляем перед символьными слоями
+        // Ищем дорожные или символьные слои карты
         const layers = mapInstance.getStyle().layers;
-        const firstSymbolLayer = layers.find(
-          (layer) => layer.type === "symbol"
+        const roadOrSymbolLayer = layers.find(
+          (layer) =>
+            layer.type === "line" ||
+            layer.type === "symbol" ||
+            layer.id.includes("road") ||
+            layer.id.includes("street") ||
+            layer.id.includes("label") ||
+            layer.id.includes("waterway") ||
+            layer.source === "mapbox"
         );
-        strokeBeforeLayerId = firstSymbolLayer
-          ? firstSymbolLayer.id
+        strokeBeforeLayerId = roadOrSymbolLayer
+          ? roadOrSymbolLayer.id
           : undefined;
         console.log(
-          "📍 Adding district stroke BELOW symbol layers:",
+          "📍 Adding district stroke BELOW road/symbol layers:",
           strokeBeforeLayerId || "at bottom"
         );
       }

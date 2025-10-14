@@ -98,27 +98,30 @@ export default function DistrictSchoolsChart({
   return (
     <>
       <Card className="border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-lg">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-white">
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900 dark:text-white">
             <div className="p-2 bg-gradient-to-br from-emerald-100 to-emerald-200 dark:from-emerald-900/40 dark:to-emerald-800/40 rounded-lg">
               <Building2 className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
             </div>
-            Общее количество школ по районам
+            <div className="flex flex-col">
+              <span className="leading-tight">Общее количество школ</span>
+              <span className="leading-tight">по районам</span>
+            </div>
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="pt-2">
           <div className="p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
-            <ResponsiveContainer width="100%" height={320}>
+            <ResponsiveContainer width="100%" height={550}>
               <BarChart
                 data={chartData}
-                margin={{ top: 20, right: 30, left: 20, bottom: 80 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 120 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis
                   dataKey="name"
                   angle={-45}
                   textAnchor="end"
-                  height={80}
+                  height={90}
                   fontSize={12}
                   fontWeight="bold"
                   interval={0}
