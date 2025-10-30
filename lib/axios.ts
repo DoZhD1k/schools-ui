@@ -67,7 +67,13 @@ const processQueue = (error: unknown = null) => {
 
 export const setAuthHeader = (token: string | null) => {
   if (token) {
-    api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    // Проверяем, содержит ли токен уже префикс
+    if (token.startsWith("Token ") || token.startsWith("Bearer ")) {
+      api.defaults.headers.common["Authorization"] = token;
+    } else {
+      // Используем формат Token согласно новой API документации
+      api.defaults.headers.common["Authorization"] = `Token ${token}`;
+    }
   } else {
     delete api.defaults.headers.common["Authorization"];
   }

@@ -11,7 +11,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { setAuthHeader } from "@/lib/axios";
-import { jwtDecode } from "jwt-decode";
 
 interface AuthContextType {
   accessToken: string | null;
@@ -21,13 +20,6 @@ interface AuthContextType {
   userRole: string | null;
   isAdmin: boolean;
   logout: () => Promise<void>;
-}
-
-interface JwtPayload {
-  sub: string;
-  role?: string;
-  exp: number;
-  iat: number;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -40,18 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userRole, setUserRole] = useState<string | null>(null);
 
-  const extractRoleFromToken = (token: string): string | null => {
+  // Простая функция для извлечения роли из токена
+  // Согласно API документации, роль должна определяться на основе данных пользователя
+  const extractRoleFromLocalStorage = (): string | null => {
     try {
-      // Check if token has the correct JWT format (3 parts separated by dots)
-      if (!token || token.split(".").length !== 3) {
-        console.error("Invalid token format:", token);
-        return null;
-      }
-
-      const decodedToken = jwtDecode<JwtPayload>(token);
-      return decodedToken.role || null;
+      // Попробуем получить роль из localStorage, где мы её сохранили при входе
+      const savedRole = localStorage.getItem("userRole");
+      return savedRole;
     } catch (error) {
-      console.error("Error decoding token:", error);
+      console.error("Error getting user role:", error);
       return null;
     }
   };
@@ -59,14 +48,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setAccessToken = useCallback(
     (token: string | null, expires_in?: number) => {
       setAccessTokenState(token);
-      setAuthHeader(token);
 
+      // Обновляем заголовок авторизации для axios
+      // Согласно API документации используем формат "Token XXX"
       if (token) {
+        setAuthHeader(`Token ${token}`);
         localStorage.setItem("accessToken", token);
-        const role = extractRoleFromToken(token);
+
+        // Роль будет установлена отдельно при успешном входе
+        const role = extractRoleFromLocalStorage();
         setUserRole(role);
       } else {
+        setAuthHeader(null);
         localStorage.removeItem("accessToken");
+        localStorage.removeItem("userRole");
         setUserRole(null);
       }
 
@@ -84,7 +79,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch("/api/sign-out", { method: "POST" });
+      // Согласно API документации, специального endpoint для logout нет
+      // Просто очищаем токен на клиенте
+      console.log("Logging out user");
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
@@ -96,6 +93,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshAccessToken = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Используем существующий endpoint для обновления токена
+      // В будущем можно адаптировать под новый API
       const response = await fetch("/api/refresh-token", { method: "POST" });
       const data = await response.json();
 
@@ -124,7 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Делаем перенаправление только если мы на защищенном маршруте и НЕ на странице входа
         if (isProtectedRoute && !isSignInPage) {
-          // Используем тихое перенаправление без перезагрузки страницы
           router.push("/sign-in");
         }
       }
@@ -143,7 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isSignInPage = window.location.pathname.includes("/sign-in");
 
       if (isProtectedRoute && !isSignInPage) {
-        // Используем тихую навигацию для предотвращения полной перезагрузки
         router.push("/sign-in");
       }
     } finally {
@@ -158,21 +155,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const savedExpiresAt = localStorage.getItem("expiresAt");
 
       if (savedToken && savedExpiresAt) {
-        // Validate token format before using it
-        if (savedToken.split(".").length !== 3) {
-          console.error("Invalid token format in localStorage, clearing...");
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("expiresAt");
-          await refreshAccessToken();
-        } else {
-          const now = Date.now();
-          const expiryTime = Number(savedExpiresAt);
+        const now = Date.now();
+        const expiryTime = Number(savedExpiresAt);
 
-          if (now < expiryTime) {
-            setAccessToken(savedToken, (expiryTime - now) / 1000);
-          } else {
-            await refreshAccessToken();
-          }
+        if (now < expiryTime) {
+          setAccessToken(savedToken, (expiryTime - now) / 1000);
+        } else {
+          await refreshAccessToken();
         }
       } else {
         await refreshAccessToken();
@@ -207,19 +196,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event.key === "accessToken") {
         if (event.newValue) {
           if (event.newValue !== accessToken) {
-            // Плавное обновление токена без перезагрузки страницы
             setAccessToken(event.newValue);
           }
         } else {
-          // При потере токена
           setAccessToken(null);
 
-          // Проверяем, находимся ли мы на защищенном маршруте
           const isProtectedRoute =
             window.location.pathname.includes("/admin") ||
             window.location.pathname.includes("/map");
 
-          // Используем тихую навигацию для предотвращения полной перезагрузки страницы
           if (isProtectedRoute) {
             router.push("/sign-in");
           }
@@ -239,7 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         isAuthenticated: !!accessToken,
         userRole,
-        isAdmin: userRole === "admin",
+        isAdmin: userRole === "Администратор", // Согласно новой API документации
         logout,
       }}
     >

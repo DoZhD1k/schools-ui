@@ -32,6 +32,7 @@ import {
 } from "@/utils/responsive";
 import { toast } from "sonner";
 import { LoginFormProps } from "@/types/dictionary";
+import { schoolRatingApiService } from "@/services/school-rating-api.service";
 
 // Interface InputWithAnimationProps and LoginResponse definitions
 interface InputWithAnimationProps {
@@ -44,12 +45,6 @@ interface InputWithAnimationProps {
   };
   type?: string;
   placeholder: string;
-}
-
-interface LoginResponse {
-  token: string;
-  expires_in: number;
-  message?: string;
 }
 
 export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
@@ -68,13 +63,10 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
 
   // Define the shape of our form schema with localized messages
   const formSchema = z.object({
-    username: z
+    email: z
       .string()
-      .min(3, { message: signIn.validation.username.min })
-      .max(50, { message: signIn.validation.username.max })
-      .regex(/^[a-zA-Z0-9_-]+$/, {
-        message: signIn.validation.username.invalid,
-      }),
+      .min(1, { message: signIn.validation.username.min }) // Используем существующие переводы
+      .email({ message: "Введите корректный email адрес" }),
     password: z
       .string()
       .min(3, { message: signIn.validation.password.min })
@@ -87,7 +79,7 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -186,8 +178,8 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
     const savedData = sessionStorage.getItem("loginForm");
     if (savedData) {
       try {
-        const { username } = JSON.parse(savedData) as { username: string };
-        form.setValue("username", username);
+        const { email } = JSON.parse(savedData) as { email: string };
+        form.setValue("email", email);
       } catch (error) {
         console.error("Failed to parse saved form data:", error);
         // Clear corrupted data
@@ -213,35 +205,19 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/sign-in", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(values),
-        credentials: "include", // Important for cookies
+      // Используем новый School Rating API
+      const result = await schoolRatingApiService.login({
+        email: values.email,
+        password: values.password,
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        // If not JSON, it's likely an HTML error page
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        throw new Error(
-          signIn.errors.generic || "Server returned invalid response"
-        );
-      }
-
-      const data = (await response.json()) as LoginResponse;
-
-      if (response.ok) {
-        setAccessToken(data.token, data.expires_in);
+      if (result.success && result.data) {
+        setAccessToken(result.data.token);
 
         // Save form data
         sessionStorage.setItem(
           "loginForm",
-          JSON.stringify({ username: values.username })
+          JSON.stringify({ email: values.email })
         );
 
         toast.success(signIn.success.title, {
@@ -250,7 +226,7 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
 
         router.push("/");
       } else {
-        throw new Error(data.message || signIn.errors.generic);
+        throw new Error(result.error || signIn.errors.generic);
       }
     } catch (error) {
       setAttempts((prev) => prev + 1);
@@ -507,16 +483,17 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
               >
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="email"
                   render={({ field }) => (
                     <FormItem className="space-y-2 sm:space-y-3">
                       <FormLabel className="text-sm sm:text-base font-normal text-foreground">
-                        {signIn.username}
+                        Email
                       </FormLabel>
                       <FormControl>
                         <InputWithAnimation
                           field={field}
-                          placeholder="ivanov"
+                          type="email"
+                          placeholder="admin@test.com"
                         />
                       </FormControl>
                       <FormMessage className="text-xs font-medium" />
