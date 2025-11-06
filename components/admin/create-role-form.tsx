@@ -21,7 +21,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
+import { adminApiService } from "@/services/admin-api.service";
 
 interface CreateRoleFormData {
   name: string;
@@ -61,7 +61,7 @@ export function CreateRoleForm({ onSuccess }: CreateRoleFormProps) {
     setIsLoading(true);
 
     try {
-      const result = await schoolRatingApiService.createRole({
+      const newRole = await adminApiService.createRole({
         name: data.name.trim(),
         can_input_data: data.can_input_data,
         can_view_reports: data.can_view_reports,
@@ -69,15 +69,9 @@ export function CreateRoleForm({ onSuccess }: CreateRoleFormProps) {
         can_form_rating: data.can_form_rating,
       });
 
-      if (result.success) {
-        toast.success("Роль успешно создана");
-        reset();
-        onSuccess();
-      } else {
-        toast.error("Ошибка создания роли", {
-          description: result.error,
-        });
-      }
+      toast.success("Роль успешно создана");
+      reset();
+      onSuccess();
     } catch (error) {
       toast.error("Ошибка создания роли", {
         description:

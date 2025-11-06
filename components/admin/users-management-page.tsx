@@ -53,8 +53,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
-import { User, Role } from "@/types/school-rating-api";
+import { adminApiService } from "@/services/admin-api.service";
+import { User, Role } from "@/services/admin-api.service";
 import { useAuth } from "@/contexts/auth-context";
 import { CreateUserForm } from "./create-user-form";
 import { EditUserForm } from "./edit-user-form";
@@ -73,17 +73,10 @@ export default function UsersManagementPage() {
   const loadUsers = async () => {
     setIsLoading(true);
     try {
-      const result = await schoolRatingApiService.getUsers({
+      const users = await adminApiService.getUsers({
         search: searchTerm || undefined,
       });
-
-      if (result.success && result.data) {
-        setUsers(result.data);
-      } else {
-        toast.error("Ошибка загрузки пользователей", {
-          description: result.error,
-        });
-      }
+      setUsers(users);
     } catch (error) {
       toast.error("Ошибка загрузки пользователей", {
         description:
@@ -95,15 +88,8 @@ export default function UsersManagementPage() {
 
   const loadRoles = async () => {
     try {
-      const result = await schoolRatingApiService.getRoles();
-
-      if (result.success && result.data) {
-        setRoles(result.data);
-      } else {
-        toast.error("Ошибка загрузки ролей", {
-          description: result.error,
-        });
-      }
+      const roles = await adminApiService.getRoles();
+      setRoles(roles);
     } catch (error) {
       toast.error("Ошибка загрузки ролей", {
         description:
@@ -126,16 +112,9 @@ export default function UsersManagementPage() {
     }
 
     try {
-      const result = await schoolRatingApiService.deleteUser(userId);
-
-      if (result.success) {
-        toast.success("Пользователь удален");
-        loadUsers(); // Перезагружаем список
-      } else {
-        toast.error("Ошибка удаления пользователя", {
-          description: result.error,
-        });
-      }
+      await adminApiService.deleteUser(userId);
+      toast.success("Пользователь удален");
+      loadUsers(); // Перезагружаем список
     } catch (error) {
       toast.error("Ошибка удаления пользователя", {
         description:
@@ -146,20 +125,13 @@ export default function UsersManagementPage() {
 
   const handleToggleUserStatus = async (user: User) => {
     try {
-      const result = await schoolRatingApiService.patchUser(user.id, {
+      await adminApiService.updateUser(user.id, {
         is_active: !user.is_active,
       });
-
-      if (result.success) {
-        toast.success(
-          `Пользователь ${user.is_active ? "деактивирован" : "активирован"}`
-        );
-        loadUsers(); // Перезагружаем список
-      } else {
-        toast.error("Ошибка изменения статуса пользователя", {
-          description: result.error,
-        });
-      }
+      toast.success(
+        `Пользователь ${user.is_active ? "деактивирован" : "активирован"}`
+      );
+      loadUsers(); // Перезагружаем список
     } catch (error) {
       toast.error("Ошибка изменения статуса пользователя", {
         description:
@@ -169,13 +141,15 @@ export default function UsersManagementPage() {
   };
 
   // Фильтрация пользователей
-  const filteredUsers = users.filter(
-    (user) =>
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.role_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredUsers = Array.isArray(users)
+    ? users.filter(
+        (user) =>
+          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          user.role_name.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : [];
 
   const getUserInitials = (user: User) => {
     return `${user.first_name.charAt(0)}${user.last_name.charAt(

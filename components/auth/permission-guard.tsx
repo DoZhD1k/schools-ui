@@ -5,7 +5,7 @@
 
 "use client";
 
-import { usePermissions, UserPermissions } from "@/hooks/usePermissions";
+import { usePermissionsLegacy, UserPermissions } from "@/hooks/usePermissions";
 
 interface PermissionGuardProps {
   permission: keyof UserPermissions;
@@ -18,9 +18,9 @@ export function PermissionGuard({
   children,
   fallback = null,
 }: PermissionGuardProps) {
-  const permissions = usePermissions();
+  const permissions = usePermissionsLegacy();
 
-  if (permissions[permission]) {
+  if (permissions && permissions[permission]) {
     return <>{children}</>;
   }
 

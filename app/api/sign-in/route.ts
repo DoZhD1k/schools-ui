@@ -1,68 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { authService } from "@/services/auth.service";
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    // Читаем моковые данные пользователей
-    const authDataPath = path.join(
-      process.cwd(),
-      "sample",
-      "mock",
-      "auth.json"
-    );
-    const authData = JSON.parse(fs.readFileSync(authDataPath, "utf8"));
+    console.log("🔐 Sign-in attempt for:", email);
 
-    // Находим пользователя по email
-    const user = authData.users.find(
-      (u: {
-        username: string;
-        password: string;
-        isActive: boolean;
-        id: number;
-        role: string;
-        email: string;
-      }) => u.email === email && u.password === password && u.isActive
-    );
+    // Используем реальный API для авторизации
+    const result = await authService.login({ email, password });
 
-    if (!user) {
+    if (!result.success) {
+      console.error("❌ Authentication failed:", result.error);
       return NextResponse.json(
-        { error: "Неверные учетные данные" }, // Формат согласно API документации
+        { error: result.error || "Неверные учетные данные" },
         { status: 401 }
       );
     }
 
-    // Получаем токены для пользователя
-    const tokens = authData.tokens[user.username];
+    console.log(
+      "✅ Authentication successful for user:",
+      result.data!.user.email
+    );
 
-    if (!tokens) {
-      return NextResponse.json(
-        { error: "Authentication tokens not found" },
-        { status: 500 }
-      );
-    }
-
-    // Сохраняем роль пользователя в localStorage будет сделано на клиенте
-    // Создаем ответ в формате согласно API документации
+    // Создаем ответ с токеном
     const response = NextResponse.json({
-      token: tokens.access_token, // Возвращаем простой токен, не JWT
+      token: result.data!.token,
+      user: result.data!.user,
     });
 
-    // Устанавливаем refresh token в httpOnly cookie
-    response.cookies.set("refresh_token", tokens.refresh_token, {
+    // Сохраняем токен в httpOnly cookie для дополнительной безопасности
+    response.cookies.set("auth_token", result.data!.token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 7 * 24 * 60 * 60, // 7 дней
+      maxAge: 24 * 60 * 60, // 24 часа
     });
 
     return response;
   } catch (error) {
-    console.error("Sign in error:", error);
+    console.error("❌ Sign in error:", error);
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Ошибка сервера. Попробуйте позже." },
       { status: 500 }
     );
   }

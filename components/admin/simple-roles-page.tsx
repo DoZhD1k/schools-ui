@@ -5,8 +5,16 @@
 
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Shield, Users, Settings, Plus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import {
+  Shield,
+  Users,
+  Settings,
+  Plus,
+  Edit,
+  Trash2,
+  MoreHorizontal,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -27,48 +35,153 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   LoadingWithError,
   useErrorHandler,
 } from "@/components/ui/error-display";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
-import { Role } from "@/types/school-rating-api";
+import { adminApiService, Role } from "@/services/admin-api.service";
 import { useAuth } from "@/contexts/auth-context";
+import { CreateRoleForm } from "./create-role-form";
+import { EditRoleForm } from "./edit-role-form";
 
 export default function SimpleRolesPage() {
   const { isAdmin } = useAuth();
   const [roles, setRoles] = useState<Role[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { error, handleError, clearError } = useErrorHandler();
+  const hasLoadedRef = useRef(false);
 
-  const loadRoles = useCallback(async () => {
-    setIsLoading(true);
-    clearError();
+  // Состояния для диалогов
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingRole, setDeletingRole] = useState<Role | null>(null);
+  const [isDeletingRole, setIsDeletingRole] = useState(false);
 
-    try {
-      const result = await schoolRatingApiService.getRoles();
+  useEffect(() => {
+    if (!isAdmin || hasLoadedRef.current) return;
+    hasLoadedRef.current = true;
 
-      if (result.success && result.data) {
-        setRoles(result.data);
-        toast.success(`Загружено ${result.data.length} ролей`);
-      } else {
+    const loadRoles = async () => {
+      setIsLoading(true);
+      clearError();
+
+      try {
+        const rolesData = await adminApiService.getRoles();
+        setRoles(rolesData);
+        toast.success(`Загружено ${rolesData.length} ролей`);
+      } catch (err) {
         handleError({
-          message: result.error || "Ошибка загрузки ролей",
+          message: err instanceof Error ? err.message : "Ошибка загрузки ролей",
           status: 400,
         });
       }
-    } catch (err) {
-      handleError(err);
-    }
 
-    setIsLoading(false);
-  }, [clearError, handleError]);
+      setIsLoading(false);
+    };
 
-  useEffect(() => {
+    loadRoles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAdmin]); // Убираем clearError и handleError из зависимостей
+
+  const retryLoadRoles = () => {
     if (isAdmin) {
-      loadRoles();
+      hasLoadedRef.current = false; // Сбрасываем флаг для повторной загрузки
+      setIsLoading(true);
+      clearError();
+
+      adminApiService
+        .getRoles()
+        .then((rolesData) => {
+          setRoles(rolesData);
+          toast.success(`Загружено ${rolesData.length} ролей`);
+          hasLoadedRef.current = true;
+        })
+        .catch((err) => {
+          handleError({
+            message:
+              err instanceof Error ? err.message : "Ошибка загрузки ролей",
+            status: 400,
+          });
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
-  }, [isAdmin, loadRoles]);
+  };
+
+  // Функции управления ролями
+  const handleCreateRole = () => {
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCreateSuccess = () => {
+    setIsCreateDialogOpen(false);
+    hasLoadedRef.current = false;
+    retryLoadRoles();
+  };
+
+  const handleEditRole = (role: Role) => {
+    setEditingRole(role);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditSuccess = () => {
+    setIsEditDialogOpen(false);
+    setEditingRole(null);
+    hasLoadedRef.current = false;
+    retryLoadRoles();
+  };
+
+  const handleDeleteRole = (role: Role) => {
+    setDeletingRole(role);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteRole = async () => {
+    if (!deletingRole) return;
+
+    setIsDeletingRole(true);
+    try {
+      await adminApiService.deleteRole(deletingRole.id);
+      toast.success(`Роль "${deletingRole.name}" успешно удалена`);
+      setIsDeleteDialogOpen(false);
+      setDeletingRole(null);
+      hasLoadedRef.current = false;
+      retryLoadRoles();
+    } catch (error) {
+      toast.error("Ошибка удаления роли", {
+        description:
+          error instanceof Error ? error.message : "Неизвестная ошибка",
+      });
+    } finally {
+      setIsDeletingRole(false);
+    }
+  };
 
   const getActivePermissionsCount = (role: Role) => {
     return [
@@ -101,7 +214,7 @@ export default function SimpleRolesPage() {
     <LoadingWithError
       isLoading={isLoading}
       error={error}
-      onRetry={loadRoles}
+      onRetry={retryLoadRoles}
       loadingText="Загрузка ролей..."
     >
       <div className="space-y-6">
@@ -113,10 +226,23 @@ export default function SimpleRolesPage() {
             </p>
           </div>
 
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Создать роль
-          </Button>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button onClick={handleCreateRole}>
+                <Plus className="h-4 w-4 mr-2" />
+                Создать роль
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Создание новой роли</DialogTitle>
+              </DialogHeader>
+              <CreateRoleForm onSuccess={handleCreateSuccess} />
+            </DialogContent>
+          </Dialog>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -191,18 +317,19 @@ export default function SimpleRolesPage() {
                   <TableHead>Аналитика</TableHead>
                   <TableHead>Рейтинг</TableHead>
                   <TableHead>Активных прав</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Загрузка...
                     </TableCell>
                   </TableRow>
                 ) : roles.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
+                    <TableCell colSpan={7} className="text-center py-8">
                       Роли не найдены
                     </TableCell>
                   </TableRow>
@@ -253,6 +380,31 @@ export default function SimpleRolesPage() {
                           {getActivePermissionsCount(role)} из 4
                         </Badge>
                       </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0">
+                              <span className="sr-only">Открыть меню</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => handleEditRole(role)}
+                            >
+                              <Edit className="mr-2 h-4 w-4" />
+                              Редактировать
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteRole(role)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Удалить
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   ))
                 )}
@@ -260,6 +412,46 @@ export default function SimpleRolesPage() {
             </Table>
           </CardContent>
         </Card>
+
+        {/* Диалог редактирования роли */}
+        {editingRole && (
+          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+            <DialogContent className="max-w-2xl">
+              <DialogHeader>
+                <DialogTitle>Редактирование роли</DialogTitle>
+              </DialogHeader>
+              <EditRoleForm role={editingRole} onSuccess={handleEditSuccess} />
+            </DialogContent>
+          </Dialog>
+        )}
+
+        {/* Диалог подтверждения удаления */}
+        <AlertDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Подтверждение удаления</AlertDialogTitle>
+              <AlertDialogDescription>
+                Вы уверены, что хотите удалить роль &quot;{deletingRole?.name}
+                &quot;? Это действие нельзя отменить.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={isDeletingRole}>
+                Отменить
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={confirmDeleteRole}
+                disabled={isDeletingRole}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                {isDeletingRole ? "Удаление..." : "Удалить"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </LoadingWithError>
   );

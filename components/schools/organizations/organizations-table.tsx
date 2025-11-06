@@ -19,23 +19,28 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Edit3,
 } from "lucide-react";
 import { OrganizationData } from "./organization-card";
 
 interface OrganizationsTableProps {
   organizations: OrganizationData[];
   onView: (org: OrganizationData) => void;
+  onEdit?: (org: OrganizationData) => void;
   onSort: (column: string) => void;
   sortBy: string;
   sortOrder: "asc" | "desc";
+  canEditSchool?: (schoolId: string) => boolean;
 }
 
 export const OrganizationsTable = ({
   organizations,
   onView,
+  onEdit,
   onSort,
   sortBy,
   sortOrder,
+  canEditSchool,
 }: OrganizationsTableProps) => {
   const [selectedOrgs, setSelectedOrgs] = useState<Set<string>>(new Set());
 
@@ -183,14 +188,29 @@ export const OrganizationsTable = ({
                 </div>
               </TableCell>
               <TableCell className="text-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onView(org)}
-                  className="h-8 px-2 text-xs"
-                >
-                  <Eye className="h-3 w-3" />
-                </Button>
+                <div className="flex items-center justify-center space-x-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onView(org)}
+                    className="h-8 px-2 text-xs"
+                    title="Просмотр паспорта"
+                  >
+                    <Eye className="h-3 w-3" />
+                  </Button>
+
+                  {canEditSchool && canEditSchool(org.id) && onEdit && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onEdit(org)}
+                      className="h-8 px-2 text-xs"
+                      title="Редактировать данные"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
               </TableCell>
             </TableRow>
           ))}

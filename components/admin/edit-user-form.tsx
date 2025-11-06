@@ -20,8 +20,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
-import { User, Role } from "@/types/school-rating-api";
+import { adminApiService } from "@/services/admin-api.service";
+import { User, Role } from "@/services/admin-api.service";
 
 interface EditUserFormProps {
   user: User;
@@ -84,21 +84,11 @@ export function EditUserForm({ user, roles, onSuccess }: EditUserFormProps) {
         updateData.school = formData.school;
       }
 
-      const result = await schoolRatingApiService.updateUser(
-        user.id,
-        updateData
-      );
-
-      if (result.success) {
-        toast.success("Пользователь обновлен", {
-          description: `Данные пользователя ${formData.first_name} ${formData.last_name} успешно обновлены`,
-        });
-        onSuccess();
-      } else {
-        toast.error("Ошибка обновления пользователя", {
-          description: result.error,
-        });
-      }
+      const updatedUser = await adminApiService.updateUser(user.id, updateData);
+      toast.success("Пользователь обновлен", {
+        description: `Данные пользователя ${formData.first_name} ${formData.last_name} успешно обновлены`,
+      });
+      onSuccess();
     } catch (error) {
       toast.error("Ошибка обновления пользователя", {
         description:

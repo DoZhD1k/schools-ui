@@ -32,9 +32,26 @@ function SchoolsRatingPageClient() {
 
   // Decode JWT to get username
   useEffect(() => {
-    if (accessToken) {
+    if (accessToken && typeof accessToken === "string") {
       try {
-        const base64Url = accessToken.split(".")[1];
+        // Remove "Token " prefix if present
+        const token = accessToken.startsWith("Token ")
+          ? accessToken.substring(6)
+          : accessToken;
+
+        // Check if token has the expected JWT format (3 parts separated by dots)
+        const tokenParts = token.split(".");
+        if (tokenParts.length !== 3) {
+          console.warn("Token is not in JWT format");
+          return;
+        }
+
+        const base64Url = tokenParts[1];
+        if (!base64Url) {
+          console.warn("Invalid JWT: missing payload");
+          return;
+        }
+
         const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
         const jsonPayload = decodeURIComponent(
           atob(base64)

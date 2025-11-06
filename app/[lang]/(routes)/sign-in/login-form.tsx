@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, JSX } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -32,7 +32,6 @@ import {
 } from "@/utils/responsive";
 import { toast } from "sonner";
 import { LoginFormProps } from "@/types/dictionary";
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
 
 // Interface InputWithAnimationProps and LoginResponse definitions
 interface InputWithAnimationProps {
@@ -50,10 +49,11 @@ interface InputWithAnimationProps {
 export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
   const { signIn } = dictionary;
   const router = useRouter();
+  const params = useParams();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { setAccessToken } = useAuth();
+  const { setAccessToken, setUserProfile } = useAuth();
   const [attempts, setAttempts] = useState<number>(0);
-  const MAX_ATTEMPTS = 5;
+  const MAX_ATTEMPTS = 125;
   const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
   // Responsive helpers
@@ -205,26 +205,46 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
     setIsLoading(true);
 
     try {
-      // Используем новый School Rating API
-      const result = await schoolRatingApiService.login({
-        email: values.email,
-        password: values.password,
+      // Используем новый API endpoint для авторизации
+      const response = await fetch("/api/sign-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
       });
 
-      if (result.success && result.data) {
-        setAccessToken(result.data.token);
+      const result = await response.json();
 
-        // Save form data
+      if (response.ok && result.token) {
+        // Устанавливаем токен в контексте авторизации
+        setAccessToken(result.token, 24 * 60 * 60); // 24 часа
+
+        // Сохраняем данные формы
         sessionStorage.setItem(
           "loginForm",
           JSON.stringify({ email: values.email })
         );
 
+        // Сохраняем и устанавливаем профиль пользователя если он пришел
+        if (result.user) {
+          localStorage.setItem("userProfile", JSON.stringify(result.user));
+          setUserProfile(result.user); // Устанавливаем профиль в контексте
+        }
+
         toast.success(signIn.success.title, {
           description: signIn.success.description,
         });
 
-        router.push("/");
+        // Небольшая задержка для обеспечения сохранения данных
+        setTimeout(() => {
+          // Получаем текущий язык из параметров URL
+          const lang = (params.lang as string) || "ru"; // Используем язык из параметров, по умолчанию 'ru'
+          router.push(`/${lang}/dashboard`); // Перенаправляем на дашборд с языком
+        }, 100);
       } else {
         throw new Error(result.error || signIn.errors.generic);
       }
@@ -426,27 +446,25 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
               {signIn.description}
             </motion.p>
 
-            {/* Admin Mock Data */}
+            {/* Real API Test Data */}
             <motion.div
               className="mt-4 p-3 bg-muted/50 border border-border rounded-sm"
               variants={descVariants}
             >
               <p className="text-xs font-medium text-foreground mb-2">
-                Admin Test Account:
+                Test Account (Real API):
               </p>
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    Username:
-                  </span>
+                  <span className="text-xs text-muted-foreground">Email:</span>
                   <code
                     className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
-                      navigator.clipboard.writeText("admin");
-                      toast.success("Username copied!");
+                      navigator.clipboard.writeText("admin@test.com");
+                      toast.success("Email copied!");
                     }}
                   >
-                    admin
+                    admin@test.com
                   </code>
                 </div>
                 <div className="flex items-center justify-between">
@@ -456,16 +474,16 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
                   <code
                     className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
-                      navigator.clipboard.writeText("admin123");
+                      navigator.clipboard.writeText("password123");
                       toast.success("Password copied!");
                     }}
                   >
-                    admin123
+                    password123
                   </code>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2 italic">
-                Click to copy
+                Click to copy. Using real API: /api/sign-in
               </p>
             </motion.div>
           </div>

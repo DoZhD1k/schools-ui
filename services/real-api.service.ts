@@ -1,4 +1,6 @@
 // Сервис для работы с реальными API данными
+import { api } from "@/lib/axios";
+
 const API_BASE_URL =
   "https://admin.smartalmaty.kz/api/v1/institutions-monitoring";
 
@@ -192,34 +194,18 @@ class RealApiService {
     endpoint: string,
     params?: ApiParams
   ): Promise<ApiResponse<T>> {
-    const url = new URL(`${API_BASE_URL}/${endpoint}/`);
-
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, value.toString());
-        }
-      });
-    }
-
     try {
-      const response = await fetch(url.toString(), {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
+      const response = await api.get<ApiResponse<T>>(
+        `${API_BASE_URL}/${endpoint}/`,
+        {
+          params,
+        }
+      );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      return data;
+      return response.data;
     } catch (error) {
-      console.error("API request failed:", error);
-      throw error;
+      console.error(`API Error [${endpoint}]:`, error);
+      throw new Error(`Failed to fetch ${endpoint} data`);
     }
   }
 

@@ -174,7 +174,9 @@ export class IntegratedSchoolsService {
         return null;
       }
 
-      console.log(`Found school: ${schoolData.name_of_the_organization} (ID: ${schoolId})`);
+      console.log(
+        `Found school: ${schoolData.name_of_the_organization} (ID: ${schoolId})`
+      );
 
       // Получаем все данные для паспорта
       const additionalData = await realApiService.getSchoolData(schoolId);
@@ -432,6 +434,38 @@ export class IntegratedSchoolsService {
       districtMap[districtName] ||
       districtName.toLowerCase().replace(/\s+/g, "_")
     );
+  }
+
+  // Обновить данные школы
+  static async updateSchool(
+    id: string,
+    schoolData: Partial<School>
+  ): Promise<School> {
+    try {
+      // TODO: Здесь должен быть реальный API запрос для обновления школы
+      // Пока что возвращаем обновленные данные с симуляцией задержки
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      const updatedSchool = await this.getSchool(id);
+      if (!updatedSchool) {
+        throw new Error(`School with ID ${id} not found`);
+      }
+
+      // В реальном приложении здесь был бы PUT/PATCH запрос:
+      // const response = await axios.put(`/api/schools/${id}`, schoolData);
+      // return response.data;
+
+      console.log("School update data:", schoolData);
+
+      // Возвращаем обновленную школу (в реальности данные пришли бы с сервера)
+      return {
+        ...updatedSchool,
+        ...schoolData,
+      };
+    } catch (error) {
+      console.error("Error updating school:", error);
+      throw error;
+    }
   }
 
   // Очистить кеш

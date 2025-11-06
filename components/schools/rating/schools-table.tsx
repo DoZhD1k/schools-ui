@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { Eye, Building2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CombinedSchool } from "./school-card";
+import { api } from "@/lib/axios";
 
 interface AnalyzeItem {
   id: number;
@@ -71,16 +72,25 @@ export const SchoolsTable = ({
         const offset = (currentPage - 1) * itemsPerPage;
 
         const [res1, res2] = await Promise.all([
-          fetch(
-            `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}&search=${searchQuery}`
-          ),
-          fetch(
-            `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/analyze/?limit=${itemsPerPage}&offset=${offset}&district=${districtFilter}`
-          ),
+          api.get("/schools/", {
+            params: {
+              limit: itemsPerPage,
+              offset: offset,
+              district: districtFilter,
+              search: searchQuery,
+            },
+          }),
+          api.get("/schools/analyze/", {
+            params: {
+              limit: itemsPerPage,
+              offset: offset,
+              district: districtFilter,
+            },
+          }),
         ]);
 
-        const data1 = await res1.json();
-        const data2 = await res2.json();
+        const data1 = res1.data;
+        const data2 = res2.data;
 
         const analyzeMap = new Map<number, AnalyzeItem>();
         data2.results.forEach((a: AnalyzeItem) => analyzeMap.set(a.id, a));

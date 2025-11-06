@@ -31,8 +31,8 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
-import { Role, CreateUserRequest } from "@/types/school-rating-api";
+import { adminApiService } from "@/services/admin-api.service";
+import { Role, CreateUserRequest } from "@/services/admin-api.service";
 
 const createUserSchema = z.object({
   email: z.string().email("Введите корректный email адрес"),
@@ -44,7 +44,7 @@ const createUserSchema = z.object({
   position: z.string().min(1, "Должность обязательна"),
   role: z.number().min(1, "Выберите роль"),
   school: z.number().optional(),
-  is_active: z.boolean().default(true),
+  is_active: z.boolean(),
 });
 
 type CreateUserFormData = z.infer<typeof createUserSchema>;
@@ -105,18 +105,11 @@ export function CreateUserForm({ roles, onSuccess }: CreateUserFormProps) {
         userData.school = values.school;
       }
 
-      const result = await schoolRatingApiService.createUser(userData);
-
-      if (result.success) {
-        toast.success("Пользователь создан", {
-          description: `Пользователь ${values.first_name} ${values.last_name} успешно создан`,
-        });
-        onSuccess();
-      } else {
-        toast.error("Ошибка создания пользователя", {
-          description: result.error,
-        });
-      }
+      const newUser = await adminApiService.createUser(userData);
+      toast.success("Пользователь создан", {
+        description: `Пользователь ${values.first_name} ${values.last_name} успешно создан`,
+      });
+      onSuccess();
     } catch (error) {
       toast.error("Ошибка создания пользователя", {
         description:

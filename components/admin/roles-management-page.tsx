@@ -52,7 +52,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
+import { adminApiService } from "@/services/admin-api.service";
 import { Role } from "@/types/school-rating-api";
 import { RoleManagementGuard } from "@/components/auth/permission-guard";
 import { useAuth } from "@/contexts/auth-context";
@@ -72,17 +72,10 @@ export default function RolesManagementPage() {
   const loadRoles = useCallback(async () => {
     setIsLoading(true);
     try {
-      const result = await schoolRatingApiService.getRoles({
+      const roles = await adminApiService.getRoles({
         search: searchTerm || undefined,
       });
-
-      if (result.success && result.data) {
-        setRoles(result.data);
-      } else {
-        toast.error("Ошибка загрузки ролей", {
-          description: result.error,
-        });
-      }
+      setRoles(roles);
     } catch (error) {
       toast.error("Ошибка загрузки ролей", {
         description:
@@ -105,16 +98,9 @@ export default function RolesManagementPage() {
     }
 
     try {
-      const result = await schoolRatingApiService.deleteRole(roleId);
-
-      if (result.success) {
-        toast.success("Роль удалена");
-        loadRoles(); // Перезагружаем список
-      } else {
-        toast.error("Ошибка удаления роли", {
-          description: result.error,
-        });
-      }
+      await adminApiService.deleteRole(roleId);
+      toast.success("Роль удалена");
+      loadRoles(); // Перезагружаем список
     } catch (error) {
       toast.error("Ошибка удаления роли", {
         description:

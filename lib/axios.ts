@@ -2,7 +2,10 @@ import axios from "axios";
 import https from "https";
 
 // Get API URL from environment variables with a fallback
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || ""; // Replace with your actual API URL
+const apiUrl =
+  process.env.NEXT_PUBLIC_SCHOOL_RATING_API_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://admin.smartalmaty.kz/api/v1/institutions-monitoring"; // Default to institutions-monitoring API
 
 // Log for debugging
 if (typeof window === "undefined") {
@@ -25,14 +28,9 @@ export const api = axios.create({
         rejectUnauthorized: false,
       }),
     }),
-  // Fix for the common EPROTO/SSL error - force baseURL protocol to http:// in development
-  ...(isDev &&
-    apiUrl.startsWith("https://") && {
-      baseURL: apiUrl.replace("https://", "http://"),
-    }),
 });
 
-// Add interceptor with optional trailing slash
+// Add interceptor with optional trailing slash and auth token
 api.interceptors.request.use((config) => {
   // Only add trailing slash if not explicitly disabled
   if (
@@ -42,6 +40,35 @@ api.interceptors.request.use((config) => {
   ) {
     config.url += "/";
   }
+
+  // Автоматически добавляем токен из localStorage если он не установлен в headers
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      // Проверяем, что токен не содержит префикс Token, и добавляем его
+      const authToken = token.startsWith("Token ") ? token : `Token ${token}`;
+
+      // Устанавливаем заголовок независимо от того, есть ли он уже
+      config.headers.Authorization = authToken;
+
+      // Debugging info
+      const isJWT = token.includes(".");
+      const isMock = token.includes("mock") || token.startsWith("eyJ"); // JWT starts with eyJ
+      console.log("Adding auth token to request:", {
+        url: config.url,
+        fullUrl: `${config.baseURL}${config.url}`,
+        tokenType: isJWT ? "JWT" : "other",
+        isMockToken: isMock && !isJWT,
+        tokenPrefix: authToken.substring(0, 15) + "...",
+        hasAuthHeader: !!config.headers.Authorization,
+      });
+    } else {
+      console.log("❌ No token found in localStorage for request:", config.url);
+    }
+  } else {
+    console.log("🖥️ Server-side request, no localStorage access:", config.url);
+  }
+
   return config;
 });
 
@@ -66,6 +93,10 @@ const processQueue = (error: unknown = null) => {
 };
 
 export const setAuthHeader = (token: string | null) => {
+  console.log("🔧 Setting auth header:", {
+    token: token ? token.substring(0, 15) + "..." : null,
+  });
+
   if (token) {
     // Проверяем, содержит ли токен уже префикс
     if (token.startsWith("Token ") || token.startsWith("Bearer ")) {
@@ -74,8 +105,13 @@ export const setAuthHeader = (token: string | null) => {
       // Используем формат Token согласно новой API документации
       api.defaults.headers.common["Authorization"] = `Token ${token}`;
     }
+    console.log(
+      "✅ Auth header set:",
+      api.defaults.headers.common["Authorization"]?.substring(0, 15) + "..."
+    );
   } else {
     delete api.defaults.headers.common["Authorization"];
+    console.log("❌ Auth header removed");
   }
 };
 

@@ -21,8 +21,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import { schoolRatingApiService } from "@/services/school-rating-api.service";
-import { Role } from "@/types/school-rating-api";
+import { adminApiService } from "@/services/admin-api.service";
+import { Role } from "@/services/admin-api.service";
 
 interface EditRoleFormData {
   name: string;
@@ -74,7 +74,7 @@ export function EditRoleForm({ role, onSuccess }: EditRoleFormProps) {
     setIsLoading(true);
 
     try {
-      const result = await schoolRatingApiService.updateRole(role.id, {
+      const updatedRole = await adminApiService.updateRole(role.id, {
         name: data.name.trim(),
         can_input_data: data.can_input_data,
         can_view_reports: data.can_view_reports,
@@ -82,14 +82,8 @@ export function EditRoleForm({ role, onSuccess }: EditRoleFormProps) {
         can_form_rating: data.can_form_rating,
       });
 
-      if (result.success) {
-        toast.success("Роль успешно обновлена");
-        onSuccess();
-      } else {
-        toast.error("Ошибка обновления роли", {
-          description: result.error,
-        });
-      }
+      toast.success("Роль успешно обновлена");
+      onSuccess();
     } catch (error) {
       toast.error("Ошибка обновления роли", {
         description:
