@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, JSX } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -46,19 +46,14 @@ interface InputWithAnimationProps {
   placeholder: string;
 }
 
-interface LoginResponse {
-  token: string;
-  expires_in: number;
-  message?: string;
-}
-
 export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
   const { signIn } = dictionary;
   const router = useRouter();
+  const params = useParams();
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const { setAccessToken } = useAuth();
+  const { setAccessToken, setUserProfile } = useAuth();
   const [attempts, setAttempts] = useState<number>(0);
-  const MAX_ATTEMPTS = 5;
+  const MAX_ATTEMPTS = 125;
   const LOCKOUT_TIME = 15 * 60 * 1000; // 15 minutes
 
   // Responsive helpers
@@ -68,13 +63,10 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
 
   // Define the shape of our form schema with localized messages
   const formSchema = z.object({
-    username: z
+    email: z
       .string()
-      .min(3, { message: signIn.validation.username.min })
-      .max(50, { message: signIn.validation.username.max })
-      .regex(/^[a-zA-Z0-9_-]+$/, {
-        message: signIn.validation.username.invalid,
-      }),
+      .min(1, { message: signIn.validation.username.min }) // Используем существующие переводы
+      .email({ message: "Введите корректный email адрес" }),
     password: z
       .string()
       .min(3, { message: signIn.validation.password.min })
@@ -87,7 +79,7 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      username: "",
+      email: "",
       password: "",
     },
   });
@@ -186,8 +178,8 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
     const savedData = sessionStorage.getItem("loginForm");
     if (savedData) {
       try {
-        const { username } = JSON.parse(savedData) as { username: string };
-        form.setValue("username", username);
+        const { email } = JSON.parse(savedData) as { email: string };
+        form.setValue("email", email);
       } catch (error) {
         console.error("Failed to parse saved form data:", error);
         // Clear corrupted data
@@ -213,44 +205,48 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
     setIsLoading(true);
 
     try {
+      // Используем новый API endpoint для авторизации
       const response = await fetch("/api/sign-in", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
-        credentials: "include", // Important for cookies
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
       });
 
-      // Check if response is JSON
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        // If not JSON, it's likely an HTML error page
-        const text = await response.text();
-        console.error("Non-JSON response received:", text);
-        throw new Error(
-          signIn.errors.generic || "Server returned invalid response"
-        );
-      }
+      const result = await response.json();
 
-      const data = (await response.json()) as LoginResponse;
+      if (response.ok && result.token) {
+        // Устанавливаем токен в контексте авторизации
+        setAccessToken(result.token, 24 * 60 * 60); // 24 часа
 
-      if (response.ok) {
-        setAccessToken(data.token, data.expires_in);
-
-        // Save form data
+        // Сохраняем данные формы
         sessionStorage.setItem(
           "loginForm",
-          JSON.stringify({ username: values.username })
+          JSON.stringify({ email: values.email })
         );
+
+        // Сохраняем и устанавливаем профиль пользователя если он пришел
+        if (result.user) {
+          localStorage.setItem("userProfile", JSON.stringify(result.user));
+          setUserProfile(result.user); // Устанавливаем профиль в контексте
+        }
 
         toast.success(signIn.success.title, {
           description: signIn.success.description,
         });
 
-        router.push("/");
+        // Небольшая задержка для обеспечения сохранения данных
+        setTimeout(() => {
+          // Получаем текущий язык из параметров URL
+          const lang = (params.lang as string) || "ru"; // Используем язык из параметров, по умолчанию 'ru'
+          router.push(`/${lang}/dashboard`); // Перенаправляем на дашборд с языком
+        }, 100);
       } else {
-        throw new Error(data.message || signIn.errors.generic);
+        throw new Error(result.error || signIn.errors.generic);
       }
     } catch (error) {
       setAttempts((prev) => prev + 1);
@@ -450,27 +446,25 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
               {signIn.description}
             </motion.p>
 
-            {/* Admin Mock Data */}
+            {/* Real API Test Data */}
             <motion.div
               className="mt-4 p-3 bg-muted/50 border border-border rounded-sm"
               variants={descVariants}
             >
               <p className="text-xs font-medium text-foreground mb-2">
-                Admin Test Account:
+                Test Account (Real API):
               </p>
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    Username:
-                  </span>
+                  <span className="text-xs text-muted-foreground">Email:</span>
                   <code
                     className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
-                      navigator.clipboard.writeText("admin");
-                      toast.success("Username copied!");
+                      navigator.clipboard.writeText("admin@test.com");
+                      toast.success("Email copied!");
                     }}
                   >
-                    admin
+                    admin@test.com
                   </code>
                 </div>
                 <div className="flex items-center justify-between">
@@ -480,16 +474,16 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
                   <code
                     className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
-                      navigator.clipboard.writeText("admin123");
+                      navigator.clipboard.writeText("password123");
                       toast.success("Password copied!");
                     }}
                   >
-                    admin123
+                    password123
                   </code>
                 </div>
               </div>
               <p className="text-xs text-muted-foreground mt-2 italic">
-                Click to copy
+                Click to copy. Using real API: /api/sign-in
               </p>
             </motion.div>
           </div>
@@ -507,16 +501,17 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
               >
                 <FormField
                   control={form.control}
-                  name="username"
+                  name="email"
                   render={({ field }) => (
                     <FormItem className="space-y-2 sm:space-y-3">
                       <FormLabel className="text-sm sm:text-base font-normal text-foreground">
-                        {signIn.username}
+                        Email
                       </FormLabel>
                       <FormControl>
                         <InputWithAnimation
                           field={field}
-                          placeholder="ivanov"
+                          type="email"
+                          placeholder="admin@test.com"
                         />
                       </FormControl>
                       <FormMessage className="text-xs font-medium" />

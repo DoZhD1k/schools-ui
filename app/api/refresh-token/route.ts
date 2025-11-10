@@ -1,81 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { authService } from "@/services/auth.service";
 
 export async function POST(request: NextRequest) {
   try {
-    // Получаем refresh token из cookies
-    const refreshToken = request.cookies.get("refresh_token")?.value;
+    // Получаем токен из cookies или из заголовка Authorization
+    let token = request.cookies.get("auth_token")?.value;
 
-    if (!refreshToken) {
-      return NextResponse.json(
-        { message: "No refresh token found" },
-        { status: 401 }
-      );
-    }
-
-    // Читаем моковые данные
-    const authDataPath = path.join(
-      process.cwd(),
-      "sample",
-      "mock",
-      "auth.json"
-    );
-    const authData = JSON.parse(fs.readFileSync(authDataPath, "utf8"));
-
-    // Находим пользователя по refresh token
-    let userTokens: {
-      access_token: string;
-      refresh_token: string;
-      expires_in: number;
-      role: string;
-    } | null = null;
-    let username = null;
-
-    for (const [user, tokens] of Object.entries(authData.tokens)) {
-      const tokenData = tokens as {
-        access_token: string;
-        refresh_token: string;
-        expires_in: number;
-        role: string;
-      };
-      if (tokenData.refresh_token === refreshToken) {
-        userTokens = tokenData;
-        username = user;
-        break;
+    if (!token) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader && authHeader.startsWith("Token ")) {
+        token = authHeader.substring(6);
       }
     }
 
-    if (!userTokens || !username) {
+    if (!token) {
+      return NextResponse.json({ message: "Токен не найден" }, { status: 401 });
+    }
+
+    console.log("🔄 Verifying token...");
+
+    // Проверяем действительность токена через реальный API
+    const result = await authService.verifyToken(token);
+
+    if (!result.success) {
+      console.error("❌ Token verification failed:", result.error);
       return NextResponse.json(
-        { message: "Invalid refresh token" },
+        { message: result.error || "Токен недействителен" },
         { status: 401 }
       );
     }
 
-    // Проверяем, что пользователь активен
-    const user = authData.users.find(
-      (u: { username: string; isActive: boolean }) =>
-        u.username === username && u.isActive
-    );
+    console.log("✅ Token is valid for user:", result.data!.email);
 
-    if (!user) {
-      return NextResponse.json(
-        { message: "User not found or inactive" },
-        { status: 401 }
-      );
-    }
-
-    // Возвращаем новый access token
+    // Возвращаем существующий токен и данные пользователя
+    // В реальном API обычно токены имеют длительный срок действия
+    // или есть отдельный механизм refresh tokens
     return NextResponse.json({
-      access_token: userTokens.access_token,
-      expires_in: userTokens.expires_in,
+      access_token: token,
+      user: result.data,
+      expires_in: 24 * 60 * 60, // 24 часа в секундах
     });
   } catch (error) {
-    console.error("Refresh token error:", error);
-    return NextResponse.json(
-      { message: "Internal server error" },
-      { status: 500 }
-    );
+    console.error("❌ Refresh token error:", error);
+    return NextResponse.json({ message: "Ошибка сервера" }, { status: 500 });
   }
 }

@@ -26,7 +26,7 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const refreshToken = request.cookies.get("refresh_token")?.value;
+  const authToken = request.cookies.get("auth_token")?.value; // Обновлено на auth_token
 
   // Define regex for public files
   const PUBLIC_FILE =
@@ -68,8 +68,8 @@ export function middleware(request: NextRequest) {
   // Handle root redirect (adjusted for i18n)
   if (pathname === "/") {
     const locale = getLocale(request);
-    // If user has refresh token, redirect to dashboard, otherwise to main page
-    if (refreshToken) {
+    // If user has auth token, redirect to dashboard, otherwise to main page
+    if (authToken) {
       return NextResponse.redirect(
         new URL(`/${locale}/dashboard`, request.url)
       );
@@ -90,7 +90,7 @@ export function middleware(request: NextRequest) {
 
   // After locale is handled, check authentication for protected routes
   if (isProtectedRoute) {
-    if (!refreshToken) {
+    if (!authToken) {
       // If token is absent, redirect to sign-in page (with locale)
       const locale = pathname.split("/")[1]; // Extract locale from path
       const signInUrl = new URL(`/${locale}/sign-in`, request.url);

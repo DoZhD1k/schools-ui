@@ -1,7 +1,8 @@
 import type { DistrictPolygon } from "@/types/schools-map";
+import { api } from "@/lib/axios";
 
 const BALANCE_ENRICHED_API_URL =
-  "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/balance-enriched/?limit=2500";
+  "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/balance-enriched/";
 
 export interface BalanceEnrichedApiResponse {
   type: "FeatureCollection";
@@ -27,32 +28,24 @@ export class DistrictPolygonsService {
         BALANCE_ENRICHED_API_URL
       );
 
-      const response = await fetch(BALANCE_ENRICHED_API_URL, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
+      const response = await api.get<BalanceEnrichedApiResponse>(
+        BALANCE_ENRICHED_API_URL,
+        {
+          params: { limit: 2500 },
+        }
+      );
 
-      console.log("📥 Response status:", response.status);
-      console.log("📥 Response ok:", response.ok);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: BalanceEnrichedApiResponse = await response.json();
+      console.log("📥 Response status: 200");
       console.log("📊 Received polygon data:", {
-        type: data.type,
-        count: data.count,
-        features: data.features.length,
-        name: data.name,
+        type: response.data.type,
+        count: response.data.count,
+        features: response.data.features.length,
+        name: response.data.name,
       });
 
       // Логируем первый полигон для отладки
-      if (data.features.length > 0) {
-        const firstPolygon = data.features[0];
+      if (response.data.features.length > 0) {
+        const firstPolygon = response.data.features[0];
         console.log("🔍 First polygon sample:", {
           id: firstPolygon.id,
           type: firstPolygon.type,
@@ -61,7 +54,7 @@ export class DistrictPolygonsService {
         });
       }
 
-      return data.features;
+      return response.data.features;
     } catch (error) {
       console.error("❌ Error fetching district polygons:", error);
       throw error;

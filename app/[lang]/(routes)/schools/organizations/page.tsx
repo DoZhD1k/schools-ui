@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
+import { usePermissions } from "@/hooks/usePermissions";
 import { withAuth } from "@/components/hoc/withAuth";
 import { LoadingSpinner } from "@/components/loading-spinner";
+import EditSchoolForm from "@/components/schools/edit-school-form";
 import { useParams } from "next/navigation";
 import {
   School,
@@ -34,66 +36,35 @@ import {
   type OrganizationData,
 } from "@/components/schools/organizations";
 
-// Утилита для декодирования JWT токена
-function decodeJWT(token: string) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map(function (c) {
-          return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error("Error decoding JWT:", error);
-    return null;
-  }
-}
-
 function OrganizationsPage() {
   const params = useParams() as { lang: string };
   const { lang } = params;
-  const { accessToken } = useAuth();
+  const { user } = useAuth();
+  const permissions = usePermissions();
+
   const [isLoading, setIsLoading] = useState(true);
-  const [, setUserName] = useState<string>("Пользователь");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("all");
-  // Убрали выбор вида - всегда таблица
   const [currentPage, setCurrentPage] = useState(1);
   const [sortBy, setSortBy] = useState("nameRu");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [organizations, setOrganizations] = useState<OrganizationData[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoadingOrgs, setIsLoadingOrgs] = useState(true);
+  const hasLoadedData = useRef(false);
 
-  // Инициализация сервиса
-  const ITEMS_PER_PAGE = 10;
+  // Состояния для модального окна редактирования
+  const [selectedOrganizationForEdit, setSelectedOrganizationForEdit] =
+    useState<OrganizationData | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // Функция для конвертации School в формат организаций
-  const convertToOrganizationData = (school: SchoolType): OrganizationData => {
-    return {
-      id: school.id.toString(),
-      nameRu: school.nameRu,
-      nameKz: school.nameKz || school.nameRu,
-      organizationType: school.organizationType,
-      district: school.district.nameRu,
-      address: school.address,
-      director: school.director,
-      currentRating: school.currentRating,
-      currentStudents: school.currentStudents,
-      capacity: school.capacity,
-      ratingZone: school.ratingZone,
-    };
-  };
+  const ITEMS_PER_PAGE = 20;
 
   const districts = [
     { id: "all", name: "Все районы" },
     { id: "almalinsky", name: "Алмалинский район" },
+    { id: "nauryzbaysky", name: "Наурызбайский район" },
     { id: "bostandyksky", name: "Бостандыкский район" },
     { id: "turksibsky", name: "Турксибский район" },
     { id: "alatausky", name: "Алатауский район" },
@@ -102,20 +73,82 @@ function OrganizationsPage() {
     { id: "auezovsky", name: "Ауэзовский район" },
   ];
 
+  // Простая функция для загрузки организаций без мемоизации
+  const fetchOrganizations = useCallback(async () => {
+    if (!permissions) return; // Не загружаем данные пока нет permissions
+
+    try {
+      setIsLoadingOrgs(true);
+
+      // Загружаем ВСЕ школы без серверной фильтрации
+      const schools = await IntegratedSchoolsService.getSchools();
+
+      // Преобразуем School[] в формат для фильтрации
+      const schoolsForFiltering = schools.map((school) => ({
+        school_id: parseInt(school.id),
+        ...school,
+      }));
+
+      // Применяем фильтрацию по правам доступа на клиенте
+      let filteredSchoolsWithId = schoolsForFiltering;
+
+      if (permissions && !permissions.canManageAllSchools()) {
+        // Организация образования видит только свои школы
+        filteredSchoolsWithId = schoolsForFiltering.filter((item) => {
+          const schoolId = item.school_id;
+          return schoolId ? schoolId === user?.school : false;
+        });
+      }
+
+      // Преобразуем обратно в School[]
+      const filteredSchools = filteredSchoolsWithId.map(
+        ({
+          school_id: _,
+          ...school
+        }: {
+          school_id: number;
+          [key: string]: unknown;
+        }) => school
+      ) as unknown as SchoolType[];
+
+      // Конвертируем в формат OrganizationData
+      const organizationsData: OrganizationData[] = filteredSchools.map(
+        (school: SchoolType) => ({
+          id: school.id,
+          nameRu: school.nameRu,
+          nameKz: school.nameKz,
+          address: school.address,
+          phone: school.phone,
+          director: school.director,
+          foundedYear: school.foundedYear,
+          commissionedYear: school.commissionedYear,
+          capacity: school.capacity,
+          currentStudents: school.currentStudents,
+          organizationType: school.organizationType,
+          currentRating: school.currentRating,
+          q1Rating: school.q1Rating,
+          q2Rating: school.q2Rating,
+          q3Rating: school.q3Rating,
+          yearlyRating: school.yearlyRating,
+          district: school.district.nameRu,
+          ratingZone: school.ratingZone,
+          coordinates: school.coordinates,
+        })
+      );
+
+      setOrganizations(organizationsData);
+      setTotalCount(organizationsData.length);
+      hasLoadedData.current = true;
+    } catch (error) {
+      console.error("Error fetching organizations:", error);
+    } finally {
+      setIsLoadingOrgs(false);
+    }
+  }, [permissions, user?.school]);
+
   useEffect(() => {
     setCurrentPage(1); // Сбрасываем страницу при изменении поиска или района
   }, [selectedDistrict, debouncedSearchTerm]);
-
-  useEffect(() => {
-    if (accessToken) {
-      const decoded = decodeJWT(accessToken);
-      if (decoded && decoded.sub) {
-        const email = decoded.sub;
-        const name = email.split("@")[0];
-        setUserName(name.charAt(0).toUpperCase() + name.slice(1));
-      }
-    }
-  }, [accessToken]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -137,52 +170,109 @@ function OrganizationsPage() {
     setCurrentPage(1); // Сбрасываем страницу при изменении района
   }, [selectedDistrict]);
 
+  // Загружаем данные только один раз при наличии permissions
   useEffect(() => {
-    const fetchOrganizations = async () => {
+    if (!permissions || hasLoadedData.current) return;
+
+    const loadData = async () => {
       try {
         setIsLoadingOrgs(true);
 
         // Загружаем ВСЕ школы без серверной фильтрации
-        // Фильтрацию будем делать на клиенте, как на странице рейтинга
         const schools = await IntegratedSchoolsService.getSchools();
 
-        // Конвертируем в формат организаций
-        const orgsData = schools.map(convertToOrganizationData);
-        setOrganizations(orgsData);
-        setTotalCount(schools.length);
+        // Преобразуем School[] в формат для фильтрации
+        const schoolsForFiltering = schools.map((school) => ({
+          school_id: parseInt(school.id),
+          ...school,
+        }));
+
+        // Применяем фильтрацию по правам доступа на клиенте
+        let filteredSchoolsWithId = schoolsForFiltering;
+
+        if (permissions && !permissions.canManageAllSchools()) {
+          // Организация образования видит только свои школы
+          filteredSchoolsWithId = schoolsForFiltering.filter((item) => {
+            const schoolId = item.school_id;
+            return schoolId ? schoolId === user?.school : false;
+          });
+        }
+
+        // Преобразуем обратно в School[]
+        const filteredSchools = filteredSchoolsWithId.map(
+          ({
+            school_id: _,
+            ...school
+          }: {
+            school_id: number;
+            [key: string]: unknown;
+          }) => school
+        ) as unknown as SchoolType[];
+
+        // Конвертируем в формат OrganizationData
+        const organizationsData: OrganizationData[] = filteredSchools.map(
+          (school: SchoolType) => ({
+            id: school.id,
+            nameRu: school.nameRu,
+            nameKz: school.nameKz,
+            address: school.address,
+            phone: school.phone,
+            director: school.director,
+            foundedYear: school.foundedYear,
+            commissionedYear: school.commissionedYear,
+            capacity: school.capacity,
+            currentStudents: school.currentStudents,
+            organizationType: school.organizationType,
+            currentRating: school.currentRating,
+            q1Rating: school.q1Rating,
+            q2Rating: school.q2Rating,
+            q3Rating: school.q3Rating,
+            yearlyRating: school.yearlyRating,
+            district: school.district.nameRu,
+            ratingZone: school.ratingZone,
+            coordinates: school.coordinates,
+          })
+        );
+
+        setOrganizations(organizationsData);
+        setTotalCount(organizationsData.length);
+        hasLoadedData.current = true;
       } catch (error) {
-        console.error("Ошибка загрузки организаций:", error);
+        console.error("Error fetching organizations:", error);
       } finally {
         setIsLoadingOrgs(false);
       }
     };
 
-    fetchOrganizations();
-  }, []); // Убираем зависимости - загружаем данные только один раз
+    loadData();
+  }, [permissions, user?.school]);
 
-  // Применяем фильтрацию локально, как на странице рейтинга
+  // Фильтрация и поиск на клиенте
   const filteredAndSearchedOrganizations = organizations.filter((org) => {
     // Фильтр по району
     if (selectedDistrict !== "all") {
       const districtName = districts.find(
         (d) => d.id === selectedDistrict
       )?.name;
-      if (districtName && org.district !== districtName) {
+      if (
+        districtName &&
+        !org.district.includes(districtName.replace(" район", ""))
+      ) {
         return false;
       }
     }
 
-    // Фильтр по поиску (как в DetailedRatingsTable)
+    // Поиск по тексту
     if (debouncedSearchTerm) {
       const searchLower = debouncedSearchTerm.toLowerCase();
-      if (
-        !org.nameRu.toLowerCase().includes(searchLower) &&
-        !org.nameKz.toLowerCase().includes(searchLower) &&
-        !org.address.toLowerCase().includes(searchLower) &&
-        !(org.director && org.director.toLowerCase().includes(searchLower))
-      ) {
-        return false;
-      }
+      return (
+        org.nameRu.toLowerCase().includes(searchLower) ||
+        org.nameKz.toLowerCase().includes(searchLower) ||
+        org.director.toLowerCase().includes(searchLower) ||
+        org.address.toLowerCase().includes(searchLower) ||
+        org.district.toLowerCase().includes(searchLower) ||
+        org.organizationType.toLowerCase().includes(searchLower)
+      );
     }
 
     return true;
@@ -234,6 +324,44 @@ function OrganizationsPage() {
     window.location.href = `/${lang}/schools/passport/${org.id}`;
   };
 
+  const handleEditOrganization = (org: OrganizationData) => {
+    setSelectedOrganizationForEdit(org);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setIsEditModalOpen(false);
+    setSelectedOrganizationForEdit(null);
+  };
+
+  const handleSaveSchool = (updatedSchool: SchoolType) => {
+    // Обновляем данные в списке организаций
+    setOrganizations((prev) =>
+      prev.map((org) =>
+        org.id === updatedSchool.id
+          ? {
+              ...org,
+              nameRu: updatedSchool.nameRu,
+              nameKz: updatedSchool.nameKz,
+              address: updatedSchool.address,
+              phone: updatedSchool.phone,
+              director: updatedSchool.director,
+              capacity: updatedSchool.capacity,
+              currentStudents: updatedSchool.currentStudents,
+              organizationType: updatedSchool.organizationType,
+            }
+          : org
+      )
+    );
+  };
+
+  const canEditSchool = useCallback(
+    (schoolId: string) => {
+      return permissions?.canEditSchoolData(schoolId) ?? false;
+    },
+    [permissions]
+  );
+
   const handleSort = (column: string) => {
     if (sortBy === column) {
       setSortOrder(sortOrder === "asc" ? "desc" : "asc");
@@ -269,71 +397,6 @@ function OrganizationsPage() {
         <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
 
-      {/* Header */}
-      {/* <header className="relative bg-white/80 backdrop-blur-md border-b border-[hsl(0_0%_100%_/_0.2)] shadow-sm">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl blur opacity-20"></div>
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-white/90 backdrop-blur-sm border border-[hsl(0_0%_100%_/_0.2)] shadow-lg transform hover:scale-105 transition-all duration-300">
-                  <Building2 className="h-6 w-6 text-slate-700" />
-                </div>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-slate-800">
-                  Организации образования
-                </h1>
-                <p className="text-sm text-slate-600 font-medium">
-                  Каталог образовательных организаций
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Link href={`/${lang}/dashboard`}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90 hover:border-[hsl(0_0%_100%_/_0.3)] shadow-sm transition-all duration-300"
-                >
-                  <BarChart3 className="h-4 w-4 mr-2" />
-                  Главная
-                </Button>
-              </Link>
-              <Link href={`/${lang}/schools/rating`}>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="bg-white/80 backdrop-blur-sm border-[hsl(0_0%_100%_/_0.2)] text-slate-700 hover:bg-white/90 hover:border-[hsl(0_0%_100%_/_0.3)] shadow-sm transition-all duration-300"
-                >
-                  <School className="h-4 w-4 mr-2" />
-                  Рейтинг
-                </Button>
-              </Link>
-              <div className="flex items-center space-x-3">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full blur opacity-20"></div>
-                  <Avatar className="relative h-9 w-9 bg-white/90 backdrop-blur-sm border border-[hsl(0_0%_100%_/_0.2)]">
-                    <AvatarFallback className="bg-transparent text-slate-700 text-sm font-semibold">
-                      {userName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={logout}
-                  className="text-slate-700 hover:text-red-600 hover:bg-red-50/80 backdrop-blur-sm border border-transparent hover:border-red-200/50 rounded-xl transition-all duration-300"
-                >
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Выйти
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header> */}
-
       {/* Welcome Banner */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/90 via-teal-600/90 to-blue-700/90"></div>
@@ -355,6 +418,23 @@ function OrganizationsPage() {
                 Полная база данных образовательных учреждений с детальной
                 информацией о рейтингах, контактах и статистике.
               </p>
+
+              {/* Информация о правах доступа */}
+              {permissions && (
+                <div className="mb-4 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
+                  <div className="text-sm text-white/90">
+                    <div className="font-medium">Ваши права доступа:</div>
+                    <div className="text-white/70">
+                      {permissions.isAdmin()
+                        ? "Администратор - полный доступ ко всем школам"
+                        : permissions.canManageAllSchools()
+                        ? "Управление образования - доступ ко всем школам"
+                        : "Организация образования - доступ только к своей школе"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <p className="text-sm text-white/70 mb-6 leading-relaxed">
                 Общий рейтинг рассчитывается по взвешенной формуле с учетом
                 качества знаний, динамики результатов, развития талантов,
@@ -480,9 +560,11 @@ function OrganizationsPage() {
           <OrganizationsTable
             organizations={currentOrganizations}
             onView={handleViewOrganization}
+            onEdit={handleEditOrganization}
             onSort={handleSort}
             sortBy={sortBy}
             sortOrder={sortOrder}
+            canEditSchool={canEditSchool}
           />
 
           {/* Integrated Pagination */}
@@ -493,6 +575,13 @@ function OrganizationsPage() {
                   Показано {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
                   {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} из{" "}
                   {totalCount}
+                  {permissions &&
+                    !permissions.isAdmin() &&
+                    !permissions.canManageAllSchools() && (
+                      <span className="ml-2 text-blue-600 font-medium">
+                        (только ваша организация)
+                      </span>
+                    )}
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -508,36 +597,41 @@ function OrganizationsPage() {
                   </Button>
 
                   <div className="flex items-center space-x-1">
-                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                      let pageNumber;
-                      if (totalPages <= 5) {
-                        pageNumber = i + 1;
-                      } else if (currentPage <= 3) {
-                        pageNumber = i + 1;
-                      } else if (currentPage >= totalPages - 2) {
-                        pageNumber = totalPages - 4 + i;
-                      } else {
-                        pageNumber = currentPage - 2 + i;
-                      }
+                    {Array.from({ length: totalPages }, (_, i) => i + 1)
+                      .filter((pageNumber) => {
+                        const distance = Math.abs(pageNumber - currentPage);
+                        return (
+                          distance <= 2 ||
+                          pageNumber === 1 ||
+                          pageNumber === totalPages
+                        );
+                      })
+                      .map((pageNumber, index, array) => {
+                        const prevPageNumber =
+                          index > 0 ? array[index - 1] : null;
+                        const showEllipsis =
+                          prevPageNumber && pageNumber - prevPageNumber > 1;
 
-                      return (
-                        <Button
-                          key={pageNumber}
-                          variant={
-                            currentPage === pageNumber ? "default" : "outline"
-                          }
-                          size="sm"
-                          onClick={() => goToPage(pageNumber)}
-                          className={`w-10 h-10 p-0 ${
-                            currentPage === pageNumber
-                              ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
-                              : "bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
-                          }`}
-                        >
-                          {pageNumber}
-                        </Button>
-                      );
-                    })}
+                        return (
+                          <React.Fragment key={pageNumber}>
+                            {showEllipsis && (
+                              <span className="px-2 text-slate-500">...</span>
+                            )}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => goToPage(pageNumber)}
+                              className={`w-8 h-8 p-0 ${
+                                currentPage === pageNumber
+                                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white"
+                                  : "bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
+                              }`}
+                            >
+                              {pageNumber}
+                            </Button>
+                          </React.Fragment>
+                        );
+                      })}
                   </div>
 
                   <Button
@@ -551,6 +645,23 @@ function OrganizationsPage() {
                     <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Информация о количестве элементов без пагинации */}
+          {totalPages <= 1 && filteredAndSearchedOrganizations.length > 0 && (
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 p-4">
+              <div className="text-sm text-slate-600">
+                Показано {filteredAndSearchedOrganizations.length} из{" "}
+                {organizations.length} организаций
+                {permissions &&
+                  !permissions.isAdmin() &&
+                  !permissions.canManageAllSchools() && (
+                    <span className="ml-2 text-blue-600 font-medium">
+                      (только ваша организация)
+                    </span>
+                  )}
               </div>
             </div>
           )}
@@ -582,6 +693,16 @@ function OrganizationsPage() {
           </div>
         )}
       </main>
+
+      {/* Модальное окно редактирования */}
+      {selectedOrganizationForEdit && (
+        <EditSchoolForm
+          schoolId={selectedOrganizationForEdit.id}
+          isOpen={isEditModalOpen}
+          onClose={handleCloseEditModal}
+          onSave={handleSaveSchool}
+        />
+      )}
     </div>
   );
 }

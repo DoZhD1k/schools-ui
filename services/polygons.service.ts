@@ -34,6 +34,9 @@ export class PolygonsService {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          ...(typeof window !== "undefined" && {
+            Authorization: `Token ${localStorage.getItem("accessToken") || ""}`,
+          }),
         },
       });
 

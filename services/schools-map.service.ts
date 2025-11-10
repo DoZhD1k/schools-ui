@@ -3,9 +3,10 @@ import {
   SchoolFeature,
   MapFilters,
 } from "@/types/schools-map";
+import { api } from "@/lib/axios";
 
-const SCHOOLS_API_URL =
-  "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/?limit=10000";
+// Используем относительный путь, поскольку базовый URL уже настроен в axios
+const SCHOOLS_API_ENDPOINT = "/schools/";
 
 export class SchoolsMapService {
   /**
@@ -13,30 +14,21 @@ export class SchoolsMapService {
    */
   static async fetchSchools(): Promise<SchoolFeature[]> {
     try {
-      console.log("Fetching schools from:", SCHOOLS_API_URL);
+      console.log("Fetching schools from endpoint:", SCHOOLS_API_ENDPOINT);
+      console.log("Base URL:", api.defaults.baseURL);
 
-      const response = await fetch(SCHOOLS_API_URL, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      const response = await api.get<SchoolsApiResponse>(SCHOOLS_API_ENDPOINT, {
+        params: { limit: 10000 },
       });
 
-      console.log("Response status:", response.status);
-      console.log("Response ok:", response.ok);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data: SchoolsApiResponse = await response.json();
+      console.log("Response status: 200");
       console.log("Received data:", {
-        count: data.count,
-        results: data.results.length,
+        count: response.data.count,
+        results: response.data.results.length,
       });
 
       // Преобразуем данные в GeoJSON формат
-      const features: SchoolFeature[] = data.results
+      const features: SchoolFeature[] = response.data.results
         .filter((school) => school.infra && school.infra.origin_geom) // Только школы с геометрией
         .map((school) => {
           console.log("🔍 Processing school geometry:", {
@@ -58,7 +50,7 @@ export class SchoolsMapService {
         });
 
       console.log(
-        `Converted ${features.length} schools with geometry out of ${data.results.length} total`
+        `Converted ${features.length} schools with geometry out of ${response.data.results.length} total`
       );
       return features;
     } catch (error) {

@@ -4,11 +4,9 @@ import {
   DistrictPolygon,
   SchoolProperties,
 } from "@/types/schools-map";
+import { api } from "@/lib/axios";
 
 export class BalanceEnrichedService {
-  private static baseUrl =
-    "https://admin.smartalmaty.kz/api/v1/institutions-monitoring";
-
   /**
    * Загружает данные balance-enriched (полигоны районов с номерами школ)
    */
@@ -16,15 +14,11 @@ export class BalanceEnrichedService {
     limit: number = 2500
   ): Promise<BalanceEnrichedItem[]> {
     try {
-      const response = await fetch(
-        `${this.baseUrl}/balance-enriched/?limit=${limit}`
-      );
+      const response = await api.get("/balance-enriched/", {
+        params: { limit },
+      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = response.data;
 
       console.log("🔍 Raw API response type:", typeof data);
       console.log("🔍 Raw API response keys:", Object.keys(data));
@@ -43,10 +37,12 @@ export class BalanceEnrichedService {
           "🔍 Found GeoJSON FeatureCollection with features:",
           data.features.length
         );
-        result = data.features.map((feature: any) => ({
-          ...feature.properties,
-          geometry: feature.geometry,
-        }));
+        result = data.features.map(
+          (feature: { properties: any; geometry: any }) => ({
+            ...feature.properties,
+            geometry: feature.geometry,
+          })
+        );
       } else {
         console.error("❌ Unexpected data structure:", data);
         // Если это объект, попробуем найти массив в его свойствах
@@ -80,13 +76,11 @@ export class BalanceEnrichedService {
     limit: number = 500
   ): Promise<SchoolProperties[]> {
     try {
-      const response = await fetch(`${this.baseUrl}/schools/?limit=${limit}`);
+      const response = await api.get("/schools/", {
+        params: { limit },
+      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = response.data;
 
       let result: SchoolProperties[];
       if (Array.isArray(data)) {

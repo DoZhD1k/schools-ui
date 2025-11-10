@@ -1,5 +1,6 @@
 import { BalanceEnrichedService } from "@/services/balance-enriched.service";
 import { BalanceEnrichedItem } from "@/types/schools-map";
+import { api } from "@/lib/axios";
 
 export interface DashboardStats {
   totalSchools: number;
@@ -47,22 +48,23 @@ export class DashboardService {
         console.log("📊 Fetching dashboard data from schools API...");
 
         // Получаем основные данные о школах
-        const schoolsResponse = await fetch(
-          "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/schools/?limit=1000"
-        );
-        const schoolsData = await schoolsResponse.json();
+        const schoolsResponse = await api.get("/schools/", {
+          params: { limit: 1000 },
+        });
+        const schoolsData = schoolsResponse.data;
 
         // Получаем данные о педагогах
-        const teachersResponse = await fetch(
-          "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/teacher-category/?limit=1000"
-        );
-        const teachersData = await teachersResponse.json();
+        const teachersResponse = await api.get("/teacher-category/", {
+          params: { limit: 1000 },
+        });
+        const teachersData = teachersResponse.data;
 
         // Получаем данные об академической успеваемости
-        const performanceResponse = await fetch(
-          "https://admin.smartalmaty.kz/api/v1/institutions-monitoring/academic-performance2023-2024/?limit=1000"
+        const performanceResponse = await api.get(
+          "/academic-performance2023-2024/",
+          { params: { limit: 1000 } }
         );
-        const performanceData = await performanceResponse.json();
+        const performanceData = performanceResponse.data;
 
         console.log("📊 API Data received:", {
           schools: schoolsData.count,
