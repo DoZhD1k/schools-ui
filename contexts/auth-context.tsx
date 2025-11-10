@@ -6,11 +6,11 @@ import {
   useState,
   useEffect,
   useCallback,
-  useRef,
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import { setAuthHeader } from "@/lib/axios";
+import { authService } from "@/services/auth.service";
 
 interface UserProfile {
   id: number;
@@ -52,7 +52,6 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
-  const previousToken = useRef<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -98,16 +97,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log("🚪 Logging out user");
 
-      // Если есть токен, уведомляем сервер о выходе
+      // Если есть токен, уведомляем сервер о выходе через authService
       if (accessToken) {
         try {
-          await fetch("/api/sign-out", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Token ${accessToken}`,
-            },
-          });
+          await authService.logout(accessToken);
         } catch (error) {
           console.error("Error during server logout:", error);
           // Не блокируем logout при ошибке сервера
@@ -125,112 +118,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshAccessToken = useCallback(async () => {
     setIsLoading(true);
     try {
-      const response = await fetch("/api/refresh-token", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken && { Authorization: `Token ${accessToken}` }),
-        },
-      });
+      // Убираем автообновление токенов, так как работаем напрямую с внешним API
+      // Если токен истек, пользователю нужно будет авторизоваться заново
+      console.log("🔄 Token refresh not available, user needs to re-login");
 
-      const data = await response.json();
-
-      if (response.ok) {
-        const newToken = data.access_token;
-
-        if (newToken !== previousToken.current) {
-          previousToken.current = newToken;
-          // Устанавливаем токен напрямую чтобы избежать циклов
-          setAccessTokenState(newToken);
-          setAuthHeader(`Token ${newToken}`);
-          localStorage.setItem("accessToken", newToken);
-
-          if (data.expires_in) {
-            const expiryTime = Date.now() + data.expires_in * 1000;
-            setExpiresAt(expiryTime);
-            localStorage.setItem("expiresAt", expiryTime.toString());
-          }
-
-          // Сохраняем профиль пользователя
-          if (data.user) {
-            console.log("📥 Received user data from API:", data.user);
-
-            // Если нет role ID, но есть role_name, определяем ID по названию
-            if (!data.user.role && data.user.role_name) {
-              console.log(
-                "🔧 Fixing missing role ID based on role_name:",
-                data.user.role_name
-              );
-              switch (data.user.role_name) {
-                case "Администратор":
-                  data.user.role = 1;
-                  break;
-                case "Организация образования":
-                  data.user.role = 2;
-                  break;
-                case "Управление образования":
-                  data.user.role = 3;
-                  break;
-                default:
-                  console.warn("⚠️ Unknown role_name:", data.user.role_name);
-              }
-              console.log("✅ Fixed user data with role ID:", data.user.role);
-            }
-
-            setUserProfile(data.user);
-            localStorage.setItem("userProfile", JSON.stringify(data.user));
-          } else {
-            console.log("❌ No user data in API response:", data);
-          }
-        }
-      } else {
-        console.error("Failed to refresh token:", data.message);
-        setAccessTokenState(null);
-        setUserProfile(null);
-        setAuthHeader(null);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("userProfile");
-
-        // Проверяем, находимся ли мы на защищенном маршруте
-        const isProtectedRoute =
-          window.location.pathname.includes("/ru/admin") ||
-          window.location.pathname.includes("/en/admin") ||
-          window.location.pathname.includes("/kz/admin") ||
-          window.location.pathname.includes("/ru/map") ||
-          window.location.pathname.includes("/en/map") ||
-          window.location.pathname.includes("/kz/map");
-
-        const isSignInPage = window.location.pathname.includes("/sign-in");
-
-        if (isProtectedRoute && !isSignInPage) {
-          router.push("/sign-in");
-        }
-      }
-    } catch (error) {
-      console.error("Error refreshing token:", error);
+      // Очищаем неактуальный токен
       setAccessTokenState(null);
       setUserProfile(null);
       setAuthHeader(null);
       localStorage.removeItem("accessToken");
       localStorage.removeItem("userProfile");
+      localStorage.removeItem("expiresAt");
 
+      // Проверяем, находимся ли мы на защищенном маршруте
       const isProtectedRoute =
-        window.location.pathname.includes("/ru/admin") ||
-        window.location.pathname.includes("/en/admin") ||
-        window.location.pathname.includes("/kz/admin") ||
-        window.location.pathname.includes("/ru/map") ||
-        window.location.pathname.includes("/en/map") ||
-        window.location.pathname.includes("/kz/map");
+        typeof window !== "undefined" &&
+        (window.location.pathname.includes("/admin") ||
+          window.location.pathname.includes("/map") ||
+          window.location.pathname.includes("/dashboard"));
 
-      const isSignInPage = window.location.pathname.includes("/sign-in");
+      const isSignInPage =
+        typeof window !== "undefined" &&
+        window.location.pathname.includes("/sign-in");
 
       if (isProtectedRoute && !isSignInPage) {
-        router.push("/sign-in");
+        const currentLang = window.location.pathname.split("/")[1] || "ru";
+        router.push(`/${currentLang}/sign-in`);
       }
+    } catch (error) {
+      console.error("Error refreshing token:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [router, accessToken]);
+  }, [router]);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -372,6 +292,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("👤 Is Admin:", isAdmin);
     }
   }, [userProfile, isAdmin]);
+
+  // Защита маршрутов на клиенте
+  useEffect(() => {
+    if (!isLoading) {
+      const protectedPaths = [
+        "/admin",
+        "/map",
+        "/dashboard",
+        "/schools",
+        "/analytics",
+        "/deficit",
+        "/profile",
+      ];
+      const isProtectedRoute = protectedPaths.some(
+        (path) =>
+          typeof window !== "undefined" &&
+          window.location.pathname.includes(path)
+      );
+
+      const authenticated = !!accessToken && !!userProfile;
+
+      if (isProtectedRoute && !authenticated) {
+        console.log(
+          "🚫 Access denied to protected route, redirecting to sign-in"
+        );
+        const currentLang =
+          typeof window !== "undefined"
+            ? window.location.pathname.split("/")[1] || "ru"
+            : "ru";
+        router.push(`/${currentLang}/sign-in`);
+      }
+    }
+  }, [accessToken, userProfile, isLoading, router]);
 
   return (
     <AuthContext.Provider

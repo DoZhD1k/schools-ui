@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/contexts/auth-context";
+import { authService } from "@/services/auth.service";
 import {
   useIsMobile,
   useDeviceType,
@@ -205,23 +206,17 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
     setIsLoading(true);
 
     try {
-      // Используем новый API endpoint для авторизации
-      const response = await fetch("/api/sign-in", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: values.email,
-          password: values.password,
-        }),
+      // Делаем запрос напрямую к внешней API, минуя наш API роут
+      console.log("🔐 Direct login attempt for:", values.email);
+
+      const result = await authService.login({
+        email: values.email,
+        password: values.password,
       });
 
-      const result = await response.json();
-
-      if (response.ok && result.token) {
+      if (result.success && result.data?.token) {
         // Устанавливаем токен в контексте авторизации
-        setAccessToken(result.token, 24 * 60 * 60); // 24 часа
+        setAccessToken(result.data.token, 24 * 60 * 60); // 24 часа
 
         // Сохраняем данные формы
         sessionStorage.setItem(
@@ -230,9 +225,15 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
         );
 
         // Сохраняем и устанавливаем профиль пользователя если он пришел
-        if (result.user) {
-          localStorage.setItem("userProfile", JSON.stringify(result.user));
-          setUserProfile(result.user); // Устанавливаем профиль в контексте
+        if (result.data.user) {
+          // Приводим пользователя к типу, ожидаемому в контексте
+          const userForContext = {
+            ...result.data.user,
+            role: result.data.user.role_name === "Администратор" ? 1 : 2, // Добавляем role ID
+          };
+
+          localStorage.setItem("userProfile", JSON.stringify(userForContext));
+          setUserProfile(userForContext); // Устанавливаем профиль в контексте
         }
 
         toast.success(signIn.success.title, {
