@@ -22,17 +22,25 @@ export async function POST(request: NextRequest) {
     // Удаляем auth cookie
     response.cookies.set("auth_token", "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure:
+        process.env.NODE_ENV === "production" && process.env.VERCEL_URL
+          ? true
+          : false,
       sameSite: "lax",
       maxAge: 0, // Удаляем cookie
+      domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
     });
 
     // Также удаляем старый refresh_token cookie на всякий случай
     response.cookies.set("refresh_token", "", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure:
+        process.env.NODE_ENV === "production" && process.env.VERCEL_URL
+          ? true
+          : false,
       sameSite: "lax",
       maxAge: 0,
+      domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
     });
 
     return response;

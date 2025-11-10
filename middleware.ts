@@ -26,7 +26,22 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const authToken = request.cookies.get("auth_token")?.value; // Обновлено на auth_token
+  const authToken = request.cookies.get("auth_token")?.value;
+
+  // Отладочная информация для Vercel
+  if (process.env.NODE_ENV === "production") {
+    console.log("Middleware debug:", {
+      pathname,
+      hasAuthToken: !!authToken,
+      cookies: Object.fromEntries(
+        request.cookies
+          .getAll()
+          .map((c) => [c.name, c.value.substring(0, 10) + "..."])
+      ),
+      host: request.headers.get("host"),
+      userAgent: request.headers.get("user-agent")?.substring(0, 50),
+    });
+  }
 
   // Define regex for public files
   const PUBLIC_FILE =
@@ -90,6 +105,12 @@ export function middleware(request: NextRequest) {
 
   // After locale is handled, check authentication for protected routes
   if (isProtectedRoute) {
+    // Для продакшн среды на Vercel пропускаем проверку куков в middleware
+    // и полагаемся на клиентскую проверку в AuthContext
+    if (process.env.NODE_ENV === "production") {
+      return NextResponse.next();
+    }
+
     if (!authToken) {
       // If token is absent, redirect to sign-in page (with locale)
       const locale = pathname.split("/")[1]; // Extract locale from path

@@ -29,7 +29,7 @@ Authorization: Token 93f28f3a-b860-4801-9197-3cfc50...
 ```json
 {
   "email": "admin@test.com",
-  "password": "password123"
+  "password": "admin123456"
 }
 ```
 

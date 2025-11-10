@@ -1,8 +1,3 @@
-/**
- * Сервис аутентификации для работы с реальным API
- * Base URL: https://admin.smartalmaty.kz/api/v1/school-rating/
- */
-
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_AUTH_API_URL ||
   "https://admin.smartalmaty.kz/api/v1/institutions-monitoring";
@@ -50,71 +45,6 @@ class AuthService {
   }
 
   /**
-   * Mock авторизация для тестовых аккаунтов
-   */
-  private async mockLogin(credentials: LoginRequest): Promise<{
-    success: boolean;
-    data?: { token: string; user: UserProfile };
-    error?: string;
-  }> {
-    // Имитируем задержку сети
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // Проверяем тестовые учетные данные
-    const testCredentials = [
-      { email: "admin@test.com", password: "admin123456" },
-      { email: "admin@test.com", password: "password123" },
-      { email: "school_a@test.com", password: "user123" },
-    ];
-
-    const validCredentials = testCredentials.find(
-      (cred) =>
-        cred.email === credentials.email &&
-        cred.password === credentials.password
-    );
-
-    if (!validCredentials) {
-      return {
-        success: false,
-        error: "Неверные тестовые учетные данные",
-      };
-    }
-
-    // Создаем mock токен (валидный JWT для dev)
-    const mockToken =
-      "mock_token_" +
-      Date.now() +
-      "_" +
-      Math.random().toString(36).substr(2, 9);
-
-    const mockUser: UserProfile = {
-      id: 1,
-      email: credentials.email,
-      first_name: "Test",
-      last_name: "User",
-      patronymic: "Testovich",
-      position: "Test Administrator",
-      role_name: credentials.email.includes("admin")
-        ? "Администратор"
-        : "Пользователь",
-      school_name: credentials.email.includes("school")
-        ? "Test School"
-        : undefined,
-      is_active: true,
-    };
-
-    console.log("✅ Mock authentication successful for:", credentials.email);
-
-    return {
-      success: true,
-      data: {
-        token: mockToken,
-        user: mockUser,
-      },
-    };
-  }
-
-  /**
    * Авторизация пользователя
    */
   async login(credentials: LoginRequest): Promise<{
@@ -125,24 +55,9 @@ class AuthService {
     try {
       console.log("🔐 Attempting login with real API:", API_BASE_URL);
       console.log("📧 Email:", credentials.email);
-
-      // Проверяем принудительное использование моков через переменную окружения
-      const forceMockAuth = process.env.NEXT_PUBLIC_FORCE_MOCK_AUTH === "true";
-
-      // Используем mock только если принудительно включен
-      if (forceMockAuth) {
-        console.log(
-          "🎭 Using mock authentication (forced by environment variable)"
-        );
-        return this.mockLogin(credentials);
-      }
-
       // Попробуем разные возможные endpoints для авторизации с timeout
       const possibleEndpoints = [
         `${API_BASE_URL}/school-rating/login/`, // Основной endpoint согласно API
-        `${API_BASE_URL}/auth/login/`,
-        `${API_BASE_URL}/login/`,
-        `${API_BASE_URL}/school-rating/auth/login/`,
       ];
 
       let lastError = "Неверные учетные данные";
@@ -249,12 +164,7 @@ class AuthService {
   }> {
     try {
       // Попробуем разные возможные endpoints для получения профиля
-      const possibleEndpoints = [
-        `${API_BASE_URL}/school-rating/users/me/`,
-        `${API_BASE_URL}/school-rating/auth/user/`,
-        `${API_BASE_URL}/auth/user/`,
-        `${API_BASE_URL}/users/me/`,
-      ];
+      const possibleEndpoints = [`${API_BASE_URL}/school-rating/users/me/`];
 
       for (const endpoint of possibleEndpoints) {
         try {

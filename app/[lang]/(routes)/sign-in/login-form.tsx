@@ -474,11 +474,11 @@ export default function LoginForm({ dictionary }: LoginFormProps): JSX.Element {
                   <code
                     className="text-xs bg-background px-2 py-1 rounded cursor-pointer hover:bg-muted/80 transition-colors"
                     onClick={() => {
-                      navigator.clipboard.writeText("password123");
+                      navigator.clipboard.writeText("admin123456");
                       toast.success("Password copied!");
                     }}
                   >
-                    password123
+                    admin123456
                   </code>
                 </div>
               </div>

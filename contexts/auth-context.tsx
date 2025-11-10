@@ -11,7 +11,6 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { setAuthHeader } from "@/lib/axios";
-import { adminApiService } from "@/services/admin-api.service";
 
 interface UserProfile {
   id: number;
@@ -61,6 +60,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setAccessToken = useCallback(
     (token: string | null, expires_in?: number) => {
       setAccessTokenState(token);
+
+      // Дополнительная отладочная информация для продакшн
+      if (process.env.NODE_ENV === "production") {
+        console.log("🔧 Setting access token:", {
+          hasToken: !!token,
+          tokenPrefix: token ? token.substring(0, 10) + "..." : "null",
+          environment: "production",
+          expires_in,
+        });
+      }
 
       // Обновляем заголовок авторизации для axios
       if (token) {
