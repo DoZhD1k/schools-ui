@@ -5,13 +5,32 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
+    // Валидация входных данных
+    if (!email || !password) {
+      console.error("❌ Missing credentials:", {
+        email: !!email,
+        password: !!password,
+      });
+      return NextResponse.json(
+        { error: "Email и пароль обязательны" },
+        { status: 400 }
+      );
+    }
+
     console.log("🔐 Sign-in attempt for:", email);
+    console.log("🌍 Environment info:", {
+      NODE_ENV: process.env.NODE_ENV,
+      VERCEL_URL: process.env.VERCEL_URL,
+      NEXT_PUBLIC_AUTH_API_URL: process.env.NEXT_PUBLIC_AUTH_API_URL,
+      hasCredentials: !!email && !!password,
+    });
 
     // Используем реальный API для авторизации
     const result = await authService.login({ email, password });
 
     if (!result.success) {
       console.error("❌ Authentication failed:", result.error);
+      console.error("❌ Full result:", result);
       return NextResponse.json(
         { error: result.error || "Неверные учетные данные" },
         { status: 401 }

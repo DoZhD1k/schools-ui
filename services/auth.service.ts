@@ -1,6 +1,17 @@
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_AUTH_API_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
   "https://admin.smartalmaty.kz/api/v1/institutions-monitoring";
+
+// Логируем для отладки
+if (typeof window === "undefined") {
+  console.log("🔧 Auth Service API URL:", API_BASE_URL);
+  console.log("🔧 Environment variables:", {
+    NEXT_PUBLIC_AUTH_API_URL: process.env.NEXT_PUBLIC_AUTH_API_URL,
+    NEXT_PUBLIC_API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    NODE_ENV: process.env.NODE_ENV,
+  });
+}
 
 export interface LoginRequest {
   email: string;
@@ -55,9 +66,21 @@ class AuthService {
     try {
       console.log("🔐 Attempting login with real API:", API_BASE_URL);
       console.log("📧 Email:", credentials.email);
+      console.log("🌍 Environment variables:", {
+        NODE_ENV: process.env.NODE_ENV,
+        NEXT_PUBLIC_AUTH_API_URL: process.env.NEXT_PUBLIC_AUTH_API_URL,
+        API_BASE_URL,
+        isServerSide: typeof window === "undefined",
+      });
+
       // Попробуем разные возможные endpoints для авторизации с timeout
       const possibleEndpoints = [
         `${API_BASE_URL}/school-rating/login/`, // Основной endpoint согласно API
+        // На случай проблем с CORS на Vercel используем прокси
+        ...(typeof window === "undefined" &&
+        process.env.NODE_ENV === "production"
+          ? ["/api/auth-proxy"]
+          : []),
       ];
 
       let lastError = "Неверные учетные данные";
@@ -66,8 +89,16 @@ class AuthService {
         try {
           console.log(`🔍 Trying endpoint: ${endpoint}`);
 
+          // Определяем, используем ли мы прокси
+          const isProxy = endpoint.startsWith("/api/");
+          const fetchUrl = isProxy
+            ? typeof window !== "undefined"
+              ? endpoint
+              : `http://localhost:3000${endpoint}`
+            : endpoint;
+
           const response = await this.fetchWithTimeout(
-            endpoint,
+            fetchUrl,
             {
               method: "POST",
               headers: {
@@ -75,8 +106,8 @@ class AuthService {
               },
               body: JSON.stringify(credentials),
             },
-            10000
-          ); // 10 секунд timeout
+            15000 // Увеличиваем timeout до 15 секунд для Vercel
+          );
 
           console.log(`📡 Response from ${endpoint}:`, {
             status: response.status,
@@ -89,8 +120,23 @@ class AuthService {
             continue;
           }
 
-          const responseData = await response.json();
-          console.log(`📦 Response data from ${endpoint}:`, responseData);
+          // Получаем текст ответа для лучшей диагностики
+          const responseText = await response.text();
+          console.log(`📦 Raw response from ${endpoint}:`, responseText);
+
+          let responseData;
+          try {
+            responseData = JSON.parse(responseText);
+          } catch (parseError) {
+            console.error("❌ Failed to parse JSON response:", parseError);
+            lastError = "Сервер вернул неверный формат данных";
+            continue;
+          }
+
+          console.log(
+            `📦 Parsed response data from ${endpoint}:`,
+            responseData
+          );
 
           if (!response.ok) {
             console.error("❌ Login failed:", responseData);
@@ -98,7 +144,7 @@ class AuthService {
               responseData.error ||
               responseData.detail ||
               responseData.message ||
-              "Неверные учетные данные";
+              `HTTP ${response.status}: ${response.statusText}`;
             continue;
           }
 
@@ -137,19 +183,25 @@ class AuthService {
           throw new Error("Токен не получен от сервера");
         } catch (endpointError) {
           console.error(`❌ Error with endpoint ${endpoint}:`, endpointError);
+          if (endpointError instanceof Error) {
+            lastError = endpointError.message;
+          }
           continue;
         }
       }
 
+      console.error("❌ All endpoints failed. Last error:", lastError);
       return {
         success: false,
         error: lastError,
       };
     } catch (error) {
       console.error("❌ Login error:", error);
+      const errorMessage =
+        error instanceof Error ? error.message : "Ошибка подключения к серверу";
       return {
         success: false,
-        error: "Ошибка подключения к серверу",
+        error: errorMessage,
       };
     }
   }
