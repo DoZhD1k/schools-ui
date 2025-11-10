@@ -32,7 +32,7 @@ export default function ApiTestComponent() {
   const [isLoading, setIsLoading] = useState(false);
   const [credentials, setCredentials] = useState({
     email: "admin@test.com",
-    password: "password123",
+    password: "admin123456",
   });
 
   const addTestResult = (name: string, success: boolean, data: unknown) => {

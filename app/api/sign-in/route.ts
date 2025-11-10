@@ -32,9 +32,13 @@ export async function POST(request: NextRequest) {
     // Сохраняем токен в httpOnly cookie для дополнительной безопасности
     response.cookies.set("auth_token", result.data!.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure:
+        process.env.NODE_ENV === "production" && process.env.VERCEL_URL
+          ? true
+          : false,
       sameSite: "lax",
       maxAge: 24 * 60 * 60, // 24 часа
+      domain: process.env.NODE_ENV === "production" ? undefined : "localhost",
     });
 
     return response;
