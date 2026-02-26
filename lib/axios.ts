@@ -45,8 +45,14 @@ api.interceptors.request.use((config) => {
   if (typeof window !== "undefined") {
     const token = localStorage.getItem("accessToken");
     if (token) {
-      // Проверяем, что токен не содержит префикс Token, и добавляем его
-      const authToken = token.startsWith("Token ") ? token : `Token ${token}`;
+      // Keycloak использует Bearer токены (JWT)
+      // Если токен уже содержит префикс — используем как есть
+      let authToken: string;
+      if (token.startsWith("Bearer ") || token.startsWith("Token ")) {
+        authToken = token;
+      } else {
+        authToken = `Bearer ${token}`;
+      }
 
       // Устанавливаем заголовок независимо от того, есть ли он уже
       config.headers.Authorization = authToken;
@@ -102,12 +108,12 @@ export const setAuthHeader = (token: string | null) => {
     if (token.startsWith("Token ") || token.startsWith("Bearer ")) {
       api.defaults.headers.common["Authorization"] = token;
     } else {
-      // Используем формат Token согласно новой API документации
-      api.defaults.headers.common["Authorization"] = `Token ${token}`;
+      // По умолчанию используем Bearer (Keycloak JWT)
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     }
     console.log(
       "✅ Auth header set:",
-      api.defaults.headers.common["Authorization"]?.substring(0, 15) + "..."
+      api.defaults.headers.common["Authorization"]?.substring(0, 15) + "...",
     );
   } else {
     delete api.defaults.headers.common["Authorization"];
@@ -188,5 +194,5 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  }
+  },
 );

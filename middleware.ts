@@ -16,7 +16,7 @@ function getLocale(request: NextRequest): string | undefined {
 
   // Use negotiator and intl-localematcher to get best locale
   const languages = new Negotiator({ headers: negotiatorHeaders }).languages(
-    locales
+    locales,
   );
 
   const locale = matchLocale(languages, locales, i18n.defaultLocale);
@@ -26,7 +26,10 @@ function getLocale(request: NextRequest): string | undefined {
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const authToken = request.cookies.get("auth_token")?.value;
+  // Поддержка Keycloak: проверяем kc_token (новый) или auth_token (старый)
+  const authToken =
+    request.cookies.get("kc_token")?.value ||
+    request.cookies.get("auth_token")?.value;
 
   // Отладочная информация для Vercel
   if (process.env.NODE_ENV === "production") {
@@ -36,7 +39,7 @@ export function middleware(request: NextRequest) {
       cookies: Object.fromEntries(
         request.cookies
           .getAll()
-          .map((c) => [c.name, c.value.substring(0, 10) + "..."])
+          .map((c) => [c.name, c.value.substring(0, 10) + "..."]),
       ),
       host: request.headers.get("host"),
       userAgent: request.headers.get("user-agent")?.substring(0, 50),
@@ -62,7 +65,7 @@ export function middleware(request: NextRequest) {
 
   // Check if there is any supported locale in the pathname
   const pathnameHasLocale = i18n.locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`,
   );
 
   // Define protected paths, including dynamic segments
@@ -77,7 +80,7 @@ export function middleware(request: NextRequest) {
     "/schools/passport/",
   ];
   const isProtectedRoute = protectedPaths.some((protectedPath) =>
-    pathname.includes(protectedPath)
+    pathname.includes(protectedPath),
   );
 
   // Handle root redirect (adjusted for i18n)
@@ -93,7 +96,7 @@ export function middleware(request: NextRequest) {
     // Create the new URL with the locale prefix
     const newUrl = new URL(
       `/${locale}${pathname.startsWith("/") ? "" : "/"}${pathname}`,
-      request.url
+      request.url,
     );
     return NextResponse.redirect(newUrl);
   }
