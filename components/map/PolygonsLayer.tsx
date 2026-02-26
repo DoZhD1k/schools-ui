@@ -17,7 +17,7 @@ const getAllPolygons = async () => {
           Accept: "application/json",
           "Content-Type": "application/json",
         },
-      }
+      },
     );
 
     if (!response.ok) {
@@ -76,7 +76,7 @@ interface PolygonFilters {
 }
 
 const createFilterSpecification = (
-  filters: PolygonFilters | null
+  filters: PolygonFilters | null,
 ): FilterSpecification => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const conditions: any[] = ["all"];
@@ -162,7 +162,7 @@ export default function PolygonsLayer({
     if (districtPolygons && districtPolygons.length > 0) {
       console.log(
         "🎯 Using provided district polygons:",
-        districtPolygons.length
+        districtPolygons.length,
       );
       return;
     }
@@ -306,7 +306,7 @@ export default function PolygonsLayer({
       console.log("🔄 Updating existing source:", POLYGONS_SOURCE_ID);
       // Update existing source data
       const source = mapInstance.getSource(
-        POLYGONS_SOURCE_ID
+        POLYGONS_SOURCE_ID,
       ) as mapboxgl.GeoJSONSource;
       source.setData(geojsonData);
 
@@ -316,10 +316,10 @@ export default function PolygonsLayer({
           mapInstance.setPaintProperty(
             POLYGONS_FILL_LAYER_ID,
             "fill-opacity",
-            activePolygonStyle.opacity
+            activePolygonStyle.opacity,
           );
           console.log(
-            `🔧 Force-updated fill opacity after data update to ${activePolygonStyle.opacity}`
+            `🔧 Force-updated fill opacity after data update to ${activePolygonStyle.opacity}`,
           );
         }
       }, 100);
@@ -333,13 +333,20 @@ export default function PolygonsLayer({
       // Это поместит районные полигоны под дорогами карты
       let beforeLayerId: string | undefined;
 
-      // Ищем школьный слой маркеров, чтобы добавить районные полигоны перед ним
+      // Ищем школьный слой маркеров или кластеров, чтобы добавить районные полигоны перед ними
+      const clusterLayer = "schools-clusters";
       const schoolsMarkersLayer = "schools-markers";
-      if (mapInstance.getLayer(schoolsMarkersLayer)) {
+      if (mapInstance.getLayer(clusterLayer)) {
+        beforeLayerId = clusterLayer;
+        console.log(
+          "📍 Adding district polygons BEFORE cluster layer:",
+          beforeLayerId,
+        );
+      } else if (mapInstance.getLayer(schoolsMarkersLayer)) {
         beforeLayerId = schoolsMarkersLayer;
         console.log(
           "📍 Adding district polygons BEFORE schools markers layer:",
-          beforeLayerId
+          beforeLayerId,
         );
       } else {
         // Ищем дорожные или символьные слои карты
@@ -354,7 +361,7 @@ export default function PolygonsLayer({
             layer.id.includes("street") ||
             layer.id.includes("label") ||
             layer.id.includes("waterway") ||
-            layer.source === "mapbox"
+            layer.source === "mapbox",
         );
 
         beforeLayerId = roadOrSymbolLayer ? roadOrSymbolLayer.id : undefined;
@@ -362,7 +369,7 @@ export default function PolygonsLayer({
           "📍 Adding district polygons BELOW road/symbol layers:",
           beforeLayerId || "at bottom",
           "Found layer:",
-          roadOrSymbolLayer?.id
+          roadOrSymbolLayer?.id,
         );
       }
       mapInstance.addLayer(
@@ -383,11 +390,11 @@ export default function PolygonsLayer({
             "fill-opacity": activePolygonStyle.opacity,
           },
         },
-        beforeLayerId
+        beforeLayerId,
       ); // Insert at the top (beforeLayerId = undefined)
       console.log(
         "✅ Fill layer added successfully at the TOP" +
-          ` with opacity: ${activePolygonStyle.opacity}`
+          ` with opacity: ${activePolygonStyle.opacity}`,
       );
 
       // Принудительно устанавливаем правильную прозрачность
@@ -397,10 +404,10 @@ export default function PolygonsLayer({
           mapInstance.setPaintProperty(
             POLYGONS_FILL_LAYER_ID,
             "fill-opacity",
-            activePolygonStyle.opacity
+            activePolygonStyle.opacity,
           );
           console.log(
-            `🔧 Force-updated fill opacity to ${activePolygonStyle.opacity}`
+            `🔧 Force-updated fill opacity to ${activePolygonStyle.opacity}`,
           );
         }
       }, 100);
@@ -410,12 +417,12 @@ export default function PolygonsLayer({
       mapInstance.setPaintProperty(
         POLYGONS_FILL_LAYER_ID,
         "fill-color",
-        activePolygonStyle.surplusColor
+        activePolygonStyle.surplusColor,
       );
       mapInstance.setPaintProperty(
         POLYGONS_FILL_LAYER_ID,
         "fill-opacity",
-        activePolygonStyle.opacity
+        activePolygonStyle.opacity,
       );
     }
 
@@ -425,12 +432,19 @@ export default function PolygonsLayer({
 
       // Тот же beforeLayerId что и для fill слоя
       let strokeBeforeLayerId: string | undefined;
-      const schoolsMarkersLayer = "schools-markers";
-      if (mapInstance.getLayer(schoolsMarkersLayer)) {
-        strokeBeforeLayerId = schoolsMarkersLayer;
+      const strokeClusterLayer = "schools-clusters";
+      const strokeSchoolsMarkersLayer = "schools-markers";
+      if (mapInstance.getLayer(strokeClusterLayer)) {
+        strokeBeforeLayerId = strokeClusterLayer;
+        console.log(
+          "📍 Adding district stroke BEFORE cluster layer:",
+          strokeBeforeLayerId,
+        );
+      } else if (mapInstance.getLayer(strokeSchoolsMarkersLayer)) {
+        strokeBeforeLayerId = strokeSchoolsMarkersLayer;
         console.log(
           "📍 Adding district stroke BEFORE schools markers layer:",
-          strokeBeforeLayerId
+          strokeBeforeLayerId,
         );
       } else {
         // Ищем дорожные или символьные слои карты
@@ -443,14 +457,14 @@ export default function PolygonsLayer({
             layer.id.includes("street") ||
             layer.id.includes("label") ||
             layer.id.includes("waterway") ||
-            layer.source === "mapbox"
+            layer.source === "mapbox",
         );
         strokeBeforeLayerId = roadOrSymbolLayer
           ? roadOrSymbolLayer.id
           : undefined;
         console.log(
           "📍 Adding district stroke BELOW road/symbol layers:",
-          strokeBeforeLayerId || "at bottom"
+          strokeBeforeLayerId || "at bottom",
         );
       }
 
@@ -468,11 +482,11 @@ export default function PolygonsLayer({
             "line-opacity": 1,
           },
         },
-        strokeBeforeLayerId // Add before schools layers
+        strokeBeforeLayerId, // Add before schools layers
       );
       console.log(
         "✅ Stroke layer added successfully at the TOP" +
-          ` with width: ${activePolygonStyle.strokeWidth}`
+          ` with width: ${activePolygonStyle.strokeWidth}`,
       );
     } else {
       console.log("🔄 Updating existing stroke layer paint properties");
@@ -480,12 +494,12 @@ export default function PolygonsLayer({
       mapInstance.setPaintProperty(
         POLYGONS_STROKE_LAYER_ID,
         "line-color",
-        activePolygonStyle.strokeColor
+        activePolygonStyle.strokeColor,
       );
       mapInstance.setPaintProperty(
         POLYGONS_STROKE_LAYER_ID,
         "line-width",
-        activePolygonStyle.strokeWidth
+        activePolygonStyle.strokeWidth,
       );
     }
 
@@ -535,7 +549,7 @@ export default function PolygonsLayer({
       if (hoveredPolygonId !== null) {
         mapInstance.setFeatureState(
           { source: POLYGONS_SOURCE_ID, id: hoveredPolygonId },
-          { hover: false }
+          { hover: false },
         );
       }
       hoveredPolygonId = null;
@@ -550,14 +564,14 @@ export default function PolygonsLayer({
         if (hoveredPolygonId !== null) {
           mapInstance.setFeatureState(
             { source: POLYGONS_SOURCE_ID, id: hoveredPolygonId },
-            { hover: false }
+            { hover: false },
           );
         }
         hoveredPolygonId = features[0].id || null;
         if (hoveredPolygonId !== null) {
           mapInstance.setFeatureState(
             { source: POLYGONS_SOURCE_ID, id: hoveredPolygonId },
-            { hover: true }
+            { hover: true },
           );
         }
       }
@@ -591,7 +605,7 @@ export default function PolygonsLayer({
           source: POLYGONS_SOURCE_ID,
           id: selectedPolygon,
         },
-        { selected: true }
+        { selected: true },
       );
     }
 
@@ -602,7 +616,7 @@ export default function PolygonsLayer({
             source: POLYGONS_SOURCE_ID,
             id: selectedPolygon,
           },
-          { selected: false }
+          { selected: false },
         );
       }
     };

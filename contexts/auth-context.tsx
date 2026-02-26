@@ -21,6 +21,7 @@ import {
   logoutKeycloak,
   getKeycloakRoles,
 } from "@/lib/keycloak";
+import { fetchLegacyToken } from "@/lib/auth-utils";
 
 // ────────────────────────────────────────────────────
 // Типы
@@ -206,6 +207,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             localStorage.setItem("userProfile", JSON.stringify(profile));
             console.log("✅ Keycloak authenticated:", profile.email);
           }
+
+          // Получаем legacy-токен от старого API для доступа к данным
+          fetchLegacyToken().catch((err: unknown) =>
+            console.warn("⚠️ Legacy token fetch failed (non-critical):", err),
+          );
 
           // Автообновление токена каждые 30 секунд
           refreshIntervalRef.current = setInterval(async () => {

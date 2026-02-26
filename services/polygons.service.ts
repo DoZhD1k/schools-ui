@@ -11,7 +11,7 @@ export class PolygonsService {
   static async getPolygons(
     filters?: PolygonFilters,
     limit = 50,
-    offset = 0
+    offset = 0,
   ): Promise<PolygonsApiResponse> {
     try {
       const params = new URLSearchParams({
@@ -35,7 +35,7 @@ export class PolygonsService {
         headers: {
           "Content-Type": "application/json",
           ...(typeof window !== "undefined" && {
-            Authorization: `Token ${localStorage.getItem("accessToken") || ""}`,
+            Authorization: `Token ${localStorage.getItem("legacyApiToken") || localStorage.getItem("accessToken") || ""}`,
           }),
         },
       });
@@ -57,7 +57,7 @@ export class PolygonsService {
    * Получить все полигоны
    */
   static async getAllPolygons(
-    filters?: PolygonFilters
+    filters?: PolygonFilters,
   ): Promise<PolygonFeature[]> {
     try {
       const response = await this.getPolygons(filters, 2000, 0);
@@ -130,7 +130,7 @@ export class PolygonsService {
         uyghur: props.uyghur || "Нет данных",
       },
       loadPercent: Math.round(
-        (props.demand_public_6_17 / props.capacity_with_shifts_weighted) * 100
+        (props.demand_public_6_17 / props.capacity_with_shifts_weighted) * 100,
       ),
     };
   }

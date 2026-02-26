@@ -43,29 +43,41 @@ api.interceptors.request.use((config) => {
 
   // Автоматически добавляем токен из localStorage если он не установлен в headers
   if (typeof window !== "undefined") {
+    // Для старого API (institutions-monitoring) используем legacy-токен
+    const legacyToken = localStorage.getItem("legacyApiToken");
     const token = localStorage.getItem("accessToken");
-    if (token) {
-      // Keycloak использует Bearer токены (JWT)
-      // Если токен уже содержит префикс — используем как есть
+
+    // Определяем, какой токен использовать
+    const effectiveToken = legacyToken || token;
+
+    if (effectiveToken) {
       let authToken: string;
-      if (token.startsWith("Bearer ") || token.startsWith("Token ")) {
-        authToken = token;
+      if (legacyToken) {
+        // Legacy-токен всегда отправляем в формате Token xxx
+        authToken = `Token ${legacyToken}`;
+      } else if (token) {
+        // Keycloak JWT — в формате Bearer
+        if (token.startsWith("Bearer ") || token.startsWith("Token ")) {
+          authToken = token;
+        } else {
+          authToken = `Bearer ${token}`;
+        }
       } else {
-        authToken = `Bearer ${token}`;
+        authToken = "";
       }
 
-      // Устанавливаем заголовок независимо от того, есть ли он уже
-      config.headers.Authorization = authToken;
+      if (authToken) {
+        // Устанавливаем заголовок независимо от того, есть ли он уже
+        config.headers.Authorization = authToken;
+      }
 
       // Debugging info
-      const isJWT = token.includes(".");
-      const isMock = token.includes("mock") || token.startsWith("eyJ"); // JWT starts with eyJ
+      const isJWT = effectiveToken?.includes(".") ?? false;
       console.log("Adding auth token to request:", {
         url: config.url,
         fullUrl: `${config.baseURL}${config.url}`,
-        tokenType: isJWT ? "JWT" : "other",
-        isMockToken: isMock && !isJWT,
-        tokenPrefix: authToken.substring(0, 15) + "...",
+        tokenType: legacyToken ? "legacy" : isJWT ? "JWT" : "other",
+        tokenPrefix: authToken ? authToken.substring(0, 15) + "..." : "none",
         hasAuthHeader: !!config.headers.Authorization,
       });
     } else {

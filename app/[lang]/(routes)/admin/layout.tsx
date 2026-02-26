@@ -5,6 +5,7 @@
 
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
 import { usePermissions } from "@/hooks/usePermissions";
 import { AdminGuard } from "@/components/auth/role-guard";
@@ -16,6 +17,8 @@ import {
   BarChart3,
   Settings,
   FileText,
+  Menu,
+  X,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -27,6 +30,7 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { userProfile } = useAuth();
   const permissions = usePermissions();
   const pathname = usePathname();
@@ -142,14 +146,41 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     >
       <div className="min-h-screen bg-gray-50">
         <div className="flex">
+          {/* Mobile sidebar overlay */}
+          {sidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black/40 z-40 md:hidden"
+              onClick={() => setSidebarOpen(false)}
+            />
+          )}
+
+          {/* Mobile hamburger button */}
+          <button
+            className="md:hidden fixed top-[65px] left-3 z-50 p-2 bg-white rounded-lg shadow-md border border-slate-200"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            aria-label="Меню админ панели"
+          >
+            {sidebarOpen ? (
+              <X className="h-5 w-5 text-slate-700" />
+            ) : (
+              <Menu className="h-5 w-5 text-slate-700" />
+            )}
+          </button>
+
           {/* Боковое меню */}
-          <div className="w-64 bg-white shadow-sm border-r min-h-screen">
-            <div className="p-6">
+          <div
+            className={`fixed md:static inset-y-0 left-0 z-40 w-64 bg-white shadow-sm border-r min-h-screen transform transition-transform duration-200 ease-in-out ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-full"
+            } md:translate-x-0`}
+          >
+            <div className="p-4 md:p-6">
               <div className="flex items-center space-x-2 mb-6">
-                <Shield className="h-8 w-8 text-primary" />
+                <Shield className="h-7 w-7 md:h-8 md:w-8 text-primary" />
                 <div>
-                  <h2 className="text-lg font-semibold">Админ панель</h2>
-                  <p className="text-sm text-muted-foreground">
+                  <h2 className="text-base md:text-lg font-semibold">
+                    Админ панель
+                  </h2>
+                  <p className="text-xs md:text-sm text-muted-foreground">
                     Управление системой
                   </p>
                 </div>
@@ -165,7 +196,11 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                     const active = isActive(item.href);
 
                     return (
-                      <Link key={item.href} href={item.href}>
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setSidebarOpen(false)}
+                      >
                         <Button
                           variant={active ? "default" : "ghost"}
                           className={`w-full justify-start h-auto p-3 ${
@@ -177,7 +212,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                           <div className="flex items-start space-x-3">
                             <Icon className="h-5 w-5 mt-0.5 flex-shrink-0" />
                             <div className="text-left">
-                              <div className="font-medium">{item.label}</div>
+                              <div className="font-medium text-sm">
+                                {item.label}
+                              </div>
                               <div
                                 className={`text-xs ${
                                   active
@@ -203,8 +240,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
 
           {/* Основной контент */}
-          <div className="flex-1">
-            <div className="p-8">{children}</div>
+          <div className="flex-1 min-w-0">
+            <div className="p-4 pt-14 md:pt-8 md:p-8">{children}</div>
           </div>
         </div>
       </div>

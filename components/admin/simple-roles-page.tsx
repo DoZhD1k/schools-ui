@@ -217,11 +217,13 @@ export default function SimpleRolesPage() {
       onRetry={retryLoadRoles}
       loadingText="Загрузка ролей..."
     >
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="space-y-4 md:space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Роли системы</h1>
-            <p className="text-muted-foreground">
+            <h1 className="text-xl md:text-3xl font-bold tracking-tight">
+              Роли системы
+            </h1>
+            <p className="text-xs md:text-base text-muted-foreground">
               Просмотр ролей и прав доступа в системе
             </p>
           </div>
@@ -245,7 +247,7 @@ export default function SimpleRolesPage() {
           </Dialog>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-6 mb-4 md:mb-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Всего ролей</CardTitle>
@@ -288,10 +290,10 @@ export default function SimpleRolesPage() {
                   ? Math.round(
                       (roles.reduce(
                         (acc, role) => acc + getActivePermissionsCount(role),
-                        0
+                        0,
                       ) /
                         roles.length) *
-                        10
+                        10,
                     ) / 10
                   : 0}
               </div>
@@ -308,108 +310,110 @@ export default function SimpleRolesPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Название роли</TableHead>
-                  <TableHead>Ввод данных</TableHead>
-                  <TableHead>Просмотр отчетов</TableHead>
-                  <TableHead>Аналитика</TableHead>
-                  <TableHead>Рейтинг</TableHead>
-                  <TableHead>Активных прав</TableHead>
-                  <TableHead className="text-right">Действия</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
+            <div className="overflow-x-auto -mx-4 md:mx-0">
+              <Table>
+                <TableHeader>
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      Загрузка...
-                    </TableCell>
+                    <TableHead>Название роли</TableHead>
+                    <TableHead>Ввод данных</TableHead>
+                    <TableHead>Просмотр отчетов</TableHead>
+                    <TableHead>Аналитика</TableHead>
+                    <TableHead>Рейтинг</TableHead>
+                    <TableHead>Активных прав</TableHead>
+                    <TableHead className="text-right">Действия</TableHead>
                   </TableRow>
-                ) : roles.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
-                      Роли не найдены
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  roles.map((role) => (
-                    <TableRow key={role.id}>
-                      <TableCell>
-                        <div className="font-medium">{role.name}</div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            role.can_input_data ? "default" : "secondary"
-                          }
-                        >
-                          {role.can_input_data ? "Да" : "Нет"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            role.can_view_reports ? "default" : "secondary"
-                          }
-                        >
-                          {role.can_view_reports ? "Да" : "Нет"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            role.can_view_analytics ? "default" : "secondary"
-                          }
-                        >
-                          {role.can_view_analytics ? "Да" : "Нет"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={
-                            role.can_form_rating ? "default" : "secondary"
-                          }
-                        >
-                          {role.can_form_rating ? "Да" : "Нет"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {getActivePermissionsCount(role)} из 4
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="h-8 w-8 p-0">
-                              <span className="sr-only">Открыть меню</span>
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => handleEditRole(role)}
-                            >
-                              <Edit className="mr-2 h-4 w-4" />
-                              Редактировать
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => handleDeleteRole(role)}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Удалить
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                </TableHeader>
+                <TableBody>
+                  {isLoading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        Загрузка...
                       </TableCell>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
+                  ) : roles.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8">
+                        Роли не найдены
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    roles.map((role) => (
+                      <TableRow key={role.id}>
+                        <TableCell>
+                          <div className="font-medium">{role.name}</div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              role.can_input_data ? "default" : "secondary"
+                            }
+                          >
+                            {role.can_input_data ? "Да" : "Нет"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              role.can_view_reports ? "default" : "secondary"
+                            }
+                          >
+                            {role.can_view_reports ? "Да" : "Нет"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              role.can_view_analytics ? "default" : "secondary"
+                            }
+                          >
+                            {role.can_view_analytics ? "Да" : "Нет"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              role.can_form_rating ? "default" : "secondary"
+                            }
+                          >
+                            {role.can_form_rating ? "Да" : "Нет"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {getActivePermissionsCount(role)} из 4
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <span className="sr-only">Открыть меню</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleEditRole(role)}
+                              >
+                                <Edit className="mr-2 h-4 w-4" />
+                                Редактировать
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteRole(role)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Удалить
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 

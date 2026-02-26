@@ -37,6 +37,7 @@ export const clearAuthData = () => {
   localStorage.removeItem("accessToken");
   localStorage.removeItem("userProfile");
   localStorage.removeItem("expiresAt");
+  localStorage.removeItem("legacyApiToken");
 };
 
 /**

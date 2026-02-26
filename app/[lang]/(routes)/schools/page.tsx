@@ -116,7 +116,7 @@ export default function SchoolsListPage() {
     const filtered = schools.filter(
       (school) =>
         school.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        school.address.toLowerCase().includes(searchQuery.toLowerCase())
+        school.address.toLowerCase().includes(searchQuery.toLowerCase()),
     );
     setFilteredSchools(filtered);
   }, [schools, searchQuery]);
@@ -162,21 +162,21 @@ export default function SchoolsListPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto px-4 py-4 md:p-6 space-y-4 md:space-y-6">
       {/* Заголовок и информация о доступе */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-bold">Школы</h1>
-          <p className="text-muted-foreground mt-1">
+          <h1 className="text-xl md:text-3xl font-bold">Школы</h1>
+          <p className="text-sm md:text-base text-muted-foreground mt-1">
             Управление образовательными учреждениями
           </p>
         </div>
-        <div className="text-right">
-          <Badge variant="outline" className="mb-2">
+        <div className="sm:text-right">
+          <Badge variant="outline" className="mb-1 md:mb-2 text-xs">
             <Filter className="h-3 w-3 mr-1" />
             {getAccessInfo()}
           </Badge>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs md:text-sm text-muted-foreground">
             Показано: {filteredSchools.length} из {schools.length}
           </p>
         </div>
@@ -200,11 +200,13 @@ export default function SchoolsListPage() {
         <div className="grid gap-4">
           {filteredSchools.map((school) => (
             <Card key={school.id} className="hover:shadow-md transition-shadow">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{school.name}</CardTitle>
-                    <div className="flex items-center text-sm text-muted-foreground">
+              <CardHeader className="p-4 md:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
+                  <div className="space-y-1 min-w-0">
+                    <CardTitle className="text-sm md:text-lg">
+                      {school.name}
+                    </CardTitle>
+                    <div className="flex items-center text-xs md:text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4 mr-1" />
                       {school.address}
                     </div>
@@ -221,9 +223,9 @@ export default function SchoolsListPage() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center text-sm text-muted-foreground">
+              <CardContent className="p-4 md:p-6 pt-0 md:pt-0">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <div className="flex items-center text-xs md:text-sm text-muted-foreground">
                     <Users className="h-4 w-4 mr-1" />
                     Учащиеся: {school.student_count || "Н/Д"}
                   </div>

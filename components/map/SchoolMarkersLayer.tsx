@@ -15,6 +15,8 @@ interface SchoolMarkersLayerProps {
 
 const SCHOOLS_MARKERS_SOURCE_ID = "schools-markers";
 const SCHOOLS_MARKERS_LAYER_ID = "schools-markers";
+const CLUSTER_LAYER_ID = "schools-clusters";
+const CLUSTER_COUNT_LAYER_ID = "schools-cluster-count";
 
 export default function SchoolMarkersLayer({
   mapInstance,
@@ -74,7 +76,7 @@ export default function SchoolMarkersLayer({
                   type: "Point" as const,
                   coordinates: school.infra!.origin_marker.coordinates as [
                     number,
-                    number
+                    number,
                   ],
                 },
                 properties: {
@@ -95,7 +97,7 @@ export default function SchoolMarkersLayer({
             });
 
           console.log(
-            `🎯 Loaded ${schoolsWithCoordinates.length} schools with coordinates out of ${allSchools.length} total schools`
+            `🎯 Loaded ${schoolsWithCoordinates.length} schools with coordinates out of ${allSchools.length} total schools`,
           );
           setSchools(schoolsWithCoordinates);
         } else {
@@ -118,7 +120,7 @@ export default function SchoolMarkersLayer({
       const schoolWithRating = schoolsWithRatings?.find(
         (s) =>
           s.id === school.id.toString() ||
-          s.nameRu === school.properties.name_of_the_organization
+          s.nameRu === school.properties.name_of_the_organization,
       );
 
       // Используем новый рейтинг если найден
@@ -143,7 +145,7 @@ export default function SchoolMarkersLayer({
       }
       return "#6366F1"; // Индиго для государственных/прочих
     },
-    [schoolsWithRatings]
+    [schoolsWithRatings],
   );
 
   // Функция для получения размера маркера
@@ -263,29 +265,91 @@ export default function SchoolMarkersLayer({
 
     const initializeMarkerLayer = async () => {
       try {
-        console.log("🎨 Initializing school markers layer...");
+        console.log("🎨 Initializing school markers layer with clustering...");
 
-        // Создание пустого GeoJSON источника - данные добавим позже
+        // Создание пустого GeoJSON источника с кластеризацией
         const emptyGeojsonData: GeoJSON.FeatureCollection = {
           type: "FeatureCollection",
           features: [],
         };
 
-        // Добавляем источник данных
+        // Добавляем источник данных с включённой кластеризацией
         if (!mapInstance.getSource(SCHOOLS_MARKERS_SOURCE_ID)) {
           mapInstance.addSource(SCHOOLS_MARKERS_SOURCE_ID, {
             type: "geojson",
             data: emptyGeojsonData,
+            cluster: true,
+            clusterMaxZoom: 14, // после этого зума кластеры разбиваются
+            clusterRadius: 50, // радиус кластеризации в пикселях
           });
-          console.log("✅ School markers source added (empty)");
+          console.log("✅ School markers source added with clustering");
         }
 
-        // Добавляем слой маркеров
+        // ── Слой кластеров (кружки) ──
+        if (!mapInstance.getLayer(CLUSTER_LAYER_ID)) {
+          mapInstance.addLayer({
+            id: CLUSTER_LAYER_ID,
+            type: "circle",
+            source: SCHOOLS_MARKERS_SOURCE_ID,
+            filter: ["has", "point_count"],
+            paint: {
+              // Размер зависит от количества точек в кластере
+              "circle-radius": [
+                "step",
+                ["get", "point_count"],
+                18, // до 10 — 18px
+                10,
+                24, // 10-50 — 24px
+                50,
+                30, // 50-200 — 30px
+                200,
+                36, // 200+ — 36px
+              ],
+              "circle-color": [
+                "step",
+                ["get", "point_count"],
+                "#6366F1", // до 10 — индиго
+                10,
+                "#3B82F6", // 10-50 — синий
+                50,
+                "#F59E0B", // 50-200 — янтарь
+                200,
+                "#EF4444", // 200+ — красный
+              ],
+              "circle-opacity": 0.85,
+              "circle-stroke-width": 3,
+              "circle-stroke-color": "#FFFFFF",
+              "circle-stroke-opacity": 0.9,
+            },
+          });
+        }
+
+        // ── Слой текста (число внутри кластера) ──
+        if (!mapInstance.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+          mapInstance.addLayer({
+            id: CLUSTER_COUNT_LAYER_ID,
+            type: "symbol",
+            source: SCHOOLS_MARKERS_SOURCE_ID,
+            filter: ["has", "point_count"],
+            layout: {
+              "text-field": ["get", "point_count_abbreviated"],
+              "text-font": ["DIN Pro Medium", "Arial Unicode MS Bold"],
+              "text-size": 13,
+              "text-allow-overlap": true,
+            },
+            paint: {
+              "text-color": "#FFFFFF",
+            },
+          });
+        }
+
+        // ── Слой отдельных маркеров (не-кластеры) ──
         if (!mapInstance.getLayer(SCHOOLS_MARKERS_LAYER_ID)) {
           mapInstance.addLayer({
             id: SCHOOLS_MARKERS_LAYER_ID,
             type: "circle",
             source: SCHOOLS_MARKERS_SOURCE_ID,
+            filter: ["!", ["has", "point_count"]], // только некластерные точки
             layout: {
               visibility: "visible",
             },
@@ -294,13 +358,13 @@ export default function SchoolMarkersLayer({
                 "case",
                 ["!=", ["get", "markerSize"], null],
                 ["get", "markerSize"],
-                8, // Размер по умолчанию
+                8,
               ],
               "circle-color": [
                 "case",
                 ["!=", ["get", "markerColor"], null],
                 ["get", "markerColor"],
-                "#6366F1", // Цвет по умолчанию
+                "#6366F1",
               ],
               "circle-opacity": 0.8,
               "circle-stroke-width": 2,
@@ -313,7 +377,31 @@ export default function SchoolMarkersLayer({
         }
 
         setIsInitialized(true);
-        console.log("🎉 School markers layer initialized successfully");
+        console.log("🎉 School markers layer with clustering initialized");
+
+        // Перемещаем слои маркеров/кластеров наверх, чтобы они были поверх полигонов
+        const bringLayersToTop = () => {
+          try {
+            if (mapInstance.getLayer(CLUSTER_LAYER_ID)) {
+              mapInstance.moveLayer(CLUSTER_LAYER_ID);
+            }
+            if (mapInstance.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+              mapInstance.moveLayer(CLUSTER_COUNT_LAYER_ID);
+            }
+            if (mapInstance.getLayer(SCHOOLS_MARKERS_LAYER_ID)) {
+              mapInstance.moveLayer(SCHOOLS_MARKERS_LAYER_ID);
+            }
+            console.log("✅ Cluster & marker layers moved to top");
+          } catch (err) {
+            console.warn("⚠️ Could not reorder layers:", err);
+          }
+        };
+
+        // Сразу + с задержкой (на случай если полигоны ещё не добавлены)
+        bringLayersToTop();
+        setTimeout(bringLayersToTop, 500);
+        setTimeout(bringLayersToTop, 1500);
+        setTimeout(bringLayersToTop, 3000);
       } catch (err) {
         console.error("❌ Error initializing school markers layer:", err);
       }
@@ -335,10 +423,38 @@ export default function SchoolMarkersLayer({
       mapInstance.getCanvas().style.cursor = "";
     };
 
+    // Клик по кластеру → зум
+    const handleClusterClick = (
+      e: mapboxgl.MapMouseEvent & {
+        features?: mapboxgl.MapboxGeoJSONFeature[];
+      },
+    ) => {
+      const features = mapInstance.queryRenderedFeatures(e.point, {
+        layers: [CLUSTER_LAYER_ID],
+      });
+      if (!features.length) return;
+
+      const clusterId = features[0].properties?.cluster_id;
+      if (clusterId == null) return;
+
+      const source = mapInstance.getSource(
+        SCHOOLS_MARKERS_SOURCE_ID,
+      ) as mapboxgl.GeoJSONSource;
+
+      source.getClusterExpansionZoom(clusterId, (err, zoom) => {
+        if (err || zoom == null) return;
+        const geometry = features[0].geometry as GeoJSON.Point;
+        mapInstance.easeTo({
+          center: geometry.coordinates as [number, number],
+          zoom: zoom,
+        });
+      });
+    };
+
     const handleClick = (
       e: mapboxgl.MapMouseEvent & {
         features?: mapboxgl.MapboxGeoJSONFeature[];
-      }
+      },
     ) => {
       if (!e.features || e.features.length === 0) return;
 
@@ -391,6 +507,13 @@ export default function SchoolMarkersLayer({
       mapInstance.on("click", SCHOOLS_MARKERS_LAYER_ID, handleClick);
     }
 
+    // Обработчики для кластеров
+    if (mapInstance.getLayer(CLUSTER_LAYER_ID)) {
+      mapInstance.on("mouseenter", CLUSTER_LAYER_ID, handleMouseEnter);
+      mapInstance.on("mouseleave", CLUSTER_LAYER_ID, handleMouseLeave);
+      mapInstance.on("click", CLUSTER_LAYER_ID, handleClusterClick);
+    }
+
     return () => {
       if (popup.current) {
         popup.current.remove();
@@ -403,14 +526,19 @@ export default function SchoolMarkersLayer({
             mapInstance.off(
               "mouseenter",
               SCHOOLS_MARKERS_LAYER_ID,
-              handleMouseEnter
+              handleMouseEnter,
             );
             mapInstance.off(
               "mouseleave",
               SCHOOLS_MARKERS_LAYER_ID,
-              handleMouseLeave
+              handleMouseLeave,
             );
             mapInstance.off("click", SCHOOLS_MARKERS_LAYER_ID, handleClick);
+          }
+          if (mapInstance.getLayer(CLUSTER_LAYER_ID)) {
+            mapInstance.off("mouseenter", CLUSTER_LAYER_ID, handleMouseEnter);
+            mapInstance.off("mouseleave", CLUSTER_LAYER_ID, handleMouseLeave);
+            mapInstance.off("click", CLUSTER_LAYER_ID, handleClusterClick);
           }
         } catch (error) {
           console.warn("⚠️ Error removing event listeners:", error);
@@ -428,7 +556,7 @@ export default function SchoolMarkersLayer({
         console.log(
           "🔄 Updating school markers data with",
           activeSchools.length,
-          "schools"
+          "schools",
         );
 
         const geojsonData: GeoJSON.FeatureCollection = {
@@ -439,7 +567,7 @@ export default function SchoolMarkersLayer({
               const hasMarker =
                 school.properties?.infra?.origin_marker?.coordinates &&
                 Array.isArray(
-                  school.properties.infra.origin_marker.coordinates
+                  school.properties.infra.origin_marker.coordinates,
                 ) &&
                 school.properties.infra.origin_marker.coordinates.length === 2;
 
@@ -473,7 +601,7 @@ export default function SchoolMarkersLayer({
         console.log("📍 Markers data to update:", {
           totalSchools: activeSchools.length,
           schoolsWithMarkers: activeSchools.filter(
-            (s) => s.properties?.infra?.origin_marker?.coordinates
+            (s) => s.properties?.infra?.origin_marker?.coordinates,
           ).length,
           features: geojsonData.features.length,
           sampleFeature: geojsonData.features[0]
@@ -488,15 +616,32 @@ export default function SchoolMarkersLayer({
         });
 
         const source = mapInstance.getSource(
-          SCHOOLS_MARKERS_SOURCE_ID
+          SCHOOLS_MARKERS_SOURCE_ID,
         ) as mapboxgl.GeoJSONSource;
         if (source) {
           source.setData(geojsonData);
           console.log(
             "✅ School markers data updated successfully with",
             geojsonData.features.length,
-            "markers"
+            "markers",
           );
+
+          // После обновления данных — убедимся что слои поверх полигонов
+          setTimeout(() => {
+            try {
+              if (mapInstance.getLayer(CLUSTER_LAYER_ID)) {
+                mapInstance.moveLayer(CLUSTER_LAYER_ID);
+              }
+              if (mapInstance.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+                mapInstance.moveLayer(CLUSTER_COUNT_LAYER_ID);
+              }
+              if (mapInstance.getLayer(SCHOOLS_MARKERS_LAYER_ID)) {
+                mapInstance.moveLayer(SCHOOLS_MARKERS_LAYER_ID);
+              }
+            } catch (e) {
+              console.warn("⚠️ Layer reorder failed:", e);
+            }
+          }, 200);
         } else {
           console.warn("⚠️ School markers source not found for update");
         }
@@ -521,6 +666,14 @@ export default function SchoolMarkersLayer({
       if (!mapInstance || !mapInstance.getLayer) return;
 
       try {
+        // Удаляем слои кластеров
+        if (mapInstance.getLayer(CLUSTER_COUNT_LAYER_ID)) {
+          mapInstance.removeLayer(CLUSTER_COUNT_LAYER_ID);
+        }
+        if (mapInstance.getLayer(CLUSTER_LAYER_ID)) {
+          mapInstance.removeLayer(CLUSTER_LAYER_ID);
+        }
+
         if (mapInstance.getLayer(SCHOOLS_MARKERS_LAYER_ID)) {
           mapInstance.removeLayer(SCHOOLS_MARKERS_LAYER_ID);
         }
@@ -546,7 +699,10 @@ export default function SchoolMarkersLayer({
           border: 1px solid #e5e7eb !important;
           background: rgba(255, 255, 255, 0.95) !important;
           backdrop-filter: blur(8px) !important;
-          font-family: system-ui, -apple-system, sans-serif !important;
+          font-family:
+            system-ui,
+            -apple-system,
+            sans-serif !important;
         }
 
         .school-marker-popup-small .mapboxgl-popup-tip {
