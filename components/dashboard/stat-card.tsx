@@ -62,35 +62,37 @@ export function StatCard({
 
   return (
     <Card
-      className={`transition-all duration-300 hover:scale-105 hover:shadow-3xl border rounded-3xl ${getCardStyles()}`}
+      className={`transition-all duration-300 md:hover:scale-105 hover:shadow-3xl border rounded-2xl md:rounded-3xl ${getCardStyles()}`}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
-        <CardTitle className="text-sm font-semibold text-slate-700 uppercase tracking-wide">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 md:pb-3 px-3 pt-3 md:px-6 md:pt-6">
+        <CardTitle className="text-[10px] md:text-sm font-semibold text-slate-700 uppercase tracking-wide">
           {title}
         </CardTitle>
         {icon && (
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl blur opacity-20"></div>
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl md:rounded-2xl blur opacity-20"></div>
             <div
-              className={`relative flex h-10 w-10 items-center justify-center rounded-2xl transform hover:scale-110 transition-transform duration-300 ${getIconContainerClass()}`}
+              className={`relative flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-xl md:rounded-2xl transform md:hover:scale-110 transition-transform duration-300 ${getIconContainerClass()}`}
             >
               {icon}
             </div>
           </div>
         )}
       </CardHeader>
-      <CardContent>
-        <div className="flex items-center space-x-2">
-          <div className="text-3xl font-bold text-slate-800">{value}</div>
+      <CardContent className="px-3 pb-3 md:px-6 md:pb-6">
+        <div className="flex items-center space-x-1 md:space-x-2">
+          <div className="text-xl md:text-3xl font-bold text-slate-800">
+            {value}
+          </div>
           {trend && trendValue && (
             <Badge
               variant="secondary"
-              className={`flex items-center space-x-1 text-xs font-semibold rounded-xl backdrop-blur-sm border border-[hsl(0_0%_100%_/_0.2)] shadow-sm ${
+              className={`flex items-center space-x-1 text-[10px] md:text-xs font-semibold rounded-lg md:rounded-xl backdrop-blur-sm border border-[hsl(0_0%_100%_/_0.2)] shadow-sm ${
                 trend === "up"
                   ? "text-green-700 bg-green-100/80"
                   : trend === "down"
-                  ? "text-red-700 bg-red-100/80"
-                  : "text-slate-700 bg-slate-100/80"
+                    ? "text-red-700 bg-red-100/80"
+                    : "text-slate-700 bg-slate-100/80"
               }`}
             >
               {getTrendIcon()}
@@ -99,7 +101,9 @@ export function StatCard({
           )}
         </div>
         {subtitle && (
-          <p className="text-sm text-slate-600 mt-2 font-medium">{subtitle}</p>
+          <p className="text-xs md:text-sm text-slate-600 mt-1 md:mt-2 font-medium">
+            {subtitle}
+          </p>
         )}
       </CardContent>
     </Card>

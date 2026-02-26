@@ -37,17 +37,17 @@ export const StatCard = ({
   return (
     <div className="relative overflow-hidden">
       <div
-        className={`absolute inset-0 bg-gradient-to-br ${getVariantClass()} backdrop-blur-md rounded-3xl`}
+        className={`absolute inset-0 bg-gradient-to-br ${getVariantClass()} backdrop-blur-md rounded-2xl md:rounded-3xl`}
       ></div>
-      <div className="absolute inset-0 rounded-3xl border border-[hsl(0_0%_100%_/_0.2)] shadow-lg"></div>
-      <div className="relative p-6 text-slate-800">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
+      <div className="absolute inset-0 rounded-2xl md:rounded-3xl border border-[hsl(0_0%_100%_/_0.2)] shadow-lg"></div>
+      <div className="relative p-4 md:p-6 text-slate-800">
+        <div className="flex items-center justify-between mb-2 md:mb-4">
+          <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-md border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
             {icon}
           </div>
           {trend && (
             <div
-              className={`text-sm font-medium ${
+              className={`text-xs md:text-sm font-medium ${
                 trend === "up" ? "text-green-600" : "text-red-600"
               }`}
             >
@@ -55,10 +55,14 @@ export const StatCard = ({
             </div>
           )}
         </div>
-        <div className="space-y-1">
-          <h3 className="text-sm font-medium text-slate-700">{title}</h3>
-          <div className="text-2xl font-bold text-slate-900">{value}</div>
-          <p className="text-xs text-slate-600">{subtitle}</p>
+        <div className="space-y-0.5 md:space-y-1">
+          <h3 className="text-xs md:text-sm font-medium text-slate-700">
+            {title}
+          </h3>
+          <div className="text-lg md:text-2xl font-bold text-slate-900">
+            {value}
+          </div>
+          <p className="text-[10px] md:text-xs text-slate-600">{subtitle}</p>
         </div>
       </div>
     </div>

@@ -59,7 +59,7 @@ function SchoolsRatingPageClient() {
             .map(function (c) {
               return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
             })
-            .join("")
+            .join(""),
         );
         const decoded = JSON.parse(jsonPayload);
         if (decoded && decoded.sub) {
@@ -115,7 +115,7 @@ function SchoolsRatingPageClient() {
         "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
       const exportFileDefaultName = `${title.replace(
         /[^a-zA-Z0-9]/g,
-        "_"
+        "_",
       )}.json`;
       const linkElement = document.createElement("a");
       linkElement.setAttribute("href", dataUri);
@@ -145,20 +145,19 @@ function SchoolsRatingPageClient() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Hero Section */}
       <div className="relative overflow-hidden bg-gradient-to-r from-blue-600/90 via-indigo-600/90 to-slate-700/90">
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 hidden md:block">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)] bg-[length:60px_60px]"></div>
         </div>
-        <div className="absolute inset-0">
+        <div className="absolute inset-0 hidden md:block">
           <div className="absolute top-20 left-20 w-40 h-40 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
           <div className="absolute bottom-20 right-20 w-60 h-60 bg-white/3 rounded-full blur-3xl animate-pulse delay-1000"></div>
-          <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-white/7 rounded-full blur-xl animate-pulse delay-2000"></div>
         </div>
-        <div className="relative container mx-auto px-6 py-16">
+        <div className="relative container mx-auto px-4 py-8 md:px-6 md:py-16">
           <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-3 md:mb-6 leading-tight">
               Общий рейтинг школ
             </h1>
-            <p className="text-xl md:text-2xl text-white/90 font-medium leading-relaxed">
+            <p className="text-sm sm:text-base md:text-xl lg:text-2xl text-white/90 font-medium leading-relaxed">
               Модуль для анализа рейтинга образовательных организаций города
               Алматы
             </p>
@@ -166,21 +165,21 @@ function SchoolsRatingPageClient() {
         </div>
       </div>
 
-      <div className="mx-auto p-8 space-y-10">
+      <div className="mx-auto p-4 md:p-8 space-y-6 md:space-y-10">
         {/* Общие показатели */}
         {schools && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-slate-200/60 bg-gradient-to-br from-white/80 to-slate-50/60 backdrop-blur-sm">
-              <CardContent className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
+            <Card className="group transition-all duration-300 md:hover:shadow-xl md:hover:-translate-y-2 border-slate-200/60 bg-gradient-to-br from-white/80 to-slate-50/60 backdrop-blur-sm">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center">
-                  <div className="p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <GraduationCap className="h-8 w-8 text-blue-600" />
+                  <div className="p-2 md:p-3 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg md:rounded-xl shadow-lg md:group-hover:scale-110 transition-transform duration-300">
+                    <GraduationCap className="h-5 w-5 md:h-8 md:w-8 text-blue-600" />
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                  <div className="ml-2 md:ml-4 min-w-0">
+                    <p className="text-[10px] md:text-sm font-bold text-slate-600 uppercase tracking-wide truncate">
                       Всего школ
                     </p>
-                    <p className="text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
+                    <p className="text-lg md:text-3xl font-bold bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
                       {schools.length}
                     </p>
                   </div>
@@ -188,27 +187,27 @@ function SchoolsRatingPageClient() {
               </CardContent>
             </Card>
 
-            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white backdrop-blur-sm">
-              <CardContent className="p-6">
+            <Card className="group transition-all duration-300 md:hover:shadow-xl md:hover:-translate-y-2 border-emerald-200/60 bg-gradient-to-br from-emerald-50/80 to-white backdrop-blur-sm">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-white font-bold text-lg">
+                  <div className="h-9 w-9 md:h-12 md:w-12 rounded-lg md:rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg md:group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-bold text-xs md:text-lg">
                       {schools.length > 0
                         ? Math.round(
                             (schools.filter((s) => s.ratingZone === "green")
                               .length /
                               schools.length) *
-                              100
+                              100,
                           )
                         : 0}
                       %
                     </span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                  <div className="ml-2 md:ml-4 min-w-0">
+                    <p className="text-[10px] md:text-sm font-bold text-slate-600 uppercase tracking-wide truncate">
                       Зеленая зона
                     </p>
-                    <p className="text-3xl font-bold text-emerald-600">
+                    <p className="text-lg md:text-3xl font-bold text-emerald-600">
                       {schools.filter((s) => s.ratingZone === "green").length}
                     </p>
                   </div>
@@ -216,27 +215,27 @@ function SchoolsRatingPageClient() {
               </CardContent>
             </Card>
 
-            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white backdrop-blur-sm">
-              <CardContent className="p-6">
+            <Card className="group transition-all duration-300 md:hover:shadow-xl md:hover:-translate-y-2 border-amber-200/60 bg-gradient-to-br from-amber-50/80 to-white backdrop-blur-sm">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-white font-bold text-lg">
+                  <div className="h-9 w-9 md:h-12 md:w-12 rounded-lg md:rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center shadow-lg md:group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-bold text-xs md:text-lg">
                       {schools.length > 0
                         ? Math.round(
                             (schools.filter((s) => s.ratingZone === "yellow")
                               .length /
                               schools.length) *
-                              100
+                              100,
                           )
                         : 0}
                       %
                     </span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                  <div className="ml-2 md:ml-4 min-w-0">
+                    <p className="text-[10px] md:text-sm font-bold text-slate-600 uppercase tracking-wide truncate">
                       Желтая зона
                     </p>
-                    <p className="text-3xl font-bold text-amber-600">
+                    <p className="text-lg md:text-3xl font-bold text-amber-600">
                       {schools.filter((s) => s.ratingZone === "yellow").length}
                     </p>
                   </div>
@@ -244,27 +243,27 @@ function SchoolsRatingPageClient() {
               </CardContent>
             </Card>
 
-            <Card className="group transition-all duration-300 hover:shadow-xl hover:-translate-y-2 border-red-200/60 bg-gradient-to-br from-red-50/80 to-white backdrop-blur-sm">
-              <CardContent className="p-6">
+            <Card className="group transition-all duration-300 md:hover:shadow-xl md:hover:-translate-y-2 border-red-200/60 bg-gradient-to-br from-red-50/80 to-white backdrop-blur-sm">
+              <CardContent className="p-3 md:p-6">
                 <div className="flex items-center">
-                  <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                    <span className="text-white font-bold text-lg">
+                  <div className="h-9 w-9 md:h-12 md:w-12 rounded-lg md:rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-lg md:group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-white font-bold text-xs md:text-lg">
                       {schools.length > 0
                         ? Math.round(
                             (schools.filter((s) => s.ratingZone === "red")
                               .length /
                               schools.length) *
-                              100
+                              100,
                           )
                         : 0}
                       %
                     </span>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-bold text-slate-600 uppercase tracking-wide">
+                  <div className="ml-2 md:ml-4 min-w-0">
+                    <p className="text-[10px] md:text-sm font-bold text-slate-600 uppercase tracking-wide truncate">
                       Красная зона
                     </p>
-                    <p className="text-3xl font-bold text-red-600">
+                    <p className="text-lg md:text-3xl font-bold text-red-600">
                       {schools.filter((s) => s.ratingZone === "red").length}
                     </p>
                   </div>
@@ -275,7 +274,7 @@ function SchoolsRatingPageClient() {
         )}
 
         {/* Графики распределения школ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
           <DistrictSchoolsChart
             districtStats={districtStats}
             schools={schools}

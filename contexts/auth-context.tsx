@@ -6,24 +6,40 @@ import {
   useState,
   useEffect,
   useCallback,
+  useRef,
   ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import { setAuthHeader } from "@/lib/axios";
-import { authService } from "@/services/auth.service";
+import Keycloak from "keycloak-js";
+import {
+  getKeycloak,
+  initKeycloak,
+  clearAuthData,
+  saveKeycloakUserData,
+  refreshKeycloakToken,
+  logoutKeycloak,
+  getKeycloakRoles,
+} from "@/lib/keycloak";
+import { fetchLegacyToken } from "@/lib/auth-utils";
 
-interface UserProfile {
+// ────────────────────────────────────────────────────
+// Типы
+// ────────────────────────────────────────────────────
+
+export interface UserProfile {
   id: number;
   email: string;
   first_name: string;
   last_name: string;
   patronymic?: string;
   position: string;
-  role: number; // ID роли
+  role: number;
   role_name: string;
-  school?: number | null; // ID школы
+  school?: number | null;
   school_name?: string | null;
   is_active: boolean;
+  keycloakRoles?: string[];
   rolePermissions?: {
     id: number;
     name: string;
@@ -34,225 +50,274 @@ interface UserProfile {
   };
 }
 
-interface AuthContextType {
+export interface AuthContextType {
   accessToken: string | null;
   setAccessToken: (token: string | null, expires_in?: number) => void;
   setUserProfile: (profile: UserProfile | null) => void;
   isLoading: boolean;
   isAuthenticated: boolean;
-  user: UserProfile | null; // Добавляем алиас для userProfile
+  user: UserProfile | null;
   userProfile: UserProfile | null;
   userRole: string | null;
   isAdmin: boolean;
+  keycloak: Keycloak | null;
+  login: (returnPath?: string) => void;
   logout: () => Promise<void>;
 }
 
+// ────────────────────────────────────────────────────
+// Контекст
+// ────────────────────────────────────────────────────
+
 const AuthContext = createContext<AuthContextType | null>(null);
+
+// ────────────────────────────────────────────────────
+// Вспомогательные функции
+// ────────────────────────────────────────────────────
+
+/**
+ * Определяем role ID по названию роли (из Keycloak ролей)
+ */
+function resolveRoleFromKeycloak(roles: string[]): {
+  role: number;
+  role_name: string;
+} {
+  if (roles.includes("admin") || roles.includes("Администратор")) {
+    return { role: 1, role_name: "Администратор" };
+  }
+  if (
+    roles.includes("organization") ||
+    roles.includes("Организация образования")
+  ) {
+    return { role: 2, role_name: "Организация образования" };
+  }
+  if (
+    roles.includes("management") ||
+    roles.includes("Управление образования")
+  ) {
+    return { role: 3, role_name: "Управление образования" };
+  }
+  // По умолчанию — обычный пользователь
+  return { role: 0, role_name: "Пользователь" };
+}
+
+/**
+ * Собираем UserProfile из данных Keycloak
+ */
+function buildUserProfile(
+  kc: Keycloak,
+  profileData: {
+    fullName: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+  },
+): UserProfile {
+  const kcRoles = getKeycloakRoles(kc);
+  const { role, role_name } = resolveRoleFromKeycloak(kcRoles);
+
+  // Пытаемся взять id из токена (sub)
+  const tokenPayload = kc.tokenParsed as Record<string, unknown> | undefined;
+  const sub = tokenPayload?.sub as string | undefined;
+
+  return {
+    id: sub ? parseInt(sub, 10) || 0 : 0,
+    email: profileData.email,
+    first_name: profileData.firstName,
+    last_name: profileData.lastName,
+    patronymic: "",
+    position: role_name,
+    role,
+    role_name,
+    school: null,
+    school_name: null,
+    is_active: true,
+    keycloakRoles: kcRoles,
+  };
+}
+
+// ────────────────────────────────────────────────────
+// Provider
+// ────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [keycloak, setKeycloak] = useState<Keycloak | null>(null);
+  const [keycloakReady, setKeycloakReady] = useState(false);
+  const initCalled = useRef(false);
+  const refreshIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
+    null,
+  );
 
+  // ── setAccessToken (совместимость с существующим кодом) ──
   const setAccessToken = useCallback(
-    (token: string | null, expires_in?: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    (token: string | null, _expiresIn?: number) => {
       setAccessTokenState(token);
-
-      // Дополнительная отладочная информация для продакшн
-      if (process.env.NODE_ENV === "production") {
-        console.log("🔧 Setting access token:", {
-          hasToken: !!token,
-          tokenPrefix: token ? token.substring(0, 10) + "..." : "null",
-          environment: "production",
-          expires_in,
-        });
-      }
-
-      // Обновляем заголовок авторизации для axios
       if (token) {
-        setAuthHeader(`Token ${token}`);
+        setAuthHeader(`Bearer ${token}`);
         localStorage.setItem("accessToken", token);
       } else {
         setAuthHeader(null);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("userProfile");
+        clearAuthData();
         setUserProfile(null);
       }
-
-      if (expires_in) {
-        const expiryTime = Date.now() + expires_in * 1000;
-        setExpiresAt(expiryTime);
-        localStorage.setItem("expiresAt", expiryTime.toString());
-      } else {
-        setExpiresAt(null);
-        localStorage.removeItem("expiresAt");
-      }
     },
-    [] // Убираем все зависимости для предотвращения циклов
+    [],
   );
 
+  // ── Инициализация Keycloak ──
+  useEffect(() => {
+    if (initCalled.current) return;
+    initCalled.current = true;
+
+    const bootstrap = async () => {
+      setIsLoading(true);
+
+      // При первом запуске после миграции на Keycloak —
+      // очищаем старые токены (формат Token xxx), они больше не валидны
+      const savedToken = localStorage.getItem("accessToken");
+      if (savedToken && !savedToken.includes(".")) {
+        // Старый токен (не JWT) — удаляем
+        console.log("🧹 Clearing old non-JWT token from localStorage");
+        clearAuthData();
+      }
+
+      try {
+        const kc = getKeycloak();
+        const authenticated = await initKeycloak(kc);
+        setKeycloak(kc);
+        setKeycloakReady(true);
+
+        if (authenticated && kc.token) {
+          // Сохраняем токен
+          setAccessTokenState(kc.token);
+          setAuthHeader(`Bearer ${kc.token}`);
+          localStorage.setItem("accessToken", kc.token);
+
+          // Загружаем профиль
+          const profileData = await saveKeycloakUserData(kc);
+          if (profileData) {
+            const profile = buildUserProfile(kc, profileData);
+            setUserProfile(profile);
+            localStorage.setItem("userProfile", JSON.stringify(profile));
+            console.log("✅ Keycloak authenticated:", profile.email);
+          }
+
+          // Получаем legacy-токен от старого API для доступа к данным
+          fetchLegacyToken().catch((err: unknown) =>
+            console.warn("⚠️ Legacy token fetch failed (non-critical):", err),
+          );
+
+          // Автообновление токена каждые 30 секунд
+          refreshIntervalRef.current = setInterval(async () => {
+            const success = await refreshKeycloakToken(kc);
+            if (success && kc.token) {
+              setAccessTokenState(kc.token);
+              setAuthHeader(`Bearer ${kc.token}`);
+              localStorage.setItem("accessToken", kc.token);
+            } else {
+              // Токен не удалось обновить — разлогиниваем
+              setAccessTokenState(null);
+              setUserProfile(null);
+              setAuthHeader(null);
+              clearAuthData();
+            }
+          }, 30000);
+
+          // Обработчик истечения токена
+          kc.onTokenExpired = async () => {
+            console.log("🔑 Token expired, refreshing...");
+            const success = await refreshKeycloakToken(kc);
+            if (success && kc.token) {
+              setAccessTokenState(kc.token);
+              setAuthHeader(`Bearer ${kc.token}`);
+              localStorage.setItem("accessToken", kc.token);
+            }
+          };
+        } else {
+          // Keycloak инициализирован, но пользователь НЕ аутентифицирован —
+          // очищаем любые сохранённые данные (старые токены не валидны)
+          console.log(
+            "ℹ️ Keycloak: user not authenticated, clearing saved data",
+          );
+          clearAuthData();
+        }
+      } catch (error) {
+        console.error("❌ Keycloak init error:", error);
+        // Keycloak недоступен — очищаем данные, пользователь неавторизован
+        clearAuthData();
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+      }
+    };
+  }, []);
+
+  // ── Логин через Keycloak ──
+  const login = useCallback(
+    (returnPath?: string) => {
+      if (!keycloakReady) {
+        // Keycloak не инициализировался (сервер недоступен) —
+        // не делаем redirect на /sign-in (можем попасть в цикл),
+        // просто логируем
+        console.warn("⚠️ Keycloak not ready, cannot login");
+        return;
+      }
+      const kc = keycloak || getKeycloak();
+      if (returnPath) {
+        sessionStorage.setItem("auth_redirect_path", returnPath);
+      }
+      kc.login({
+        redirectUri:
+          window.location.origin + (returnPath || window.location.pathname),
+      });
+    },
+    [keycloak, keycloakReady],
+  );
+
+  // ── Логаут через Keycloak ──
   const logout = useCallback(async () => {
     try {
-      console.log("🚪 Logging out user");
-
-      // Если есть токен, уведомляем сервер о выходе через authService
-      if (accessToken) {
-        try {
-          await authService.logout(accessToken);
-        } catch (error) {
-          console.error("Error during server logout:", error);
-          // Не блокируем logout при ошибке сервера
-        }
+      console.log("🚪 Logging out via Keycloak");
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
       }
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setAccessToken(null);
-      setUserProfile(null);
-      router.push("/sign-in");
-    }
-  }, [accessToken, router, setAccessToken]);
-
-  const refreshAccessToken = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      // Убираем автообновление токенов, так как работаем напрямую с внешним API
-      // Если токен истек, пользователю нужно будет авторизоваться заново
-      console.log("🔄 Token refresh not available, user needs to re-login");
-
-      // Очищаем неактуальный токен
       setAccessTokenState(null);
       setUserProfile(null);
       setAuthHeader(null);
-      localStorage.removeItem("accessToken");
-      localStorage.removeItem("userProfile");
-      localStorage.removeItem("expiresAt");
+      clearAuthData();
 
-      // Проверяем, находимся ли мы на защищенном маршруте
-      const isProtectedRoute =
-        typeof window !== "undefined" &&
-        (window.location.pathname.includes("/admin") ||
-          window.location.pathname.includes("/map") ||
-          window.location.pathname.includes("/dashboard"));
-
-      const isSignInPage =
-        typeof window !== "undefined" &&
-        window.location.pathname.includes("/sign-in");
-
-      if (isProtectedRoute && !isSignInPage) {
-        const currentLang = window.location.pathname.split("/")[1] || "ru";
-        router.push(`/${currentLang}/sign-in`);
+      if (keycloak?.authenticated) {
+        logoutKeycloak(window.location.origin);
+      } else {
+        router.push("/sign-in");
       }
     } catch (error) {
-      console.error("Error refreshing token:", error);
-    } finally {
-      setIsLoading(false);
+      console.error("Logout error:", error);
+      router.push("/sign-in");
     }
-  }, [router]);
+  }, [keycloak, router]);
 
-  useEffect(() => {
-    const initAuth = async () => {
-      setIsLoading(true);
-      const savedToken = localStorage.getItem("accessToken");
-      const savedProfile = localStorage.getItem("userProfile");
-      const savedExpiresAt = localStorage.getItem("expiresAt");
-
-      if (savedToken) {
-        // Загружаем профиль пользователя если он есть
-        if (savedProfile) {
-          try {
-            const parsedProfile = JSON.parse(savedProfile);
-            console.log("📦 Loaded profile from localStorage:", parsedProfile);
-
-            // Если нет role ID, но есть role_name, определяем ID по названию
-            if (!parsedProfile.role && parsedProfile.role_name) {
-              console.log(
-                "🔧 Fixing missing role ID based on role_name:",
-                parsedProfile.role_name
-              );
-              switch (parsedProfile.role_name) {
-                case "Администратор":
-                  parsedProfile.role = 1;
-                  break;
-                case "Организация образования":
-                  parsedProfile.role = 2;
-                  break;
-                case "Управление образования":
-                  parsedProfile.role = 3;
-                  break;
-                default:
-                  console.warn(
-                    "⚠️ Unknown role_name:",
-                    parsedProfile.role_name
-                  );
-              }
-              console.log("✅ Fixed profile with role ID:", parsedProfile.role);
-            }
-
-            setUserProfile(parsedProfile);
-          } catch (error) {
-            console.error("Error parsing saved user profile:", error);
-          }
-        } else {
-          console.log("📦 No saved profile in localStorage");
-        }
-
-        if (savedExpiresAt) {
-          const now = Date.now();
-          const expiryTime = Number(savedExpiresAt);
-
-          if (now < expiryTime) {
-            setAccessTokenState(savedToken);
-            setAuthHeader(`Token ${savedToken}`);
-            setExpiresAt(expiryTime);
-          } else {
-            await refreshAccessToken();
-          }
-        } else {
-          // Если нет времени истечения, устанавливаем токен и проверяем его
-          setAccessTokenState(savedToken);
-          setAuthHeader(`Token ${savedToken}`);
-          await refreshAccessToken();
-        }
-      } else {
-        // Если нет сохраненного токена, попытка обновления (это вернет ошибку, что нормально)
-        await refreshAccessToken();
-      }
-      setIsLoading(false);
-    };
-
-    initAuth();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Пустой массив зависимостей - выполняется только при монтировании
-
-  useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-
-    if (accessToken && expiresAt) {
-      const now = Date.now();
-      const timeoutDuration = expiresAt - now - 10 * 1000; // Обновляем за 10 секунд до истечения
-
-      if (timeoutDuration > 0) {
-        timer = setTimeout(refreshAccessToken, timeoutDuration);
-      } else {
-        refreshAccessToken();
-      }
-    }
-
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [accessToken, expiresAt, refreshAccessToken]);
-
+  // ── Синхронизация между вкладками ──
   useEffect(() => {
     const handleStorage = (event: StorageEvent) => {
       if (event.key === "accessToken") {
         if (event.newValue) {
           if (event.newValue !== accessToken) {
             setAccessTokenState(event.newValue);
-            setAuthHeader(`Token ${event.newValue}`);
+            setAuthHeader(`Bearer ${event.newValue}`);
           }
         } else {
           setAccessTokenState(null);
@@ -261,7 +326,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
           const isProtectedRoute =
             window.location.pathname.includes("/admin") ||
-            window.location.pathname.includes("/map");
+            window.location.pathname.includes("/map") ||
+            window.location.pathname.includes("/dashboard");
 
           if (isProtectedRoute) {
             router.push("/sign-in");
@@ -274,26 +340,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", handleStorage);
   }, [router, accessToken]);
 
-  // Определяем роль и права доступа
+  // ── Роли ──
   const userRole = userProfile?.role_name || null;
-  const isAdmin = userRole === "Администратор" || userRole === "admin";
+  const isAdmin =
+    userRole === "Администратор" ||
+    userRole === "admin" ||
+    (userProfile?.keycloakRoles?.includes("admin") ?? false);
 
-  // Добавляем отладку для проверки данных пользователя
+  // ── Отладка ──
   useEffect(() => {
     if (userProfile) {
-      console.log("🔍 Auth Context - User Profile:", userProfile);
-      console.log("📋 User Role ID:", userProfile.role);
-      console.log("📋 User Role Name:", userProfile.role_name);
-      console.log(
-        "🏫 User School:",
-        userProfile.school,
-        userProfile.school_name
-      );
+      console.log("🔍 Auth Context (Keycloak) - User Profile:", userProfile);
+      console.log("📋 Keycloak Roles:", userProfile.keycloakRoles);
       console.log("👤 Is Admin:", isAdmin);
     }
   }, [userProfile, isAdmin]);
 
-  // Защита маршрутов на клиенте
+  // ── Защита маршрутов на клиенте ──
   useEffect(() => {
     if (!isLoading) {
       const protectedPaths = [
@@ -308,20 +371,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const isProtectedRoute = protectedPaths.some(
         (path) =>
           typeof window !== "undefined" &&
-          window.location.pathname.includes(path)
+          window.location.pathname.includes(path),
       );
+
+      const isSignInPage =
+        typeof window !== "undefined" &&
+        window.location.pathname.includes("/sign-in");
 
       const authenticated = !!accessToken && !!userProfile;
 
-      if (isProtectedRoute && !authenticated) {
+      if (isProtectedRoute && !authenticated && !isSignInPage) {
         console.log(
-          "🚫 Access denied to protected route, redirecting to sign-in"
+          "🚫 Access denied to protected route, redirecting to sign-in",
         );
-        const currentLang =
+        // Перенаправляем на /sign-in — там пользователь сможет нажать кнопку логина
+        const lang =
           typeof window !== "undefined"
             ? window.location.pathname.split("/")[1] || "ru"
             : "ru";
-        router.push(`/${currentLang}/sign-in`);
+        router.push(`/${lang}/sign-in`);
       }
     }
   }, [accessToken, userProfile, isLoading, router]);
@@ -334,10 +402,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUserProfile,
         isLoading,
         isAuthenticated: !!accessToken && !!userProfile,
-        user: userProfile, // Алиас для userProfile
+        user: userProfile,
         userProfile,
         userRole,
         isAdmin,
+        keycloak,
+        login,
         logout,
       }}
     >

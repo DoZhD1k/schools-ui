@@ -1,83 +1,76 @@
-import fs from "fs";
-import path from "path";
+/**
+ * Утилита для получения legacy-токена от старого API авторизации.
+ *
+ * После авторизации через Keycloak автоматически вызывается старый
+ * endpoint login чтобы получить `Token xxx` для доступа к данным
+ * закрытого API (school-rating и др.).
+ *
+ * Креды по умолчанию — временное решение, пока API не переведён на Keycloak.
+ */
 
-export interface TokenValidationResult {
-  isValid: boolean;
-  user?: {
-    id: number;
-    username: string;
-    role: string;
-    email: string;
-  };
-  role?: string;
-}
+const LEGACY_LOGIN_URL = "/api/school-rating/login"; // проксируется через Next.js API route → admin.smartalmaty.kz
 
-export function validateToken(
-  authHeader: string | null
-): TokenValidationResult {
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return { isValid: false };
-  }
+const DEFAULT_EMAIL = "admin@test.com";
+const DEFAULT_PASSWORD = "admin123456";
 
-  const token = authHeader.substring(7);
+const STORAGE_KEY = "legacyApiToken";
 
+/**
+ * Вызвать старый login endpoint и сохранить полученный токен.
+ * Возвращает токен или null при ошибке.
+ */
+export async function fetchLegacyToken(): Promise<string | null> {
   try {
-    const authDataPath = path.join(
-      process.cwd(),
-      "sample",
-      "mock",
-      "auth.json"
-    );
-    const authData = JSON.parse(fs.readFileSync(authDataPath, "utf8"));
+    console.log("🔑 Fetching legacy API token...");
 
-    // Проверяем, существует ли такой токен и получаем пользователя
-    for (const [username, tokens] of Object.entries(authData.tokens)) {
-      const tokenData = tokens as {
-        access_token: string;
-        refresh_token: string;
-        expires_in: number;
-        role: string;
-      };
-      if (tokenData.access_token === token) {
-        // Находим пользователя
-        const user = authData.users.find(
-          (u: {
-            username: string;
-            isActive: boolean;
-            id: number;
-            role: string;
-            email: string;
-          }) => u.username === username && u.isActive
-        );
+    const response = await fetch(LEGACY_LOGIN_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: DEFAULT_EMAIL,
+        password: DEFAULT_PASSWORD,
+      }),
+    });
 
-        if (user) {
-          return {
-            isValid: true,
-            user: {
-              id: user.id,
-              username: user.username,
-              role: user.role,
-              email: user.email,
-            },
-            role: user.role,
-          };
-        }
-      }
+    if (!response.ok) {
+      console.error(
+        "❌ Legacy login failed:",
+        response.status,
+        response.statusText,
+      );
+      return null;
     }
 
-    return { isValid: false };
+    const data = await response.json();
+    const token: string | undefined = data.token;
+
+    if (!token) {
+      console.error("❌ Legacy login: no token in response", data);
+      return null;
+    }
+
+    localStorage.setItem(STORAGE_KEY, token);
+    console.log("✅ Legacy API token saved");
+    return token;
   } catch (error) {
-    console.error("Token validation error:", error);
-    return { isValid: false };
+    console.error("❌ Legacy login error:", error);
+    return null;
   }
 }
 
-export function requireAdmin(authHeader: string | null): TokenValidationResult {
-  const validation = validateToken(authHeader);
+/**
+ * Получить сохранённый legacy-токен из localStorage.
+ */
+export function getLegacyToken(): string | null {
+  if (typeof window === "undefined") return null;
+  return localStorage.getItem(STORAGE_KEY);
+}
 
-  if (!validation.isValid || validation.role !== "admin") {
-    return { isValid: false };
+/**
+ * Очистить legacy-токен.
+ */
+export function clearLegacyToken(): void {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(STORAGE_KEY);
   }
-
-  return validation;
 }

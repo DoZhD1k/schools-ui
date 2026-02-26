@@ -49,7 +49,7 @@ export default function DetailedRatingsTable({
   const [filters, setFilters] = useState<AdvancedSchoolFilters>({});
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedSchools, setSelectedSchools] = useState<Set<string>>(
-    new Set()
+    new Set(),
   );
   const [sortConfig, setSortConfig] = useState<{
     column: keyof School;
@@ -140,18 +140,18 @@ export default function DetailedRatingsTable({
 
   const handleExportSelected = () => {
     const selectedSchoolsData = filteredSchools.filter((school) =>
-      selectedSchools.has(school.id)
+      selectedSchools.has(school.id),
     );
     onExport(
       selectedSchoolsData,
-      `Выбранные школы (${selectedSchoolsData.length})`
+      `Выбранные школы (${selectedSchoolsData.length})`,
     );
   };
 
   const handleExportAll = () => {
     onExport(
       filteredSchools,
-      `Все школы с фильтрами (${filteredSchools.length})`
+      `Все школы с фильтрами (${filteredSchools.length})`,
     );
   };
 
@@ -195,53 +195,55 @@ export default function DetailedRatingsTable({
 
   return (
     <Card className="border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-lg">
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg">
-              <TrendingUp className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+      <CardHeader className="px-4 md:px-6">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="p-1.5 md:p-2 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg">
+              <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <span className="text-xl font-bold text-slate-900 dark:text-white">
-              Таблица рейтингов всех показателей ({filteredSchools.length})
+            <span className="text-base md:text-xl font-bold text-slate-900 dark:text-white">
+              Таблица рейтингов ({filteredSchools.length})
             </span>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-2 md:gap-3">
             {selectedSchools.size > 0 && (
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleExportSelected}
-                className="flex items-center gap-2 border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-600 dark:hover:bg-emerald-950/30 transition-all duration-200 font-semibold"
+                className="flex items-center gap-1 md:gap-2 border-emerald-300 hover:bg-emerald-50 hover:border-emerald-400 dark:border-emerald-600 dark:hover:bg-emerald-950/30 transition-all duration-200 font-semibold text-xs md:text-sm"
               >
-                <FileSpreadsheet className="h-4 w-4" />
-                Экспорт выбранных ({selectedSchools.size})
+                <FileSpreadsheet className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline">Экспорт выбранных</span> (
+                {selectedSchools.size})
               </Button>
             )}
             <Button
               variant="outline"
               size="sm"
               onClick={handleExportAll}
-              className="flex items-center gap-2 border-blue-300 hover:bg-blue-50 hover:border-blue-400 dark:border-blue-600 dark:hover:bg-blue-950/30 transition-all duration-200 font-semibold"
+              className="flex items-center gap-1 md:gap-2 border-blue-300 hover:bg-blue-50 hover:border-blue-400 dark:border-blue-600 dark:hover:bg-blue-950/30 transition-all duration-200 font-semibold text-xs md:text-sm"
             >
-              <Download className="h-4 w-4" />
-              Экспорт всех
+              <Download className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Экспорт всех</span>
+              <span className="sm:hidden">Экспорт</span>
             </Button>
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-4 md:space-y-6 px-4 md:px-6">
         {/* Фильтры */}
-        <div className="bg-slate-50/60 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 rounded-lg">
-              <Filter className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+        <div className="bg-slate-50/60 dark:bg-slate-700/30 p-3 md:p-4 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
+          <div className="flex items-center gap-2 md:gap-3 mb-3 md:mb-4">
+            <div className="p-1.5 md:p-2 bg-gradient-to-br from-blue-100 to-blue-200 dark:from-blue-900/40 dark:to-blue-800/40 rounded-lg">
+              <Filter className="h-4 w-4 md:h-5 md:w-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-              Фильтрация по школе
+            <h3 className="text-sm md:text-lg font-bold text-slate-900 dark:text-white">
+              Фильтрация
             </h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             {/* Поиск по школе */}
             <div>
               <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2 block">
@@ -325,8 +327,8 @@ export default function DetailedRatingsTable({
           </div>
         </div>
 
-        {/* Таблица */}
-        <div className="overflow-x-auto border border-slate-200/60 dark:border-slate-700/60 rounded-xl">
+        {/* Таблица — desktop */}
+        <div className="hidden md:block overflow-x-auto border border-slate-200/60 dark:border-slate-700/60 rounded-xl">
           <Table>
             <TableHeader className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
               <TableRow className="border-slate-200 dark:border-slate-600">
@@ -466,6 +468,73 @@ export default function DetailedRatingsTable({
           </Table>
         </div>
 
+        {/* Mobile card view */}
+        <div className="md:hidden space-y-3">
+          {paginatedSchools.map((school) => (
+            <div
+              key={school.id}
+              className="border border-slate-200/60 dark:border-slate-700/60 rounded-xl p-3 bg-white dark:bg-slate-800 shadow-sm"
+            >
+              <div className="flex items-start justify-between mb-2">
+                <div className="flex-1 min-w-0 mr-2">
+                  <p className="font-semibold text-sm text-slate-900 dark:text-slate-100 truncate">
+                    {school.nameRu}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {school.district.nameRu}
+                  </p>
+                </div>
+                <Badge
+                  variant="secondary"
+                  style={{
+                    backgroundColor: getRatingZoneColor(school.ratingZone),
+                  }}
+                  className="text-white font-bold text-xs shrink-0"
+                >
+                  {school.currentRating}%
+                </Badge>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2 text-xs mb-3">
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-1.5 text-center">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    1-четв
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                    {school.q1Rating}%
+                  </div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-1.5 text-center">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    2-четв
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                    {school.q2Rating}%
+                  </div>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-1.5 text-center">
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    3-четв
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-slate-100">
+                    {school.q3Rating}%
+                  </div>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewPassport(school.id)}
+                className="w-full flex items-center justify-center gap-2 text-xs"
+              >
+                <Eye className="h-3.5 w-3.5" />
+                Открыть паспорт
+              </Button>
+            </div>
+          ))}
+        </div>
+
         {filteredSchools.length === 0 && (
           <div className="text-center py-8">
             <p className="text-slate-500 dark:text-slate-400">
@@ -476,23 +545,22 @@ export default function DetailedRatingsTable({
 
         {/* Pagination */}
         {filteredSchools.length > 0 && (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
-            <div className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-              Показано {startIndex + 1}–
-              {Math.min(endIndex, filteredSchools.length)} из{" "}
-              {filteredSchools.length} школ
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4 mt-4 md:mt-6 p-3 md:p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
+            <div className="text-xs md:text-sm text-slate-600 dark:text-slate-400 font-medium">
+              {startIndex + 1}–{Math.min(endIndex, filteredSchools.length)} из{" "}
+              {filteredSchools.length}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 md:gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="border-slate-300 dark:border-slate-600"
+                className="border-slate-300 dark:border-slate-600 text-xs md:text-sm px-2 md:px-3"
               >
                 Назад
               </Button>
-              <div className="flex items-center gap-1">
+              <div className="hidden sm:flex items-center gap-1">
                 {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => {
                   let pageNum;
                   if (totalPages <= 7) {
@@ -511,7 +579,7 @@ export default function DetailedRatingsTable({
                       variant={currentPage === pageNum ? "default" : "outline"}
                       size="sm"
                       onClick={() => setCurrentPage(pageNum)}
-                      className={`min-w-[40px] ${
+                      className={`min-w-[36px] md:min-w-[40px] ${
                         currentPage === pageNum
                           ? "bg-blue-600 text-white hover:bg-blue-700"
                           : "border-slate-300 dark:border-slate-600"
@@ -522,6 +590,9 @@ export default function DetailedRatingsTable({
                   );
                 })}
               </div>
+              <span className="sm:hidden text-xs text-slate-600 dark:text-slate-400 font-medium px-1">
+                {currentPage}/{totalPages}
+              </span>
               <Button
                 variant="outline"
                 size="sm"
@@ -529,7 +600,7 @@ export default function DetailedRatingsTable({
                   setCurrentPage((prev) => Math.min(prev + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className="border-slate-300 dark:border-slate-600"
+                className="border-slate-300 dark:border-slate-600 text-xs md:text-sm px-2 md:px-3"
               >
                 Вперед
               </Button>
