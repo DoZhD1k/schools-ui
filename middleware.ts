@@ -47,7 +47,7 @@ export function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     // Редиректим на sign-in, так как авторизация проверяется на клиенте
     // Если пользователь авторизован, он будет перенаправлен на dashboard
-    url.pathname = `/${locale}/sign-in`;
+    url.pathname = `/${locale}/dashboard`;
     return NextResponse.redirect(url);
   }
 
