@@ -15,7 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
+import { getLocaleFromPath } from "@/lib/constants";
 
 export interface ApiError {
   status?: number;
@@ -35,6 +36,7 @@ export function ErrorDisplay({
   className = "",
 }: ErrorDisplayProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isRetrying, setIsRetrying] = useState(false);
 
   const handleRetry = async () => {
@@ -57,7 +59,10 @@ export function ErrorDisplay({
           icon: LogIn,
           actions: (
             <Button
-              onClick={() => router.push("/ru/sign-in")}
+              onClick={() => {
+                const lang = getLocaleFromPath(pathname);
+                router.push(`/${lang}/sign-in`);
+              }}
               className="w-full"
             >
               <LogIn className="h-4 w-4 mr-2" />
@@ -73,7 +78,10 @@ export function ErrorDisplay({
           icon: AlertTriangle,
           actions: (
             <Button
-              onClick={() => router.push("/ru")}
+              onClick={() => {
+                const lang = getLocaleFromPath(pathname);
+                router.push(`/${lang}/dashboard`);
+              }}
               variant="outline"
               className="w-full"
             >

@@ -1,7 +1,6 @@
 // useGeoJSONData.ts
 import { useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import type mapboxgl from "mapbox-gl";
 import type {
   RawEnrichedGridItem,
   EnrichedGridFeatureCollection,
@@ -56,7 +55,7 @@ const useGeoJSONData = () => {
 
     try {
       console.log("Fetching fresh GeoJSON data...");
-      const res = await fetch("/api/geo", {
+      const res = await fetch("/api/geo-data", {
         headers: { Authorization: `Bearer ${accessToken}` },
         // Add cache control headers
         cache: "no-cache",
@@ -117,66 +116,7 @@ const useGeoJSONData = () => {
     }
   }, [accessToken, normalizeProperties]);
 
-  /**
-   * Загружает нормализованные данные на карту
-   */
-  const loadGeoJSONData = useCallback<
-    (
-      map: mapboxgl.Map,
-      forceRefresh?: boolean
-    ) => Promise<EnrichedGridFeatureCollection>
-  >(
-    async (map, forceRefresh = false) => {
-      if (!map.isStyleLoaded()) {
-        await new Promise<void>((resolve) => {
-          const wait = () =>
-            map.isStyleLoaded() ? resolve() : setTimeout(wait, 100);
-          wait();
-        });
-      }
-
-      // If we already have the source and we're not forcing a refresh, just update it
-      const shouldUpdateSource = map.getSource("areas") && !forceRefresh;
-
-      const data = await fetchGeoJSONData();
-
-      if (shouldUpdateSource) {
-        // Just update the data in the existing source without removing/readding layers
-        // This prevents flickering
-        const source = map.getSource("areas") as
-          | mapboxgl.GeoJSONSource
-          | undefined;
-        if (source && "setData" in source) {
-          source.setData(data);
-          console.log("Updated existing map source without reloading layers");
-        }
-      } else {
-        // Remove layers and source if they exist
-        const layersToRemove = ["area-fill", "area-outline", "area-hover"];
-        for (const layer of layersToRemove) {
-          if (map.getLayer(layer)) {
-            map.removeLayer(layer);
-          }
-        }
-
-        if (map.getSource("areas")) {
-          map.removeSource("areas");
-        }
-
-        // Add the new source
-        map.addSource("areas", {
-          type: "geojson",
-          data,
-        });
-        console.log("Created new map source");
-      }
-
-      return data;
-    },
-    [fetchGeoJSONData]
-  );
-
-  return { fetchGeoJSONData, loadGeoJSONData };
+  return { fetchGeoJSONData };
 };
 
 export default useGeoJSONData;

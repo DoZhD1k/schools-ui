@@ -45,12 +45,12 @@ class AuthService {
   private fetchWithTimeout(
     url: string,
     options: RequestInit,
-    timeout = 10000,
+    timeout = 10000
   ): Promise<Response> {
     return Promise.race([
       fetch(url, options),
       new Promise<Response>((_, reject) =>
-        setTimeout(() => reject(new Error("Request timeout")), timeout),
+        setTimeout(() => reject(new Error("Request timeout")), timeout)
       ),
     ]);
   }
@@ -106,7 +106,7 @@ class AuthService {
               },
               body: JSON.stringify(credentials),
             },
-            15000, // Увеличиваем timeout до 15 секунд для Vercel
+            15000 // Увеличиваем timeout до 15 секунд для Vercel
           );
 
           console.log(`📡 Response from ${endpoint}:`, {
@@ -135,7 +135,7 @@ class AuthService {
 
           console.log(
             `📦 Parsed response data from ${endpoint}:`,
-            responseData,
+            responseData
           );
 
           if (!response.ok) {
@@ -226,13 +226,13 @@ class AuthService {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
+              Authorization: `Token ${token}`,
             },
           });
 
           if (response.status === 404) {
             console.log(
-              `❌ Profile endpoint ${endpoint} not found, trying next...`,
+              `❌ Profile endpoint ${endpoint} not found, trying next...`
             );
             continue;
           }
@@ -253,7 +253,7 @@ class AuthService {
         } catch (endpointError) {
           console.error(
             `❌ Error with profile endpoint ${endpoint}:`,
-            endpointError,
+            endpointError
           );
           continue;
         }
@@ -296,7 +296,7 @@ class AuthService {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Token ${token}`,
         },
       });
 

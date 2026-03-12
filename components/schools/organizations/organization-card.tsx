@@ -59,18 +59,18 @@ export const OrganizationCard = ({
 
   const getCapacityPercentage = () => {
     return Math.round(
-      (organization.currentStudents / organization.capacity) * 100,
+      (organization.currentStudents / organization.capacity) * 100
     );
   };
 
   return (
     <div className="relative overflow-hidden">
-      <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-2xl md:rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
-      <div className="absolute inset-0 rounded-2xl md:rounded-3xl shadow-lg"></div>
-      <div className="relative p-4 md:p-6">
-        <div className="flex items-start justify-between mb-3 md:mb-4">
-          <div className="flex-1 min-w-0">
-            <h3 className="text-sm md:text-lg font-bold text-slate-800 mb-1 line-clamp-2">
+      <div className="absolute inset-0 bg-white/80 backdrop-blur-md rounded-3xl border border-[hsl(0_0%_100%_/_0.2)]"></div>
+      <div className="absolute inset-0 rounded-3xl shadow-lg"></div>
+      <div className="relative p-6">
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-slate-800 mb-1">
               {organization.nameRu}
             </h3>
             <p className="text-sm text-slate-600 mb-1">{organization.nameKz}</p>
@@ -94,7 +94,7 @@ export const OrganizationCard = ({
             <div className="flex items-center space-x-2 mb-2">
               <div
                 className={`w-12 h-12 rounded-2xl ${getRatingZoneColor(
-                  organization.ratingZone,
+                  organization.ratingZone
                 )} flex items-center justify-center shadow-lg`}
               >
                 <span className="text-white font-bold text-lg">
@@ -104,7 +104,7 @@ export const OrganizationCard = ({
             </div>
             <Badge
               className={`text-xs font-medium ${getRatingZoneColor(
-                organization.ratingZone,
+                organization.ratingZone
               )} text-white border-0`}
             >
               {getZoneName(organization.ratingZone)}
@@ -140,8 +140,8 @@ export const OrganizationCard = ({
                 getCapacityPercentage() > 90
                   ? "bg-red-500"
                   : getCapacityPercentage() > 75
-                    ? "bg-amber-500"
-                    : "bg-emerald-500"
+                  ? "bg-amber-500"
+                  : "bg-emerald-500"
               }`}
               data-width={`${Math.min(getCapacityPercentage(), 100)}%`}
               style={{ width: `${Math.min(getCapacityPercentage(), 100)}%` }}

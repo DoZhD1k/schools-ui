@@ -1,25 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import mapboxgl from "mapbox-gl";
-import "mapbox-gl/dist/mapbox-gl.css";
-import useGeoJSONData from "@/hooks/useGeoJSONData";
+import L from "leaflet";
+import { useAuth } from "@/contexts/auth-context";
 import { useMapContext } from "@/contexts/map-context";
+import useGeoJSONData from "@/hooks/useGeoJSONData";
 import { createPopupHtml } from "./MapPopup";
-import PolygonsLayer from "./PolygonsLayer";
-import SchoolMarkersLayer from "./SchoolMarkersLayer";
-import LayerOrderTest from "./LayerOrderTest";
-import type { FilterSpecification } from "mapbox-gl";
-import { EnrichedGridProperties } from "@/types/geojson";
+import type { EnrichedGridProperties, EnrichedGridFeatureCollection } from "@/types/geojson";
 import type { DistrictPolygon, SchoolFeature } from "@/types/schools-map";
 import type { School } from "@/types/schools";
 
-// Set Mapbox token from environment variable
-mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
-
-// Almaty, Kazakhstan coordinates
-const ALMATY_CENTER: [number, number] = [76.9286, 43.2567];
+const ALMATY_CENTER: [number, number] = [43.238949, 76.889709];
 const DEFAULT_ZOOM = 11;
+const YANDEX_TILE_URL =
+  "https://core-renderer-tiles.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&lang=ru_RU&projection=web_mercator";
 
 interface MapContainerProps {
   districtPolygons?: DistrictPolygon[];
@@ -29,19 +23,96 @@ interface MapContainerProps {
   schoolsWithRatings?: School[];
 }
 
+// ── colour helpers ────────────────────────────────────────────────────────────
+
+function getColorStops(maxValue: number, colorScheme: string[]): Array<[number, string]> {
+  if (maxValue <= 100) {
+    return [
+      [0, colorScheme[0]],
+      [maxValue * 0.1, colorScheme[1]],
+      [maxValue * 0.25, colorScheme[2]],
+      [maxValue * 0.5, colorScheme[3]],
+      [maxValue, colorScheme[4]],
+    ];
+  } else if (maxValue <= 1000) {
+    return [
+      [0, colorScheme[0]],
+      [maxValue * 0.15, colorScheme[1]],
+      [maxValue * 0.4, colorScheme[2]],
+      [maxValue * 0.7, colorScheme[3]],
+      [maxValue, colorScheme[4]],
+    ];
+  } else {
+    return [
+      [0, colorScheme[0]],
+      [maxValue * 0.05, colorScheme[1]],
+      [maxValue * 0.2, colorScheme[2]],
+      [maxValue * 0.5, colorScheme[3]],
+      [maxValue, colorScheme[4]],
+    ];
+  }
+}
+
+function interpolateColor(value: number, stops: Array<[number, string]>): string {
+  for (let i = 1; i < stops.length; i++) {
+    if (value <= stops[i][0]) return stops[i][1];
+  }
+  return stops[stops.length - 1][1];
+}
+
+function getSchoolColor(school: SchoolFeature, schoolsWithRatings: School[]): string {
+  const match = schoolsWithRatings.find(
+    (s) =>
+      s.id === school.id.toString() ||
+      s.nameRu === school.properties.name_of_the_organization
+  );
+  if (match?.currentRating) {
+    const r = match.currentRating;
+    if (r >= 86) return "#10B981";
+    if (r >= 50) return "#F59E0B";
+    if (r >= 5) return "#EF4444";
+  }
+  const gis = school.properties.gis_rating;
+  if (gis) {
+    if (gis >= 4.0) return "#10B981";
+    if (gis >= 3.0) return "#F59E0B";
+    return "#EF4444";
+  }
+  if (school.properties.form_of_ownership?.includes("граждан")) return "#F97316";
+  return "#6366F1";
+}
+
+function getSchoolRadius(school: SchoolFeature): number {
+  const c = school.properties.contingency_filter;
+  if (c) {
+    if (c >= 1000) return 12;
+    if (c >= 500) return 10;
+    if (c >= 200) return 8;
+    return 6;
+  }
+  return 8;
+}
+
+// ── component ─────────────────────────────────────────────────────────────────
+
 export default function MapContainer({
-  districtPolygons,
-  schools,
+  districtPolygons = [],
+  schools = [],
   selectedSchool,
   onSchoolSelect,
-  schoolsWithRatings,
-}: MapContainerProps = {}) {
-  const mapContainer = useRef<HTMLDivElement>(null);
-  const map = useRef<mapboxgl.Map | null>(null);
-  const { loadGeoJSONData } = useGeoJSONData();
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapInitError, setMapInitError] = useState<string | null>(null);
-  const [dataLoaded, setDataLoaded] = useState(false);
+  schoolsWithRatings = [],
+}: MapContainerProps) {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const geoJSONLayerRef = useRef<L.GeoJSON | null>(null);
+  const polygonLayerRef = useRef<L.LayerGroup | null>(null);
+  const schoolLayerRef = useRef<L.LayerGroup | null>(null);
+  const isUnmountingRef = useRef(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onSchoolSelectRef = useRef<((school: any) => void) | undefined>(onSchoolSelect);
+
+  const { accessToken } = useAuth();
+  const { fetchGeoJSONData } = useGeoJSONData();
   const {
     activeMetric,
     colorScheme,
@@ -50,523 +121,280 @@ export default function MapContainer({
     setMapInstance,
     setMetricMaxValues,
     metricMaxValues,
+    polygonStyleConfig,
+    showPolygons,
+    setSelectedPolygon,
   } = useMapContext();
 
-  // Initialize map
+  const [geoData, setGeoData] = useState<EnrichedGridFeatureCollection | null>(null);
+
   useEffect(() => {
-    if (map.current || !mapContainer.current) return;
+    onSchoolSelectRef.current = onSchoolSelect;
+  }, [onSchoolSelect]);
 
-    // Check if Mapbox token is available
-    if (!mapboxgl.accessToken) {
-      setMapInitError(
-        "No Mapbox access token found. Please set NEXT_PUBLIC_MAPBOX_TOKEN in your environment variables."
-      );
-      return;
-    }
-
-    try {
-      console.log("Initializing Mapbox map centered on Almaty");
-
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: "mapbox://styles/mapbox/streets-v12", // Возвращаем темную карту
-        center: ALMATY_CENTER,
-        zoom: DEFAULT_ZOOM,
-        attributionControl: false,
-        failIfMajorPerformanceCaveat: false,
-      });
-
-      map.current.on("load", () => {
-        console.log("Map loaded successfully");
-        setMapLoaded(true);
-        if (map.current) {
-          setMapInstance(map.current);
-        }
-      });
-
-      map.current.on("error", (e) => {
-        console.error("Mapbox error:", e);
-        setMapInitError(`Map error: ${e.error?.message || "Unknown error"}`);
-      });
-
-      // Add controls after map initialization
-      map.current.addControl(new mapboxgl.NavigationControl(), "top-right");
-      map.current.addControl(
-        new mapboxgl.AttributionControl({ compact: true })
-      );
-    } catch (err) {
-      console.error("Failed to initialize map:", err);
-      setMapInitError(
-        `Failed to initialize map: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
-    }
-
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-    };
-  }, [setMapInstance]);
-
-  // Load GeoJSON data when map is ready (only once)
+  // ── Map init (once) ──────────────────────────────────────────────────────
   useEffect(() => {
-    if (!mapLoaded || !map.current || dataLoaded) return;
+    if (typeof window === "undefined" || !mapRef.current || mapInstanceRef.current) return;
 
-    const loadData = async () => {
-      try {
-        console.log("Loading initial GeoJSON data...");
-        const data = await loadGeoJSONData(map.current!);
-        console.log("GeoJSON data loaded successfully");
+    isUnmountingRef.current = false;
 
-        // Calculate max values for all metrics and update the context
-        const metricMaxValues: Record<string, number> = {};
-
-        // Loop through all features to find max values
-        data.features.forEach((feature) => {
-          const properties = feature.properties;
-
-          // Check each property that could be a metric
-          Object.entries(properties).forEach(([key, value]) => {
-            // Only process numeric values
-            if (typeof value === "number") {
-              // Initialize if not exists
-              if (!metricMaxValues[key]) {
-                metricMaxValues[key] = 0;
-              }
-
-              // Update max value if current value is higher
-              if (value > metricMaxValues[key]) {
-                metricMaxValues[key] = value;
-              }
-            }
-          });
-        });
-
-        // Round max values to nearest nice number for better UX
-        Object.keys(metricMaxValues).forEach((key) => {
-          const value = metricMaxValues[key];
-          // Round to nearest 10, 100, 1000, etc. based on magnitude
-          const magnitude = Math.pow(10, Math.floor(Math.log10(value)));
-          metricMaxValues[key] = Math.ceil(value / magnitude) * magnitude;
-        });
-
-        // Update the context with the calculated max values
-        if (typeof setMetricMaxValues === "function") {
-          setMetricMaxValues(metricMaxValues);
-        }
-
-        // Add layers only if they don't exist
-        if (!map.current!.getLayer("area-fill")) {
-          console.log("Adding map layers...");
-
-          // Add a layer for the area fill
-          map.current!.addLayer({
-            id: "area-fill",
-            type: "fill",
-            source: "areas",
-            paint: {
-              "fill-color": [
-                "interpolate",
-                ["linear"],
-                ["get", activeMetric],
-                0,
-                colorScheme[0],
-                500,
-                colorScheme[1],
-                1000,
-                colorScheme[2],
-                5000,
-                colorScheme[3],
-                10000,
-                colorScheme[4],
-              ],
-              "fill-opacity": 1,
-            },
-          });
-
-          // Add outline layer
-          map.current!.addLayer({
-            id: "area-outline",
-            type: "line",
-            source: "areas",
-            paint: {
-              "line-color": "#000",
-              "line-width": 1,
-              "line-opacity": 1,
-            },
-          });
-
-          // Add a hover effect
-          map.current!.addLayer({
-            id: "area-hover",
-            type: "fill",
-            source: "areas",
-            paint: {
-              "fill-color": "#000",
-              "fill-opacity": [
-                "case",
-                ["boolean", ["feature-state", "hover"], false],
-                0.3,
-                1,
-              ],
-            },
-          });
-
-          // Fly to the bounds of the data
-          const bounds = new mapboxgl.LngLatBounds();
-          data.features.forEach((feature) => {
-            if (feature.geometry.coordinates) {
-              feature.geometry.coordinates.forEach((polygon) => {
-                polygon.forEach((ring) => {
-                  ring.forEach((coord) => {
-                    bounds.extend(coord as [number, number]);
-                  });
-                });
-              });
-            }
-          });
-
-          if (!bounds.isEmpty()) {
-            map.current!.fitBounds(bounds, {
-              padding: 50,
-              maxZoom: 13,
-            });
-          }
-
-          console.log("Map layers added successfully");
-        }
-
-        setDataLoaded(true);
-      } catch (error) {
-        console.error("Failed to load map data:", error);
-      }
-    };
-
-    loadData();
-  }, [
-    loadGeoJSONData,
-    mapLoaded,
-    dataLoaded,
-    activeMetric,
-    colorScheme,
-    setMetricMaxValues,
-  ]);
-
-  // Setup a periodic update that doesn't cause flicker
-  useEffect(() => {
-    if (!mapLoaded || !map.current || !dataLoaded) return;
-
-    // Setup periodic quiet data refresh without rebuilding layers
-    const refreshInterval = setInterval(async () => {
-      if (map.current && document.visibilityState === "visible") {
-        try {
-          // This will just update the source data without recreating layers
-          await loadGeoJSONData(map.current);
-        } catch (err) {
-          console.error("Background data refresh failed:", err);
-        }
-      }
-    }, 2 * 60 * 1000); // Refresh every 2 minutes
-
-    return () => clearInterval(refreshInterval);
-  }, [mapLoaded, dataLoaded, loadGeoJSONData]);
-
-  // Update layer visibility, color and filter based on context
-  useEffect(() => {
-    if (!mapLoaded || !map.current) return;
-
-    // 1. Update layer visibility
-    const layers = {
-      "area-fill": visibleLayers.includes("areas"),
-      "area-outline": visibleLayers.includes("areas"),
-      "area-hover": visibleLayers.includes("areas"),
-    };
-
-    Object.entries(layers).forEach(([layer, visible]) => {
-      if (map.current!.getLayer(layer)) {
-        map.current!.setLayoutProperty(
-          layer,
-          "visibility",
-          visible ? "visible" : "none"
-        );
-      }
+    const map = L.map(mapRef.current, {
+      crs: L.CRS.EPSG3857,
+      center: ALMATY_CENTER,
+      zoom: DEFAULT_ZOOM,
+      preferCanvas: true,
+      zoomAnimation: true,
+      minZoom: 10,
+      maxZoom: 18,
     });
 
-    // 2. Update color expression with dynamic stops based on actual metric range
-    if (map.current.getLayer("area-fill")) {
-      // Get the max value for this metric from our context
-      const maxValue = metricMaxValues[activeMetric] || 10000;
+    L.tileLayer(YANDEX_TILE_URL, {
+      attribution: '&copy; <a href="https://yandex.com/maps/">Yandex</a>',
+      maxZoom: 18,
+      minZoom: 0,
+      updateWhenIdle: false,
+      keepBuffer: 2,
+    }).addTo(map);
 
-      // Create different distribution strategies based on max value
-      let colorStops: Array<[number, string]>;
-
-      if (maxValue <= 100) {
-        // For very small ranges (0-100), create more granular distribution
-        colorStops = [
-          [0, colorScheme[0]],
-          [maxValue * 0.1, colorScheme[1]], // 10% of max
-          [maxValue * 0.25, colorScheme[2]], // 25% of max
-          [maxValue * 0.5, colorScheme[3]], // 50% of max
-          [maxValue, colorScheme[4]], // 100% of max
-        ];
-      } else if (maxValue <= 1000) {
-        // For medium ranges (100-1000)
-        colorStops = [
-          [0, colorScheme[0]],
-          [maxValue * 0.15, colorScheme[1]], // 15% of max
-          [maxValue * 0.4, colorScheme[2]], // 40% of max
-          [maxValue * 0.7, colorScheme[3]], // 70% of max
-          [maxValue, colorScheme[4]], // 100% of max
-        ];
-      } else {
-        // For large ranges (>1000), use slightly more logarithmic distribution
-        colorStops = [
-          [0, colorScheme[0]],
-          [maxValue * 0.05, colorScheme[1]], // 5% of max
-          [maxValue * 0.2, colorScheme[2]], // 20% of max
-          [maxValue * 0.5, colorScheme[3]], // 50% of max
-          [maxValue, colorScheme[4]], // 100% of max
-        ];
-      }
-
-      // Build the interpolation expression for mapbox with proper typing
-      const colorExpression: mapboxgl.ExpressionSpecification = [
-        "interpolate",
-        ["linear"],
-        ["get", activeMetric],
-        ...(colorStops.flat() as (string | number)[]),
-      ];
-
-      map.current.setPaintProperty("area-fill", "fill-color", colorExpression);
-
-      console.log(
-        `Updated color scale for ${activeMetric} with max value ${maxValue}`
-      );
-    }
-
-    // 3. Apply filter based on range
-    if (map.current.getLayer("area-fill")) {
-      const filterExpression: FilterSpecification = [
-        "all",
-        [">=", ["get", activeMetric], filterRange.min],
-        ["<=", ["get", activeMetric], filterRange.max],
-      ];
-
-      // Apply the same filter to all layers
-      ["area-fill", "area-outline", "area-hover"].forEach((layerId) => {
-        if (map.current!.getLayer(layerId)) {
-          map.current!.setFilter(layerId, filterExpression);
-        }
-      });
-
-      console.log(
-        `Applied filter: ${activeMetric} between ${filterRange.min} and ${filterRange.max}`
-      );
-    }
-  }, [
-    activeMetric,
-    colorScheme,
-    visibleLayers,
-    filterRange,
-    mapLoaded,
-    metricMaxValues,
-  ]);
-
-  // Add popup with improved styling aligned with Swiss design
-  useEffect(() => {
-    if (!mapLoaded || !map.current) return;
-
-    // Variable to keep track of the current popup
-    let popup: mapboxgl.Popup | null = null;
-    // Keep track of the current feature ID
-    let currentFeatureId: string | number | null = null;
-
-    // Function to create a popup for a feature
-    const createPopup = (
-      e: mapboxgl.MapMouseEvent & {
-        features?: mapboxgl.MapboxGeoJSONFeature[];
-      }
-    ) => {
-      if (e.features && e.features.length > 0) {
-        const feature = e.features[0];
-        const featureId = feature.id !== undefined ? feature.id : null;
-        const properties = feature.properties as EnrichedGridProperties;
-
-        // Always close the previous popup first
-        if (popup) {
-          popup.remove();
-          popup = null;
-        }
-
-        // Update current feature ID
-        currentFeatureId = featureId;
-
-        // Use the exact click position for the popup
-        const clickPosition = e.lngLat;
-
-        // Get the HTML content for the popup
-        const popupContent = createPopupHtml({
-          properties,
-          activeMetric,
-        });
-
-        // Create the popup with proper options
-        const popupOptions: mapboxgl.PopupOptions = {
-          closeButton: true,
-          maxWidth: "300px",
-          className: "map-popup", // Use a custom class for styling
-          offset: [0, -10],
-          anchor: "bottom" as mapboxgl.Anchor,
-        };
-
-        // Create popup at the click position
-        popup = new mapboxgl.Popup(popupOptions)
-          .setLngLat(clickPosition)
-          .setHTML(popupContent)
-          .addTo(map.current!);
-
-        // Add CSS class for animation after the popup is added to the DOM
-        requestAnimationFrame(() => {
-          if (popup) {
-            const popupElement = popup.getElement();
-            if (popupElement) {
-              setTimeout(() => {
-                popupElement.classList.add("map-popup-visible");
-              }, 10);
-            }
-          }
-        });
-
-        // When popup closes, reset the current feature ID
-        popup.on("close", () => {
-          currentFeatureId = null;
-          popup = null;
-        });
-      }
-    };
-
-    // Simple cursor change on hover (no popup)
-    const handleMouseEnter = (
-      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }
-    ) => {
-      if (!e.features || e.features.length === 0) return;
-      map.current!.getCanvas().style.cursor = "pointer";
-    };
-
-    // Change cursor back to default when leaving a feature
-    const handleMouseLeave = () => {
-      map.current!.getCanvas().style.cursor = "";
-    };
-
-    // Show popup ONLY on click
-    const handleClick = (
-      e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }
-    ) => {
-      if (!e.features || e.features.length === 0) return;
-
-      // If we're clicking the same feature that already has a popup, don't do anything
-      if (
-        e.features[0].id !== undefined &&
-        e.features[0].id === currentFeatureId &&
-        popup
-      ) {
-        return;
-      }
-
-      // Create new popup
-      createPopup(e);
-    };
-
-    // Close popup when clicking elsewhere on the map
-    const handleMapClick = (e: mapboxgl.MapMouseEvent) => {
-      // Debug: Check all features at click point
-      const allFeatures = map.current!.queryRenderedFeatures(e.point);
-      console.log("🎯 Map click debug:", {
-        clickPosition: e.lngLat,
-        allFeatures: allFeatures.map((f) => ({
-          layer: f.layer?.id || "unknown",
-          sourceLayer: f.sourceLayer,
-          properties: f.properties,
-        })),
-      });
-
-      // Check if the click is not on a feature (only if layer exists)
-      const layers = map.current!.getLayer("area-fill") ? ["area-fill"] : [];
-      const features = map.current!.queryRenderedFeatures(e.point, {
-        layers: layers,
-      });
-
-      // Close popup when clicking outside areas
-      if (features.length === 0 && popup) {
-        popup.remove();
-        popup = null;
-        currentFeatureId = null;
-      }
-    };
-
-    // Add event listeners - only hover for cursor change, click for popup
-    map.current.on("mouseenter", "area-fill", handleMouseEnter);
-    map.current.on("mouseleave", "area-fill", handleMouseLeave);
-    map.current.on("click", "area-fill", handleClick);
-    map.current.on("click", handleMapClick);
+    mapInstanceRef.current = map;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setMapInstance(map as any);
 
     return () => {
-      // Clean up event listeners
-      if (map.current) {
-        map.current.off("mouseenter", "area-fill", handleMouseEnter);
-        map.current.off("mouseleave", "area-fill", handleMouseLeave);
-        map.current.off("click", "area-fill", handleClick);
-        map.current.off("click", handleMapClick);
-      }
-
-      // Remove popup
-      if (popup) {
-        popup.remove();
+      isUnmountingRef.current = true;
+      const m = mapInstanceRef.current;
+      if (m) {
+        [geoJSONLayerRef, polygonLayerRef, schoolLayerRef].forEach((ref) => {
+          if (ref.current) {
+            try { m.removeLayer(ref.current); } catch { /* ignore */ }
+            ref.current = null;
+          }
+        });
+        m.off();
+        m.remove();
+        mapInstanceRef.current = null;
       }
     };
-  }, [mapLoaded, activeMetric]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return (
-    <div className="relative w-full h-full">
-      {mapInitError && (
-        <div className="absolute inset-0 flex items-center justify-center bg-red-50 text-red-500 p-4 z-20">
-          <div className="bg-white p-6 rounded shadow-lg max-w-md border-l-4 border-red-500">
-            <h3 className="font-medium text-lg mb-2">Map Error</h3>
-            <p className="mb-4">{mapInitError}</p>
-          </div>
-        </div>
-      )}
+  // ── GeoJSON fetch ────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!accessToken) return;
 
-      {/* Map container - simplified like SchoolsMapContainer */}
-      <div
-        ref={mapContainer}
-        className="w-full h-full"
-        style={{ visibility: mapInitError ? "hidden" : "visible" }}
-      />
+    let cancelled = false;
 
-      {/* Add polygons layer when map is loaded */}
-      {mapLoaded && map.current && (
-        <PolygonsLayer
-          mapInstance={map.current}
-          districtPolygons={districtPolygons}
-        />
-      )}
+    const load = async () => {
+      try {
+        const data = await fetchGeoJSONData();
+        if (cancelled) return;
+        setGeoData(data);
 
-      {/* Add schools markers layer when map is loaded */}
-      {mapLoaded && map.current && (
-        <SchoolMarkersLayer
-          mapInstance={map.current}
-          filteredSchools={schools}
-          onSchoolSelect={onSchoolSelect}
-          schoolsWithRatings={schoolsWithRatings}
-        />
-      )}
+        const maxValues: Record<string, number> = {};
+        data.features.forEach((feature) => {
+          Object.entries(feature.properties).forEach(([key, value]) => {
+            if (typeof value === "number") {
+              if (!maxValues[key]) maxValues[key] = 0;
+              if (value > maxValues[key]) maxValues[key] = value;
+            }
+          });
+        });
+        Object.keys(maxValues).forEach((key) => {
+          const v = maxValues[key];
+          const mag = Math.pow(10, Math.floor(Math.log10(v || 1)));
+          maxValues[key] = Math.ceil(v / mag) * mag;
+        });
+        setMetricMaxValues(maxValues);
+      } catch (err) {
+        console.error("Failed to load GeoJSON data:", err);
+      }
+    };
 
-      {/* Layer order test - temporary debug component */}
-      {mapLoaded && map.current && <LayerOrderTest mapInstance={map.current} />}
-    </div>
-  );
+    load();
+    const interval = setInterval(load, 2 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [accessToken, fetchGeoJSONData, setMetricMaxValues]);
+
+  // ── GeoJSON layer ────────────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || !geoData || isUnmountingRef.current) return;
+
+    if (geoJSONLayerRef.current) {
+      try { map.removeLayer(geoJSONLayerRef.current); } catch { /* ignore */ }
+      geoJSONLayerRef.current = null;
+    }
+
+    const maxValue = metricMaxValues[activeMetric] || 10000;
+    const stops = getColorStops(maxValue, colorScheme);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const styleFeature = (feature: any): L.PathOptions => {
+      const props = feature?.properties as EnrichedGridProperties | undefined;
+      const value = (props?.[activeMetric] as number) || 0;
+      const visible =
+        visibleLayers.includes("areas") &&
+        value >= filterRange.min &&
+        value <= filterRange.max;
+      return {
+        fillColor: interpolateColor(value, stops),
+        fillOpacity: visible ? 1 : 0,
+        color: "#000",
+        weight: 1,
+        opacity: visible ? 1 : 0,
+      };
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const layer = L.geoJSON(geoData as any, {
+      style: styleFeature,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onEachFeature: (feature: any, featureLayer: L.Layer) => {
+        featureLayer.on("click", (e: L.LeafletMouseEvent) => {
+          if (!feature.properties) return;
+          L.popup({ maxWidth: 320 })
+            .setLatLng(e.latlng)
+            .setContent(
+              createPopupHtml({
+                properties: feature.properties as EnrichedGridProperties,
+                activeMetric,
+              })
+            )
+            .openOn(map);
+        });
+        featureLayer.on("mouseover", () => {
+          (featureLayer as L.Path).setStyle({ fillOpacity: 0.7 });
+        });
+        featureLayer.on("mouseout", () => {
+          (featureLayer as L.Path).setStyle(styleFeature(feature));
+        });
+      },
+    });
+
+    if (!isUnmountingRef.current) {
+      try { layer.addTo(map); geoJSONLayerRef.current = layer; } catch { /* ignore */ }
+    }
+  }, [geoData, activeMetric, colorScheme, visibleLayers, filterRange, metricMaxValues]);
+
+  // ── District polygons layer ───────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || isUnmountingRef.current) return;
+
+    if (polygonLayerRef.current) {
+      try { map.removeLayer(polygonLayerRef.current); } catch { /* ignore */ }
+      polygonLayerRef.current = null;
+    }
+
+    if (!showPolygons || districtPolygons.length === 0) return;
+
+    const group = L.layerGroup();
+
+    districtPolygons.forEach((p) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = p as any;
+      const geometry = raw.geometry;
+      const props = raw.properties || {};
+      if (!geometry) return;
+
+      const isSurplus =
+        (props.capacity_with_shifts_weighted || 0) > (props.demand_public_6_17 || 0);
+
+      const polyStyle: L.PathOptions = {
+        fillColor: isSurplus
+          ? polygonStyleConfig.surplusColor
+          : polygonStyleConfig.deficitColor,
+        fillOpacity: polygonStyleConfig.opacity,
+        color: polygonStyleConfig.strokeColor,
+        weight: polygonStyleConfig.strokeWidth,
+      };
+
+      const toLatLngs = (ring: number[][]): L.LatLngExpression[] =>
+        ring.map(([lng, lat]) => [lat, lng]);
+
+      let poly: L.Layer | null = null;
+
+      if (geometry.type === "Polygon") {
+        poly = L.polygon(geometry.coordinates.map(toLatLngs), polyStyle);
+      } else if (geometry.type === "MultiPolygon") {
+        poly = L.polygon(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          geometry.coordinates.flatMap((p: any) => p.map(toLatLngs)),
+          polyStyle
+        );
+      }
+
+      if (!poly) return;
+
+      poly.on("click", () => {
+        if (props.polygon_id) setSelectedPolygon(props.polygon_id);
+      });
+      (poly as L.Path).on("mouseover", () => {
+        (poly as L.Path).setStyle({
+          fillOpacity: Math.min(polygonStyleConfig.opacity * 3, 0.6),
+        });
+      });
+      (poly as L.Path).on("mouseout", () => {
+        (poly as L.Path).setStyle(polyStyle);
+      });
+
+      group.addLayer(poly);
+    });
+
+    if (!isUnmountingRef.current) {
+      try { group.addTo(map); polygonLayerRef.current = group; } catch { /* ignore */ }
+    }
+  }, [districtPolygons, polygonStyleConfig, showPolygons, setSelectedPolygon]);
+
+  // ── School markers layer ─────────────────────────────────────────────────
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map || isUnmountingRef.current) return;
+
+    if (schoolLayerRef.current) {
+      try { map.removeLayer(schoolLayerRef.current); } catch { /* ignore */ }
+      schoolLayerRef.current = null;
+    }
+
+    if (schools.length === 0) return;
+
+    const group = L.layerGroup();
+
+    schools
+      .filter((school) => {
+        const coords = school.properties?.infra?.origin_marker?.coordinates;
+        return Array.isArray(coords) && coords.length === 2;
+      })
+      .forEach((school) => {
+        const [lng, lat] = school.properties.infra!.origin_marker
+          .coordinates as [number, number];
+
+        const circle = L.circleMarker([lat, lng], {
+          radius: getSchoolRadius(school),
+          fillColor: getSchoolColor(school, schoolsWithRatings),
+          color: "#ffffff",
+          weight: 2,
+          fillOpacity: 0.8,
+        });
+
+        circle.bindPopup(
+          `<div style="padding:4px 8px;font-size:14px;font-weight:500">${school.properties.name_of_the_organization}</div>`
+        );
+
+        circle.on("click", () => {
+          onSchoolSelectRef.current?.(school);
+        });
+
+        group.addLayer(circle);
+      });
+
+    if (!isUnmountingRef.current) {
+      try { group.addTo(map); schoolLayerRef.current = group; } catch { /* ignore */ }
+    }
+  }, [schools, schoolsWithRatings]);
+
+  return <div ref={mapRef} className="h-full w-full" />;
 }

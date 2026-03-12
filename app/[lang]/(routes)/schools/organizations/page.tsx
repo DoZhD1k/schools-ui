@@ -108,7 +108,7 @@ function OrganizationsPage() {
         }: {
           school_id: number;
           [key: string]: unknown;
-        }) => school,
+        }) => school
       ) as unknown as SchoolType[];
 
       // Конвертируем в формат OrganizationData
@@ -133,7 +133,7 @@ function OrganizationsPage() {
           district: school.district.nameRu,
           ratingZone: school.ratingZone,
           coordinates: school.coordinates,
-        }),
+        })
       );
 
       setOrganizations(organizationsData);
@@ -206,7 +206,7 @@ function OrganizationsPage() {
           }: {
             school_id: number;
             [key: string]: unknown;
-          }) => school,
+          }) => school
         ) as unknown as SchoolType[];
 
         // Конвертируем в формат OrganizationData
@@ -231,7 +231,7 @@ function OrganizationsPage() {
             district: school.district.nameRu,
             ratingZone: school.ratingZone,
             coordinates: school.coordinates,
-          }),
+          })
         );
 
         setOrganizations(organizationsData);
@@ -252,7 +252,7 @@ function OrganizationsPage() {
     // Фильтр по району
     if (selectedDistrict !== "all") {
       const districtName = districts.find(
-        (d) => d.id === selectedDistrict,
+        (d) => d.id === selectedDistrict
       )?.name;
       if (
         districtName &&
@@ -283,39 +283,39 @@ function OrganizationsPage() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentOrganizations = filteredAndSearchedOrganizations.slice(
     startIndex,
-    endIndex,
+    endIndex
   );
   const totalPages = Math.ceil(
-    filteredAndSearchedOrganizations.length / ITEMS_PER_PAGE,
+    filteredAndSearchedOrganizations.length / ITEMS_PER_PAGE
   );
 
   // Обновляем статистику на основе отфильтрованных данных
   const stats = {
     totalOrganizations: filteredAndSearchedOrganizations.length,
     greenZone: filteredAndSearchedOrganizations.filter(
-      (o) => o.ratingZone === "green",
+      (o) => o.ratingZone === "green"
     ).length,
     yellowZone: filteredAndSearchedOrganizations.filter(
-      (o) => o.ratingZone === "yellow",
+      (o) => o.ratingZone === "yellow"
     ).length,
     redZone: filteredAndSearchedOrganizations.filter(
-      (o) => o.ratingZone === "red",
+      (o) => o.ratingZone === "red"
     ).length,
     totalStudents: filteredAndSearchedOrganizations.reduce(
       (sum, o) => sum + o.currentStudents,
-      0,
+      0
     ),
     totalCapacity: filteredAndSearchedOrganizations.reduce(
       (sum, o) => sum + o.capacity,
-      0,
+      0
     ),
     averageRating:
       filteredAndSearchedOrganizations.length > 0
         ? Math.round(
             filteredAndSearchedOrganizations.reduce(
               (sum, o) => sum + o.currentRating,
-              0,
-            ) / filteredAndSearchedOrganizations.length,
+              0
+            ) / filteredAndSearchedOrganizations.length
           )
         : 0,
   };
@@ -350,8 +350,8 @@ function OrganizationsPage() {
               currentStudents: updatedSchool.currentStudents,
               organizationType: updatedSchool.organizationType,
             }
-          : org,
-      ),
+          : org
+      )
     );
   };
 
@@ -359,7 +359,7 @@ function OrganizationsPage() {
     (schoolId: string) => {
       return permissions?.canEditSchoolData(schoolId) ?? false;
     },
-    [permissions],
+    [permissions]
   );
 
   const handleSort = (column: string) => {
@@ -390,65 +390,62 @@ function OrganizationsPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-gray-100 relative">
-      {/* Animated background elements — hidden on mobile */}
-      <div className="absolute inset-0 overflow-hidden hidden md:block">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse"></div>
         <div className="absolute bottom-1/3 right-1/4 w-80 h-80 bg-indigo-500/5 rounded-full blur-3xl animate-pulse delay-1000"></div>
+        <div className="absolute top-2/3 left-1/2 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl animate-pulse delay-2000"></div>
       </div>
 
       {/* Welcome Banner */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/90 via-teal-600/90 to-blue-700/90"></div>
-        <div className="absolute inset-0 hidden md:block">
+        <div className="absolute inset-0">
           <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_1px_1px,rgba(255,255,255,0.1)_1px,transparent_0)] bg-[length:60px_60px]"></div>
         </div>
-        <div className="absolute inset-0 hidden md:block">
+        <div className="absolute inset-0">
           <div className="absolute top-20 left-20 w-40 h-40 bg-white/5 rounded-full blur-2xl animate-pulse"></div>
           <div className="absolute bottom-20 right-20 w-60 h-60 bg-white/3 rounded-full blur-3xl animate-pulse delay-1000"></div>
+          <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-white/7 rounded-full blur-xl animate-pulse delay-2000"></div>
         </div>
-        <div className="relative px-4 py-8 md:px-6 md:py-16">
+        <div className="relative px-6 py-16">
           <div className="container mx-auto">
             <div className="max-w-3xl">
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-3 md:mb-4 leading-tight">
+              <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 leading-tight">
                 Каталог организаций образования
               </h1>
-              <p className="text-sm md:text-xl text-white/90 mb-4 md:mb-6 leading-relaxed">
-                Полная база данных образовательных учреждений
-                <span className="hidden sm:inline">
-                  {" "}
-                  с детальной информацией о рейтингах, контактах и статистике.
-                </span>
+              <p className="text-xl text-white/90 mb-6 leading-relaxed">
+                Полная база данных образовательных учреждений с детальной
+                информацией о рейтингах, контактах и статистике.
               </p>
 
               {/* Информация о правах доступа */}
               {permissions && (
-                <div className="mb-3 md:mb-4 p-2.5 md:p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
-                  <div className="text-xs md:text-sm text-white/90">
+                <div className="mb-4 p-3 bg-white/10 backdrop-blur-md rounded-lg border border-white/20">
+                  <div className="text-sm text-white/90">
                     <div className="font-medium">Ваши права доступа:</div>
                     <div className="text-white/70">
                       {permissions.isAdmin()
                         ? "Администратор - полный доступ ко всем школам"
                         : permissions.canManageAllSchools()
-                          ? "Управление образования - доступ ко всем школам"
-                          : "Организация образования - доступ только к своей школе"}
+                        ? "Управление образования - доступ ко всем школам"
+                        : "Организация образования - доступ только к своей школе"}
                     </div>
                   </div>
                 </div>
               )}
 
-              <p className="text-xs md:text-sm text-white/70 mb-4 md:mb-6 leading-relaxed hidden sm:block">
+              <p className="text-sm text-white/70 mb-6 leading-relaxed">
                 Общий рейтинг рассчитывается по взвешенной формуле с учетом
                 качества знаний, динамики результатов, развития талантов,
                 квалификации педагогов и других показателей.
               </p>
-              <div className="flex flex-wrap items-center gap-2 md:gap-6 text-white/90">
-                <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-4 py-2 md:px-6 md:py-3 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
+              <div className="flex items-center space-x-6 text-white/90">
+                <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-md rounded-full px-6 py-3 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse shadow-[0_0_10px_0_rgba(34,197,94,0.6)]"></div>
-                  <span className="text-xs md:text-sm font-medium">
-                    Актуальные данные
-                  </span>
+                  <span className="text-sm font-medium">Актуальные данные</span>
                 </div>
-                <div className="hidden sm:block text-xs md:text-sm bg-white/10 backdrop-blur-md rounded-full px-4 py-2 md:px-6 md:py-3 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
+                <div className="text-sm bg-white/10 backdrop-blur-md rounded-full px-6 py-3 border border-[hsl(0_0%_100%_/_0.1)] shadow-sm">
                   Обновлено: {new Date().toLocaleDateString("ru-RU")}
                 </div>
               </div>
@@ -457,9 +454,9 @@ function OrganizationsPage() {
         </div>
       </div>
 
-      <main className="relative mx-auto px-4 py-6 md:px-6 md:py-12">
+      <main className="relative mx-auto px-6 py-12">
         {/* Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 md:gap-6 mb-8 md:mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-12">
           <StatCard
             title="Всего организаций"
             value={stats.totalOrganizations}
@@ -518,25 +515,25 @@ function OrganizationsPage() {
         {/* Organizations Content with Integrated Filters */}
         <div className="relative overflow-hidden rounded-xl border border-slate-200/60 bg-white/80 backdrop-blur-md shadow-lg">
           {/* Integrated Filters Header */}
-          <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 p-3 md:p-4">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex-1 md:max-w-lg">
+          <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-b border-slate-200 p-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+              <div className="flex-1 max-w-lg">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
-                    placeholder="Поиск по названию, району..."
+                    placeholder="Поиск по названию, району, директору, адресу..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200/60 focus:bg-white/90 text-sm"
+                    className="pl-10 bg-white/70 backdrop-blur-sm border-slate-200/60 focus:bg-white/90"
                   />
                 </div>
               </div>
-              <div className="flex items-center gap-2 md:gap-3">
+              <div className="flex items-center space-x-3">
                 <Select
                   value={selectedDistrict}
                   onValueChange={setSelectedDistrict}
                 >
-                  <SelectTrigger className="flex-1 md:w-48 bg-white/70 backdrop-blur-sm border-slate-200/60 focus:bg-white/90 text-sm">
+                  <SelectTrigger className="w-48 bg-white/70 backdrop-blur-sm border-slate-200/60 focus:bg-white/90">
                     <SelectValue placeholder="Выберите район" />
                   </SelectTrigger>
                   <SelectContent>
@@ -550,11 +547,10 @@ function OrganizationsPage() {
                 <Button
                   variant="outline"
                   onClick={handleExport}
-                  size="sm"
-                  className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90 shrink-0"
+                  className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
                 >
-                  <Download className="h-4 w-4 md:mr-2" />
-                  <span className="hidden md:inline">Экспорт</span>
+                  <Download className="h-4 w-4 mr-2" />
+                  Экспорт
                 </Button>
               </div>
             </div>
@@ -573,34 +569,34 @@ function OrganizationsPage() {
 
           {/* Integrated Pagination */}
           {totalPages > 1 && (
-            <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 p-3 md:p-4">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-xs md:text-sm text-slate-600">
-                  {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
+            <div className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 p-4">
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-slate-600">
+                  Показано {(currentPage - 1) * ITEMS_PER_PAGE + 1}-
                   {Math.min(currentPage * ITEMS_PER_PAGE, totalCount)} из{" "}
                   {totalCount}
                   {permissions &&
                     !permissions.isAdmin() &&
                     !permissions.canManageAllSchools() && (
                       <span className="ml-2 text-blue-600 font-medium">
-                        (ваша организация)
+                        (только ваша организация)
                       </span>
                     )}
                 </div>
 
-                <div className="flex items-center gap-1 md:gap-2">
+                <div className="flex items-center space-x-2">
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => goToPage(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90 text-xs md:text-sm px-2 md:px-3"
+                    className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
                   >
-                    <ChevronLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline ml-1">Назад</span>
+                    <ChevronLeft className="h-4 w-4 mr-1" />
+                    Назад
                   </Button>
 
-                  <div className="hidden sm:flex items-center space-x-1">
+                  <div className="flex items-center space-x-1">
                     {Array.from({ length: totalPages }, (_, i) => i + 1)
                       .filter((pageNumber) => {
                         const distance = Math.abs(pageNumber - currentPage);
@@ -619,7 +615,7 @@ function OrganizationsPage() {
                         return (
                           <React.Fragment key={pageNumber}>
                             {showEllipsis && (
-                              <span className="px-1 text-slate-500">...</span>
+                              <span className="px-2 text-slate-500">...</span>
                             )}
                             <Button
                               variant="outline"
@@ -637,19 +633,16 @@ function OrganizationsPage() {
                         );
                       })}
                   </div>
-                  <span className="sm:hidden text-xs text-slate-600 font-medium px-1">
-                    {currentPage}/{totalPages}
-                  </span>
 
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => goToPage(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90 text-xs md:text-sm px-2 md:px-3"
+                    className="bg-white/80 backdrop-blur-sm border-slate-200/60 text-slate-700 hover:bg-white/90"
                   >
-                    <span className="hidden sm:inline mr-1">Далее</span>
-                    <ChevronRight className="h-4 w-4" />
+                    Далее
+                    <ChevronRight className="h-4 w-4 ml-1" />
                   </Button>
                 </div>
               </div>

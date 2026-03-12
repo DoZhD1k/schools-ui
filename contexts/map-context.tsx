@@ -8,14 +8,16 @@ import {
   useCallback,
   useEffect,
 } from "react";
-import type mapboxgl from "mapbox-gl";
+import type { Map as LeafletMap } from "leaflet";
 import type { EnrichedGridProperties } from "@/types/geojson";
 import type { PolygonFeature } from "@/types/polygons";
 import { FilterRange } from "@/lib/map-constants";
 
 interface MapContextProps {
-  mapInstance: mapboxgl.Map | null;
-  setMapInstance: (map: mapboxgl.Map) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  mapInstance: LeafletMap | any | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  setMapInstance: (map: LeafletMap | any) => void;
   activeMetric: keyof EnrichedGridProperties;
   setActiveMetric: (metric: keyof EnrichedGridProperties) => void;
   visibleLayers: string[];
@@ -67,7 +69,8 @@ const DEFAULT_COLOR_SCHEME = [
 ];
 
 export function MapProvider({ children }: { children: ReactNode }) {
-  const [mapInstance, setMapInstance] = useState<mapboxgl.Map | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [mapInstance, setMapInstance] = useState<LeafletMap | any | null>(null);
   const [activeMetric, setActiveMetric] =
     useState<keyof EnrichedGridProperties>("population");
   const [visibleLayers, setVisibleLayers] = useState<string[]>(["areas"]);
