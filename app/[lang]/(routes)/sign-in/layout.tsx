@@ -1,8 +1,8 @@
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Datapolis: Вход",
-  description: "Вход в систему Datapolis",
+  title: "Цифровой рейтинг школ: Вход",
+  description: "Вход в систему Цифрового рейтинга школ",
 };
 
 export default function SignInLayout({

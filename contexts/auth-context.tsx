@@ -8,10 +8,8 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
 import { setAuthHeader } from "@/lib/axios";
 import { authService } from "@/services/auth.service";
-import { getLocaleFromPath, getBasePath } from "@/lib/constants";
 
 interface UserProfile {
   id: number;
@@ -51,8 +49,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const router = useRouter();
-  const [accessToken, setAccessTokenState] = useState<string | null>(null);
+const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -112,9 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setAccessToken(null);
       setUserProfile(null);
-      router.push("/ru/sign-in");
     }
-  }, [accessToken, router, setAccessToken]);
+  }, [accessToken, setAccessToken]);
 
   const refreshAccessToken = useCallback(async () => {
     setIsLoading(true);
@@ -131,29 +127,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem("userProfile");
       localStorage.removeItem("expiresAt");
 
-      // Проверяем, находимся ли мы на защищенном маршруте
-      const isProtectedRoute =
-        typeof window !== "undefined" &&
-        (window.location.pathname.includes("/admin") ||
-          window.location.pathname.includes("/map") ||
-          window.location.pathname.includes("/dashboard"));
-
-      const isSignInPage =
-        typeof window !== "undefined" &&
-        window.location.pathname.includes("/sign-in");
-
-      if (isProtectedRoute && !isSignInPage) {
-        const currentLang = typeof window !== "undefined" 
-          ? getLocaleFromPath(window.location.pathname)
-          : "ru";
-        router.push(`/${currentLang}/sign-in`);
-      }
     } catch (error) {
       console.error("Error refreshing token:", error);
     } finally {
       setIsLoading(false);
     }
-  }, [router]);
+  }, []);
+
+  const autoLogin = useCallback(async () => {
+    try {
+      const result = await authService.login({
+        email: "admin@test.com",
+        password: "admin123456",
+      });
+      if (result.success && result.data) {
+        const { token, user } = result.data;
+        setAccessTokenState(token);
+        setAuthHeader(`Token ${token}`);
+        setUserProfile(user as unknown as UserProfile);
+        localStorage.setItem("accessToken", token);
+        localStorage.setItem("userProfile", JSON.stringify(user));
+        const expiryTime = Date.now() + 24 * 60 * 60 * 1000;
+        setExpiresAt(expiryTime);
+        localStorage.setItem("expiresAt", expiryTime.toString());
+      }
+    } catch (error) {
+      console.error("Auto-login failed:", error);
+    }
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
@@ -220,8 +221,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await refreshAccessToken();
         }
       } else {
-        // Если нет сохраненного токена, попытка обновления (это вернет ошибку, что нормально)
-        await refreshAccessToken();
+        // Нет токена — автоматически логинимся с дефолтными кредами
+        await autoLogin();
       }
       setIsLoading(false);
     };
@@ -261,22 +262,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setAccessTokenState(null);
           setUserProfile(null);
           setAuthHeader(null);
-
-          const isProtectedRoute =
-            window.location.pathname.includes("/admin") ||
-            window.location.pathname.includes("/map");
-
-          if (isProtectedRoute) {
-            const currentLang = getLocaleFromPath(window.location.pathname);
-            router.push(`/${currentLang}/sign-in`);
-          }
         }
       }
     };
 
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [router, accessToken]);
+  }, [accessToken]);
 
   // Определяем роль и права доступа
   const userRole = userProfile?.role_name || null;
@@ -297,51 +289,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [userProfile, isAdmin]);
 
-  // Защита маршрутов на клиенте
-  useEffect(() => {
-    if (!isLoading && typeof window !== "undefined") {
-      const pathname = window.location.pathname;
-      
-      // Игнорируем страницу sign-in
-      if (pathname.includes("/sign-in")) {
-        return;
-      }
-
-      const protectedPaths = [
-        "/admin",
-        "/map",
-        "/dashboard",
-        "/schools",
-        "/analytics",
-        "/deficit",
-        "/profile",
-      ];
-      
-      // Проверяем, является ли текущий путь защищенным
-      // Используем более точную проверку - путь должен начинаться с /{lang}/{protectedPath}
-      const pathSegments = pathname.split("/").filter(Boolean);
-      const basePath = getBasePath();
-      const pathWithoutBase = basePath ? pathname.replace(basePath, "") : pathname;
-      const segments = pathWithoutBase.split("/").filter(Boolean);
-      
-      // Первый сегмент должен быть локалью, второй - защищенным путем
-      const isProtectedRoute = segments.length >= 2 && 
-        protectedPaths.some(path => {
-          const pathWithoutSlash = path.replace("/", "");
-          return segments[1] === pathWithoutSlash || segments[1]?.startsWith(pathWithoutSlash);
-        });
-
-      const authenticated = !!accessToken && !!userProfile;
-
-      if (isProtectedRoute && !authenticated) {
-        console.log(
-          "🚫 Access denied to protected route, redirecting to sign-in"
-        );
-        const currentLang = getLocaleFromPath(pathname);
-        router.push(`/${currentLang}/sign-in`);
-      }
-    }
-  }, [accessToken, userProfile, isLoading, router]);
 
   return (
     <AuthContext.Provider
