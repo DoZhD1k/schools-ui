@@ -1,5 +1,6 @@
 import axios from "axios";
 import https from "https";
+import { getLocaleFromPath, buildPath } from "@/lib/constants";
 
 // Get API URL from environment variables with a fallback
 const apiUrl =
@@ -43,41 +44,23 @@ api.interceptors.request.use((config) => {
 
   // Автоматически добавляем токен из localStorage если он не установлен в headers
   if (typeof window !== "undefined") {
-    // Для старого API (institutions-monitoring) используем legacy-токен
-    const legacyToken = localStorage.getItem("legacyApiToken");
     const token = localStorage.getItem("accessToken");
+    if (token) {
+      // Проверяем, что токен не содержит префикс Token, и добавляем его
+      const authToken = token.startsWith("Token ") ? token : `Token ${token}`;
 
-    // Определяем, какой токен использовать
-    const effectiveToken = legacyToken || token;
-
-    if (effectiveToken) {
-      let authToken: string;
-      if (legacyToken) {
-        // Legacy-токен всегда отправляем в формате Token xxx
-        authToken = `Token ${legacyToken}`;
-      } else if (token) {
-        // Keycloak JWT — в формате Bearer
-        if (token.startsWith("Bearer ") || token.startsWith("Token ")) {
-          authToken = token;
-        } else {
-          authToken = `Bearer ${token}`;
-        }
-      } else {
-        authToken = "";
-      }
-
-      if (authToken) {
-        // Устанавливаем заголовок независимо от того, есть ли он уже
-        config.headers.Authorization = authToken;
-      }
+      // Устанавливаем заголовок независимо от того, есть ли он уже
+      config.headers.Authorization = authToken;
 
       // Debugging info
-      const isJWT = effectiveToken?.includes(".") ?? false;
+      const isJWT = token.includes(".");
+      const isMock = token.includes("mock") || token.startsWith("eyJ"); // JWT starts with eyJ
       console.log("Adding auth token to request:", {
         url: config.url,
         fullUrl: `${config.baseURL}${config.url}`,
-        tokenType: legacyToken ? "legacy" : isJWT ? "JWT" : "other",
-        tokenPrefix: authToken ? authToken.substring(0, 15) + "..." : "none",
+        tokenType: isJWT ? "JWT" : "other",
+        isMockToken: isMock && !isJWT,
+        tokenPrefix: authToken.substring(0, 15) + "...",
         hasAuthHeader: !!config.headers.Authorization,
       });
     } else {
@@ -120,12 +103,12 @@ export const setAuthHeader = (token: string | null) => {
     if (token.startsWith("Token ") || token.startsWith("Bearer ")) {
       api.defaults.headers.common["Authorization"] = token;
     } else {
-      // По умолчанию используем Bearer (Keycloak JWT)
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      // Используем формат Token согласно новой API документации
+      api.defaults.headers.common["Authorization"] = `Token ${token}`;
     }
     console.log(
       "✅ Auth header set:",
-      api.defaults.headers.common["Authorization"]?.substring(0, 15) + "...",
+      api.defaults.headers.common["Authorization"]?.substring(0, 15) + "..."
     );
   } else {
     delete api.defaults.headers.common["Authorization"];
@@ -192,7 +175,10 @@ api.interceptors.response.use(
               document.querySelector("form") !== null;
 
             if (isProtectedRoute && !isEditMode) {
-              window.location.href = "/sign-in";
+              const currentLang = typeof window !== "undefined"
+                ? getLocaleFromPath(window.location.pathname)
+                : "ru";
+              window.location.href = buildPath(`/${currentLang}/sign-in`);
             }
           }
           return Promise.reject(error);
@@ -206,5 +192,5 @@ api.interceptors.response.use(
     }
 
     return Promise.reject(error);
-  },
+  }
 );

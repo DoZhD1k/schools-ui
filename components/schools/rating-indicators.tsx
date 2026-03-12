@@ -119,28 +119,28 @@ export default function RatingIndicators({
 
   return (
     <>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Круговые индикаторы */}
         <Card className="border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-lg">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="flex items-center gap-2 md:gap-3 text-base md:text-xl font-bold text-slate-900 dark:text-white">
-              <div className="p-1.5 md:p-2 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg">
-                <Target className="h-4 w-4 md:h-6 md:w-6 text-purple-600 dark:text-purple-400" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-white">
+              <div className="p-2 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/40 dark:to-purple-800/40 rounded-lg">
+                <Target className="h-6 w-6 text-purple-600 dark:text-purple-400" />
               </div>
               Круговые индикаторы рейтинга
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6 pt-0">
-            <div className="grid grid-cols-3 gap-3 md:gap-6">
+          <CardContent>
+            <div className="grid grid-cols-3 gap-6">
               {indicators.map((indicator) => (
                 <div
                   key={indicator.zone}
-                  className="text-center cursor-pointer transition-transform md:hover:scale-105"
+                  className="text-center cursor-pointer transition-transform hover:scale-105"
                   onClick={() => handleIndicatorClick(indicator.zone)}
                 >
-                  <div className="relative w-16 h-16 md:w-24 md:h-24 mx-auto mb-2 md:mb-3">
+                  <div className="relative w-24 h-24 mx-auto mb-3">
                     <svg
-                      className="w-16 h-16 md:w-24 md:h-24 transform -rotate-90"
+                      className="w-24 h-24 transform -rotate-90"
                       viewBox="0 0 100 100"
                     >
                       {/* Фоновый круг */}
@@ -169,22 +169,22 @@ export default function RatingIndicators({
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span
-                        className={`text-sm md:text-xl font-bold ${
+                        className={`text-xl font-bold ${
                           indicator.zone === "green"
                             ? "text-green-500"
                             : indicator.zone === "yellow"
-                              ? "text-yellow-500"
-                              : "text-red-500"
+                            ? "text-yellow-500"
+                            : "text-red-500"
                         }`}
                       >
                         {indicator.percentage}%
                       </span>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-xs md:text-base text-slate-900 dark:text-white mb-0.5 md:mb-1">
+                  <h3 className="font-semibold text-slate-900 dark:text-white mb-1">
                     {indicator.label}
                   </h3>
-                  <p className="text-[10px] md:text-sm text-slate-600 dark:text-slate-400">
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
                     {indicator.count} школ
                   </p>
                 </div>
@@ -195,17 +195,17 @@ export default function RatingIndicators({
 
         {/* Круговая диаграмма */}
         <Card className="border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-lg">
-          <CardHeader className="p-4 md:p-6">
-            <CardTitle className="flex items-center gap-2 md:gap-3 text-base md:text-xl font-bold text-slate-900 dark:text-white">
-              <div className="p-1.5 md:p-2 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/40 dark:to-indigo-800/40 rounded-lg">
-                <Target className="h-4 w-4 md:h-6 md:w-6 text-indigo-600 dark:text-indigo-400" />
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-xl font-bold text-slate-900 dark:text-white">
+              <div className="p-2 bg-gradient-to-br from-indigo-100 to-indigo-200 dark:from-indigo-900/40 dark:to-indigo-800/40 rounded-lg">
+                <Target className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               Распределение школ по зонам
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-4 md:p-6 pt-0">
-            <div className="p-2 md:p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
-              <ResponsiveContainer width="100%" height={220}>
+          <CardContent>
+            <div className="p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
+              <ResponsiveContainer width="100%" height={280}>
                 <PieChart>
                   <Pie
                     data={pieData}
@@ -218,7 +218,7 @@ export default function RatingIndicators({
                     dataKey="value"
                     onClick={(data) =>
                       handleIndicatorClick(
-                        data.zone as "green" | "yellow" | "red",
+                        data.zone as "green" | "yellow" | "red"
                       )
                     }
                     className="cursor-pointer"
@@ -234,22 +234,19 @@ export default function RatingIndicators({
                   <Tooltip content={<CustomTooltip />} />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="flex justify-center gap-3 md:gap-4 mt-3 md:mt-4">
+              <div className="flex justify-center gap-4 mt-4">
                 {indicators.map((indicator) => (
-                  <div
-                    key={indicator.zone}
-                    className="flex items-center gap-1.5 md:gap-2"
-                  >
+                  <div key={indicator.zone} className="flex items-center gap-2">
                     <div
-                      className={`w-3 h-3 md:w-4 md:h-4 rounded-full ${
+                      className={`w-4 h-4 rounded-full ${
                         indicator.zone === "green"
                           ? "bg-green-500"
                           : indicator.zone === "yellow"
-                            ? "bg-yellow-500"
-                            : "bg-red-500"
+                          ? "bg-yellow-500"
+                          : "bg-red-500"
                       }`}
                     />
-                    <span className="text-xs md:text-sm font-medium text-slate-700 dark:text-slate-300">
+                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       {indicator.label}
                     </span>
                   </div>
@@ -262,17 +259,17 @@ export default function RatingIndicators({
 
       {/* Модальное окно со списком школ по шкале */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="w-[95vw] max-w-[95vw] md:min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-          <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-3 md:pb-4">
-            <DialogTitle className="text-base md:text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+        <DialogContent className="min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+          <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-4">
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
               {modalTitle}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
             {/* Статистика и кнопка экспорта */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-900/30 dark:to-emerald-900/30 p-3 md:p-4 rounded-lg border border-slate-200/60 dark:border-slate-600/60">
-              <p className="text-sm md:text-base text-slate-700 dark:text-slate-300 font-semibold">
+            <div className="flex justify-between items-center bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-900/30 dark:to-emerald-900/30 p-4 rounded-lg border border-slate-200/60 dark:border-slate-600/60">
+              <p className="text-slate-700 dark:text-slate-300 font-semibold">
                 Найдено школ:{" "}
                 <span className="text-blue-600 dark:text-blue-400 font-bold">
                   {modalData.length}
@@ -289,7 +286,7 @@ export default function RatingIndicators({
 
             {/* Таблица школ */}
             <div className="overflow-x-auto bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-              <table className="w-full table-auto min-w-[700px]">
+              <table className="w-full table-auto">
                 <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
                   <tr className="border-b border-slate-200 dark:border-slate-600">
                     <th className="text-left p-4 font-bold text-slate-700 dark:text-slate-300">
@@ -354,7 +351,7 @@ export default function RatingIndicators({
                           variant="secondary"
                           style={{
                             backgroundColor: getRatingZoneColor(
-                              school.ratingZone,
+                              school.ratingZone
                             ),
                           }}
                           className="text-white font-bold shadow-lg"

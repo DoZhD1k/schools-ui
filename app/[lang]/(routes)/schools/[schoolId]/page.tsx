@@ -168,16 +168,14 @@ export default function SchoolManagementPage() {
         </div>
       }
     >
-      <div className="container mx-auto px-4 py-4 md:p-6 space-y-4 md:space-y-6">
+      <div className="container mx-auto p-6 space-y-6">
         {/* Заголовок */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl md:text-3xl font-bold">{schoolData.name}</h1>
-            <p className="text-sm md:text-base text-muted-foreground mt-1">
-              {schoolData.address}
-            </p>
+            <h1 className="text-3xl font-bold">{schoolData.name}</h1>
+            <p className="text-muted-foreground mt-1">{schoolData.address}</p>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-2">
             {getAccessLevelBadge()}
             <Badge
               variant={
@@ -190,7 +188,7 @@ export default function SchoolManagementPage() {
         </div>
 
         {/* Основная информация */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Учащиеся</CardTitle>

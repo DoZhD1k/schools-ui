@@ -36,15 +36,15 @@ export default async function RootLayout({
   return (
     <html lang={lang} suppressHydrationWarning>
       <body className={`${inter.className} antialiased`}>
-        {/* <ThemeProvider
+        <ThemeProvider
           attribute="class"
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
-        > */}
-        <MapProvider>{children}</MapProvider>
-        <Toaster />
-        {/* </ThemeProvider> */}
+        >
+          <MapProvider>{children}</MapProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

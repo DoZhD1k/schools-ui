@@ -100,167 +100,131 @@ export const OrganizationsTable = ({
   );
 
   return (
-    <>
-      {/* Desktop table */}
-      <div className="hidden md:block overflow-x-auto">
-        <Table>
-          <TableHeader className="bg-gradient-to-r from-slate-50 to-slate-100">
-            <TableRow className="border-slate-200">
-              <TableHead className="w-12">
+    <div className="overflow-x-auto">
+      <Table>
+        <TableHeader className="bg-gradient-to-r from-slate-50 to-slate-100">
+          <TableRow className="border-slate-200">
+            <TableHead className="w-12">
+              <Checkbox
+                checked={
+                  selectedOrgs.size === organizations.length &&
+                  organizations.length > 0
+                }
+                onCheckedChange={handleSelectAll}
+              />
+            </TableHead>
+            <TableHead className="min-w-[250px]">
+              <SortButton column="nameRu">Организация</SortButton>
+            </TableHead>
+            <TableHead className="w-32">
+              <SortButton column="district">Район</SortButton>
+            </TableHead>
+            <TableHead className="w-32 text-center">
+              <SortButton column="currentRating">
+                <div className="flex flex-col items-center">
+                  <span>Общий рейтинг</span>
+                  <span className="text-xs font-normal text-slate-500">
+                    (взвешенный)
+                  </span>
+                </div>
+              </SortButton>
+            </TableHead>
+            <TableHead className="w-28 text-center">
+              <SortButton column="currentStudents">Учащиеся</SortButton>
+            </TableHead>
+            <TableHead className="w-24 text-center">Действия</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {organizations.map((org) => (
+            <TableRow
+              key={org.id}
+              className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 transition-all duration-200"
+            >
+              <TableCell>
                 <Checkbox
-                  checked={
-                    selectedOrgs.size === organizations.length &&
-                    organizations.length > 0
+                  checked={selectedOrgs.has(org.id)}
+                  onCheckedChange={(checked) =>
+                    handleSelectOrg(org.id, !!checked)
                   }
-                  onCheckedChange={handleSelectAll}
                 />
-              </TableHead>
-              <TableHead className="min-w-[250px]">
-                <SortButton column="nameRu">Организация</SortButton>
-              </TableHead>
-              <TableHead className="w-32">
-                <SortButton column="district">Район</SortButton>
-              </TableHead>
-              <TableHead className="w-32 text-center">
-                <SortButton column="currentRating">
-                  <div className="flex flex-col items-center">
-                    <span>Общий рейтинг</span>
-                    <span className="text-xs font-normal text-slate-500">
-                      (взвешенный)
-                    </span>
+              </TableCell>
+              <TableCell>
+                <div>
+                  <p className="font-semibold text-slate-900 text-sm leading-tight mb-1">
+                    {org.nameRu}
+                  </p>
+                  <p className="text-xs text-slate-500 mb-1">
+                    {org.organizationType}
+                  </p>
+                  <div className="flex items-center text-xs text-slate-500">
+                    <User className="h-3 w-3 mr-1" />
+                    <span className="truncate">{org.director}</span>
                   </div>
-                </SortButton>
-              </TableHead>
-              <TableHead className="w-28 text-center">
-                <SortButton column="currentStudents">Учащиеся</SortButton>
-              </TableHead>
-              <TableHead className="w-24 text-center">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {organizations.map((org) => (
-              <TableRow
-                key={org.id}
-                className="hover:bg-gradient-to-r hover:from-blue-50 hover:to-emerald-50 transition-all duration-200"
-              >
-                <TableCell>
-                  <Checkbox
-                    checked={selectedOrgs.has(org.id)}
-                    onCheckedChange={(checked) =>
-                      handleSelectOrg(org.id, !!checked)
-                    }
-                  />
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-semibold text-slate-900 text-sm leading-tight mb-1">
-                      {org.nameRu}
-                    </p>
-                    <p className="text-xs text-slate-500 mb-1">
-                      {org.organizationType}
-                    </p>
-                    <div className="flex items-center text-xs text-slate-500">
-                      <User className="h-3 w-3 mr-1" />
-                      <span className="truncate">{org.director}</span>
-                    </div>
+                </div>
+              </TableCell>
+              <TableCell>
+                <div className="text-sm text-slate-600">{org.district}</div>
+              </TableCell>
+              <TableCell className="text-center">
+                <Badge
+                  variant="secondary"
+                  style={{
+                    backgroundColor: getRatingZoneColor(org.ratingZone),
+                  }}
+                  className="text-white font-bold px-2 py-1 text-sm"
+                >
+                  {org.currentRating}%
+                </Badge>
+              </TableCell>
+              <TableCell className="text-center">
+                <div>
+                  <div className="font-semibold text-slate-900 text-sm">
+                    {org.currentStudents.toLocaleString()}
                   </div>
-                </TableCell>
-                <TableCell>
-                  <div className="text-sm text-slate-600">{org.district}</div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <Badge
-                    variant="secondary"
-                    style={{
-                      backgroundColor: getRatingZoneColor(org.ratingZone),
-                    }}
-                    className="text-white font-bold px-2 py-1 text-sm"
+                  <div className="text-xs text-slate-500">
+                    / {org.capacity.toLocaleString()}
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell className="text-center">
+                <div className="flex items-center justify-center space-x-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onView(org)}
+                    className="h-8 px-2 text-xs"
+                    title="Просмотр паспорта"
                   >
-                    {org.currentRating}%
-                  </Badge>
-                </TableCell>
-                <TableCell className="text-center">
-                  <div>
-                    <div className="font-semibold text-slate-900 text-sm">
-                      {org.currentStudents.toLocaleString()}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      / {org.capacity.toLocaleString()}
-                    </div>
-                  </div>
-                </TableCell>
-                <TableCell className="text-center">
-                  <div className="flex items-center justify-center space-x-1">
+                    <Eye className="h-3 w-3" />
+                  </Button>
+
+                  {canEditSchool && canEditSchool(org.id) && onEdit && (
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onView(org)}
+                      onClick={() => onEdit(org)}
                       className="h-8 px-2 text-xs"
-                      title="Просмотр паспорта"
+                      title="Редактировать данные"
                     >
-                      <Eye className="h-3 w-3" />
+                      <Edit3 className="h-3 w-3" />
                     </Button>
-
-                    {canEditSchool && canEditSchool(org.id) && onEdit && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => onEdit(org)}
-                        className="h-8 px-2 text-xs"
-                        title="Редактировать данные"
-                      >
-                        <Edit3 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
-
-      {/* Mobile card view */}
-      <div className="md:hidden divide-y divide-slate-200">
-        {organizations.map((org) => (
-          <div
-            key={org.id}
-            className="p-3 active:bg-slate-50 transition-colors"
-            onClick={() => onView(org)}
-          >
-            <div className="flex items-start justify-between mb-1.5">
-              <div className="flex-1 min-w-0 mr-2">
-                <p className="font-semibold text-sm text-slate-900 truncate">
-                  {org.nameRu}
-                </p>
-                <p className="text-xs text-slate-500">{org.district}</p>
-              </div>
-              <Badge
-                variant="secondary"
-                style={{
-                  backgroundColor: getRatingZoneColor(org.ratingZone),
-                }}
-                className="text-white font-bold text-xs shrink-0"
-              >
-                {org.currentRating}%
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>{org.organizationType}</span>
-              <span>{org.currentStudents.toLocaleString()} уч.</span>
-            </div>
-          </div>
-        ))}
-      </div>
+                  )}
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
 
       {organizations.length === 0 && (
-        <div className="text-center py-8 md:py-12">
-          <Building2 className="h-12 w-12 md:h-16 md:w-16 text-slate-400 mx-auto mb-3 md:mb-4" />
-          <p className="text-sm md:text-base text-slate-500">
+        <div className="text-center py-12">
+          <Building2 className="h-16 w-16 text-slate-400 mx-auto mb-4" />
+          <p className="text-slate-500">
             Организации не найдены. Попробуйте изменить параметры фильтрации.
           </p>
         </div>
       )}
-    </>
+    </div>
   );
 };

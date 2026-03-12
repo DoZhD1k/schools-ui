@@ -24,17 +24,15 @@ const API_BASE_URL = "/api/school-rating";
 
 class SchoolRatingApiService {
   private getAuthHeaders(): Record<string, string> {
-    // Используем legacy-токен от старого API (формат Token xxx)
-    const legacyToken = localStorage.getItem("legacyApiToken");
-    const token = legacyToken || localStorage.getItem("accessToken");
+    const token = localStorage.getItem("accessToken");
     return {
       "Content-Type": "application/json",
-      ...(token && { Authorization: `Token ${token}` }),
+      ...(token && { Authorization: `Token ${token}` }), // Используем Token вместо Bearer
     };
   }
 
   private async handleApiResponse<T>(
-    response: Response,
+    response: Response
   ): Promise<ApiResponse<T>> {
     const contentType = response.headers.get("content-type");
     const isJson = contentType?.includes("application/json");
@@ -175,7 +173,7 @@ class SchoolRatingApiService {
         {
           method: "GET",
           headers: this.getAuthHeaders(),
-        },
+        }
       );
 
       return this.handleApiResponse<User>(response);
@@ -199,7 +197,7 @@ class SchoolRatingApiService {
           method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(userData),
-        },
+        }
       );
 
       return this.handleApiResponse<User>(response);
@@ -217,7 +215,7 @@ class SchoolRatingApiService {
    */
   async updateUser(
     userId: number,
-    userData: UpdateUserRequest,
+    userData: UpdateUserRequest
   ): Promise<ApiResponse<User>> {
     try {
       const response = await fetch(
@@ -226,7 +224,7 @@ class SchoolRatingApiService {
           method: "PUT",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(userData),
-        },
+        }
       );
 
       return this.handleApiResponse<User>(response);
@@ -244,7 +242,7 @@ class SchoolRatingApiService {
    */
   async patchUser(
     userId: number,
-    userData: Partial<UpdateUserRequest>,
+    userData: Partial<UpdateUserRequest>
   ): Promise<ApiResponse<User>> {
     try {
       const response = await fetch(
@@ -253,7 +251,7 @@ class SchoolRatingApiService {
           method: "PATCH",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(userData),
-        },
+        }
       );
 
       return this.handleApiResponse<User>(response);
@@ -276,7 +274,7 @@ class SchoolRatingApiService {
         {
           method: "DELETE",
           headers: this.getAuthHeaders(),
-        },
+        }
       );
 
       return this.handleApiResponse<void>(response);
@@ -331,7 +329,7 @@ class SchoolRatingApiService {
         {
           method: "GET",
           headers: this.getAuthHeaders(),
-        },
+        }
       );
 
       return this.handleApiResponse<Role>(response);
@@ -355,7 +353,7 @@ class SchoolRatingApiService {
           method: "POST",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(roleData),
-        },
+        }
       );
 
       return this.handleApiResponse<Role>(response);
@@ -373,7 +371,7 @@ class SchoolRatingApiService {
    */
   async updateRole(
     roleId: number,
-    roleData: UpdateRoleRequest,
+    roleData: UpdateRoleRequest
   ): Promise<ApiResponse<Role>> {
     try {
       const response = await fetch(
@@ -382,7 +380,7 @@ class SchoolRatingApiService {
           method: "PUT",
           headers: this.getAuthHeaders(),
           body: JSON.stringify(roleData),
-        },
+        }
       );
 
       return this.handleApiResponse<Role>(response);
@@ -405,7 +403,7 @@ class SchoolRatingApiService {
         {
           method: "DELETE",
           headers: this.getAuthHeaders(),
-        },
+        }
       );
 
       return this.handleApiResponse<void>(response);

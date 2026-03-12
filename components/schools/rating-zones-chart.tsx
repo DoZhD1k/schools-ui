@@ -57,11 +57,11 @@ export default function RatingZonesChart({
       red: number;
       districtId: string;
     },
-    zone: "green" | "yellow" | "red",
+    zone: "green" | "yellow" | "red"
   ) => {
     const districtSchools = schools.filter(
       (school) =>
-        school.districtId === data.districtId && school.ratingZone === zone,
+        school.districtId === data.districtId && school.ratingZone === zone
     );
 
     const zoneNames = {
@@ -98,14 +98,14 @@ export default function RatingZonesChart({
               entry.dataKey === "green"
                 ? "Зеленая зона"
                 : entry.dataKey === "yellow"
-                  ? "Желтая зона"
-                  : "Красная зона";
+                ? "Желтая зона"
+                : "Красная зона";
             const colorClass =
               entry.dataKey === "green"
                 ? "text-green-600"
                 : entry.dataKey === "yellow"
-                  ? "text-yellow-600"
-                  : "text-red-600";
+                ? "text-yellow-600"
+                : "text-red-600";
             return (
               <p key={index} className={colorClass}>
                 {`${zoneName}: ${entry.value}`}
@@ -124,10 +124,10 @@ export default function RatingZonesChart({
   return (
     <>
       <Card className="border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm shadow-lg">
-        <CardHeader className="p-4 md:p-6 pb-2 md:pb-4">
-          <CardTitle className="flex items-center gap-2 md:gap-3 text-sm md:text-lg font-bold text-slate-900 dark:text-white">
-            <div className="p-1.5 md:p-2 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-800/40 rounded-lg">
-              <TrendingUp className="h-4 w-4 md:h-6 md:w-6 text-amber-600 dark:text-amber-400" />
+        <CardHeader className="pb-4">
+          <CardTitle className="flex items-center gap-3 text-lg font-bold text-slate-900 dark:text-white">
+            <div className="p-2 bg-gradient-to-br from-amber-100 to-amber-200 dark:from-amber-900/40 dark:to-amber-800/40 rounded-lg">
+              <TrendingUp className="h-6 w-6 text-amber-600 dark:text-amber-400" />
             </div>
             <div className="flex flex-col">
               <span className="leading-tight">Общее количество школ</span>
@@ -135,12 +135,12 @@ export default function RatingZonesChart({
             </div>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-3 md:p-6 pt-2">
-          <div className="p-2 md:p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60 overflow-x-auto">
-            <ResponsiveContainer width="100%" height={350} minWidth={500}>
+        <CardContent className="pt-2">
+          <div className="p-4 bg-slate-50/60 dark:bg-slate-700/30 rounded-xl border border-slate-200/60 dark:border-slate-600/60">
+            <ResponsiveContainer width="100%" height={550}>
               <BarChart
                 data={chartData}
-                margin={{ top: 10, right: 10, left: 0, bottom: 100 }}
+                margin={{ top: 20, right: 30, left: 20, bottom: 140 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis
@@ -191,17 +191,17 @@ export default function RatingZonesChart({
 
       {/* Модальное окно со списком школ зоны */}
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent className="w-[95vw] max-w-[95vw] md:min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-          <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-3 md:pb-4">
-            <DialogTitle className="text-base md:text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+        <DialogContent className="min-w-[150vh] max-h-[80vh] overflow-y-auto bg-gradient-to-br from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+          <DialogHeader className="border-b border-slate-200 dark:border-slate-700 pb-4">
+            <DialogTitle className="text-xl font-bold bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
               {modalTitle}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-6">
             {/* Статистика и кнопка экспорта */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-900/30 dark:to-emerald-900/30 p-3 md:p-4 rounded-lg border border-slate-200/60 dark:border-slate-600/60">
-              <p className="text-sm md:text-base text-slate-700 dark:text-slate-300 font-semibold">
+            <div className="flex justify-between items-center bg-gradient-to-r from-blue-50 to-emerald-50 dark:from-blue-900/30 dark:to-emerald-900/30 p-4 rounded-lg border border-slate-200/60 dark:border-slate-600/60">
+              <p className="text-slate-700 dark:text-slate-300 font-semibold">
                 Найдено школ:{" "}
                 <span className="text-blue-600 dark:text-blue-400 font-bold">
                   {modalData.length}
@@ -217,8 +217,8 @@ export default function RatingZonesChart({
             </div>
 
             {/* Таблица школ */}
-            <div className="overflow-x-auto bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
-              <table className="w-full table-fixed min-w-[600px]">
+            <div className="bg-white/80 dark:bg-slate-800/80 rounded-xl border border-slate-200/60 dark:border-slate-700/60 backdrop-blur-sm">
+              <table className="w-full table-fixed">
                 <thead className="bg-gradient-to-r from-slate-50 to-slate-100 dark:from-slate-700 dark:to-slate-800">
                   <tr className="border-b border-slate-200 dark:border-slate-600">
                     <th className="text-left p-2 font-bold text-slate-700 dark:text-slate-300 w-12">
@@ -287,7 +287,7 @@ export default function RatingZonesChart({
                           variant="secondary"
                           style={{
                             backgroundColor: getRatingZoneColor(
-                              school.ratingZone,
+                              school.ratingZone
                             ),
                           }}
                           className="text-white font-bold text-xs"

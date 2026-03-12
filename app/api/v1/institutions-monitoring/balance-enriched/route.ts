@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       params.append(key, value);
     });
 
-    const apiUrl = `https://admin.smartalmaty.kz/api/v1/institutions-monitoring/balance-enriched/?${params.toString()}`;
+    const apiUrl = `http://admin.smartalmaty.kz/api/v1/institutions-monitoring/balance-enriched/?${params.toString()}`;
 
     console.log("Proxying request to:", apiUrl);
 

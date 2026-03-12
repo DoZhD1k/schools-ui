@@ -1,33 +1,55 @@
 "use client";
 
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/contexts/auth-context";
-import { ComponentType, useEffect, useRef } from "react";
-import { LoadingSpinner } from "@/components/loading-spinner";
+import { useAuth } from "../../contexts/auth-context"; // оставляй свой путь
 
-export function withAuth<P extends object>(Component: ComponentType<P>) {
-  return function WithAuthComponent(props: P) {
-    const { isAuthenticated, isLoading, login } = useAuth();
+type WithAuthOptions = {
+  redirectTo?: string;
+};
+
+// Описываем минимальную форму того, что нам реально нужно из контекста
+type AuthLike = {
+  isAuthenticated?: boolean;
+  loading?: boolean;
+  isLoading?: boolean;
+  isAuthLoading?: boolean;
+};
+
+export function withAuth<P extends object>(
+    WrappedComponent: React.ComponentType<P>,
+    options: WithAuthOptions = {}
+) {
+  const { redirectTo = "/ru/sign-in" } = options;
+
+  const ComponentWithAuth: React.FC<P> = (props) => {
+    // ❗️БЕЗ any — просто приводим к нашему безопасному типу
+    const auth = useAuth() as AuthLike;
     const router = useRouter();
-    const redirectAttempted = useRef(false);
+
+    const isAuthenticated = !!auth?.isAuthenticated;
+
+    const loading =
+        !!auth?.loading ||
+        !!auth?.isLoading ||
+        !!auth?.isAuthLoading ||
+        false;
 
     useEffect(() => {
-      if (!isLoading && !isAuthenticated && !redirectAttempted.current) {
-        redirectAttempted.current = true;
-        try {
-          login(window.location.pathname);
-        } catch {
-          // Если Keycloak login не сработал — фоллбэк на /sign-in
-          const lang = window.location.pathname.split("/")[1] || "ru";
-          router.push(`/${lang}/sign-in`);
-        }
+      if (!loading && !isAuthenticated) {
+        router.replace(redirectTo);
       }
-    }, [isLoading, isAuthenticated, login, router]);
+    }, [loading, isAuthenticated, router, redirectTo]);
 
-    if (isLoading) {
-      return <LoadingSpinner />;
-    }
+    if (loading) return <div>Loading...</div>;
+    if (!isAuthenticated) return null;
 
-    return isAuthenticated ? <Component {...props} /> : null;
+    return <WrappedComponent {...props} />;
   };
+
+  ComponentWithAuth.displayName = `withAuth(${
+      WrappedComponent.displayName || WrappedComponent.name || "Component"
+  })`;
+
+  return ComponentWithAuth;
 }
