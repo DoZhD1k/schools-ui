@@ -347,15 +347,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     userRole === "admin" ||
     (userProfile?.keycloakRoles?.includes("admin") ?? false);
 
-  // ── Отладка ──
-  useEffect(() => {
-    if (userProfile) {
-      console.log("🔍 Auth Context (Keycloak) - User Profile:", userProfile);
-      console.log("📋 Keycloak Roles:", userProfile.keycloakRoles);
-      console.log("👤 Is Admin:", isAdmin);
-    }
-  }, [userProfile, isAdmin]);
-
   // ── Защита маршрутов на клиенте ──
   useEffect(() => {
     if (!isLoading) {

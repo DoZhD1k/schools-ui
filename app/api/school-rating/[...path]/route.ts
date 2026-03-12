@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 const API_BASE_URL =
-  "http://admin.smartalmaty.kz/api/v1/institutions-monitoring";
+  "https://admin.smartalmaty.kz/api/v1/institutions-monitoring";
 
 export async function GET(
   request: NextRequest,
