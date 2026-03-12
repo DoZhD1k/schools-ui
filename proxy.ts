@@ -16,11 +16,8 @@ function getLocale(request: NextRequest): string {
   return matchLocale(languages, locales, i18n.defaultLocale);
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Next.js strips basePath before passing pathname to middleware.
-  // So pathname here is already without /module-school-ranking prefix.
 
   // === ВАЖНО: игнорируем статику ===
   const PUBLIC_FILE =
@@ -45,8 +42,6 @@ export function middleware(request: NextRequest) {
   if (pathname === "/" || pathname === "") {
     const locale = getLocale(request);
     const url = request.nextUrl.clone();
-    // Редиректим на sign-in, так как авторизация проверяется на клиенте
-    // Если пользователь авторизован, он будет перенаправлен на dashboard
     url.pathname = `/${locale}/dashboard`;
     return NextResponse.redirect(url);
   }
